@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace RenderPipeline
+namespace MyRenderPipeline
 {
 	[CreateAssetMenu(fileName = "MyRenderPipeline", menuName = "MyRP/MyRenderPipeline")]
 	public class MyRenderPipelineAsset : RenderPipelineAsset
@@ -22,9 +22,9 @@ namespace RenderPipeline
 		private Material m_defaultMaterial;
 
 		[SerializeField, HideInInspector]
-		private List<RenderPipelineAsset> m_RenderPasses = new List<RenderPipelineAsset>();
+		private List<MyRenderPassAsset> m_RenderPasses = new List<MyRenderPassAsset>();
 
-		public List<RenderPipelineAsset> RenderPasses => m_RenderPasses;
+		public List<MyRenderPassAsset> RenderPasses => m_RenderPasses;
 
 
 		public float MaxShadowDistance
