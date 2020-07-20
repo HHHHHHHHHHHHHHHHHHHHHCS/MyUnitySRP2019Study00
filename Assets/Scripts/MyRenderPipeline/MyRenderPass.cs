@@ -5,12 +5,12 @@ using UnityEngine.Rendering.Universal;
 
 namespace MyRenderPipeline
 {
-	public abstract class MyMyRenderPassRenderer<T> : MyRenderPass
+	public abstract class MyRenderPassRenderer<T> : MyRenderPass
 		where T : MyRenderPassAsset
 	{
 		protected T asset { get; private set; }
 
-		public MyMyRenderPassRenderer(T asset)
+		public MyRenderPassRenderer(T asset)
 		{
 			this.asset = asset;
 		}
