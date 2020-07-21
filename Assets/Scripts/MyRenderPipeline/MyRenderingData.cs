@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using MyRenderPipeline.RenderPass.Shadow;
 using MyRenderPipeline.Shadow;
 using Unity.Collections;
 using UnityEngine;
@@ -16,7 +17,7 @@ namespace MyRenderPipeline
 		public RenderTextureFormat colorBufferFormat;
 		public Dictionary<Light, MyShadowMapData> shadowMapData;
 		public RenderTargetIdentifier defaultShadowMap;
-		public RenderTargetIdentifier veolocityBuffer;
+		public RenderTargetIdentifier velocityBuffer;
 		public int frameID;
 		public bool discardFrameBuffer;
 		public Vector2 projectionJitter;

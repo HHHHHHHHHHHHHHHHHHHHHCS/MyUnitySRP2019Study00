@@ -2,7 +2,7 @@
 using UnityEngine.Rendering;
 using Utility;
 
-namespace MyRenderPipeline
+namespace MyRenderPipeline.RenderPass
 {
 	[CreateAssetMenu(fileName = "ForwardLit", menuName = "MyRP/RenderPass/ForwardLit")]
 	public class ForwardLit : MyRenderPassAsset
@@ -39,6 +39,7 @@ namespace MyRenderPipeline
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
 
+                //SetupGlobalLight(context, ref renderingData);
 				var mainLightIndex = GetMainLightIndex(ref renderingData);
 
 				// Render Main Light

@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using MyRenderPipeline.Shadow;
+using UnityEngine;
 
-namespace MyRenderPipeline.Shadow
+namespace MyRenderPipeline.RenderPass.Shadow
 {
 	public struct MyShadowMapData
 	{

@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using MyRenderPipeline.RenderPass;
+using MyRenderPipeline.RenderPass.Shadow;
 using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -21,6 +23,8 @@ namespace MyRenderPipeline.Shadow
 		private const int PassPSM = 1;
 		private const int PassTSM = 2;
 
+		private const string shaderName = "MyRP/Shadow/ShadowMap";
+
 		public Dictionary<Light, MyShadowMapData> lightMaps = new Dictionary<Light, MyShadowMapData>();
 
 		private Material shadowMapMat;
@@ -28,14 +32,15 @@ namespace MyRenderPipeline.Shadow
 
 		public ShadowPassRenderer(ShadowPass asset) : base(asset)
 		{
-			shadowMapMat = new Material(Shader.Find("MyRP/Shadow/ShadowMap"));
+		}
+		
+		protected override void Init()
+		{
+			shadowMapMat = new Material(Shader.Find(shaderName));
 		}
 
 		public override void Setup(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
-			if (!shadowMapMat)
-				shadowMapMat = new Material(Shader.Find("MyRP/Shadow/ShadowMap"));
-
 			if (defaultShadowMap <= 0)
 			{
 				var cmd = CommandBufferPool.Get();
@@ -72,10 +77,12 @@ namespace MyRenderPipeline.Shadow
 							hasData = true;
 							break;
 						case ShadowAlgorithms.PSM:
-							//TODO:
+							data = PSMShadowMap(context, renderingData, shadowSettings, i);
+							hasData = true;
 							break;
 						case ShadowAlgorithms.TSM:
-							//TODO:
+							data = TSMShadowMap(context, renderingData, shadowSettings, i);
+							hasData = true;
 							break;
 					}
 
@@ -116,11 +123,13 @@ namespace MyRenderPipeline.Shadow
 					cmd.ReleaseTemporaryRT(lightMaps[light.light].shadowMapIdentifier);
 				}
 			}
-			
+
 			lightMaps.Clear();
 			context.ExecuteCommandBuffer(cmd);
 			cmd.Clear();
 			CommandBufferPool.Release(cmd);
 		}
+
+
 	}
 }

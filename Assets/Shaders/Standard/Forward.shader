@@ -12,8 +12,8 @@
 	
 	#include "UnityCG.cginc"
 	#include "./Lib.hlsl"
-	#include "./Light.hlsl"
-	#include "./Shadow/ShadowLib.hlsl"
+	#include "./Lighting.hlsl"
+	#include "./../Shadow/ShadowLib.hlsl"
 	
 	float4 _Color;
 	sampler2D _MainTex;
@@ -22,7 +22,7 @@
 	float4 _Normal_ST;
 	float _BumpScale;
 	
-	float4 Light(v2f_defulat i, float3 ambient)
+	float4 Light(v2f_default i, float3 ambient)
 	{
 		i.uv = TRANSFORM_TEX(i.uv, _MainTex);
 		float4 albedo = tex2D(_MainTex, i.uv) * _Color;
@@ -44,12 +44,12 @@
 	
 	float4 forwardBase(v2f_default i): SV_TARGET
 	{
-		return light(i, _AmbientLight);
+		return Light(i, _AmbientLight);
 	}
 	
 	float4 forwardAdd(v2f_default i): SV_TARGET
 	{
-		return light(i, 0);
+		return Light(i, 0);
 	}
 	
 	ENDHLSL
@@ -98,8 +98,7 @@
 			
 		}
 		
-		/*
-		//Unity强制规定 需要LightMode = MotionVectors
+		//MotionVectors 需要LightMode = MotionVectors
 		Pass
 		{
 			Name "MotionVectors"
@@ -122,7 +121,6 @@
 			ENDHLSL
 			
 		}
-		*/
 	}
 	CustomEditor "MyRenderPipeline.Editor.Material.ForwardLitEditorGUI"
 }

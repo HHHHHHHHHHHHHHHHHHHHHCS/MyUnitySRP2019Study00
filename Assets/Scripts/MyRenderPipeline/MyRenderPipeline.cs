@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using MyRenderPipeline;
+using MyRenderPipeline.RenderPass;
+using MyRenderPipeline.RenderPass.Shadow;
 using MyRenderPipeline.Shadow;
 using MyRenderPipeline.Utils;
 using UnityEngine;
@@ -90,7 +92,9 @@ namespace MyRenderPipeline
 			InitRenderQueue(camera);
 			SetupLight(ref renderingData);
 
-			cmd.SetRenderTarget(colorTarget, depthTarget);
+
+			cmd.SetRenderTarget(colorTarget, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, depthTarget,
+				RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 			cmd.ClearRenderTarget(true, true, Color.black, 1);
 			context.ExecuteCommandBuffer(cmd);
 			cmd.Clear();
@@ -129,25 +133,27 @@ namespace MyRenderPipeline
 			if (camera.cameraType == CameraType.SceneView)
 			{
 				//draw Gizmos 
-				context.DrawGizmos(camera,GizmoSubset.PreImageEffects);
-				context.DrawGizmos(camera,GizmoSubset.PostImageEffects);
+				context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
+				context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
 			}
 
 			foreach (var pass in renderPassQueue)
 			{
-				pass.Cleanup(context,ref renderingData);
+				pass.Cleanup(context, ref renderingData);
 			}
+
 			foreach (var pass in globalUserPasses)
 			{
-				pass.Cleanup(context,ref renderingData);
+				pass.Cleanup(context, ref renderingData);
 			}
+
 			foreach (var pass in userPasses)
 			{
-				pass.Cleanup(context,ref renderingData);
+				pass.Cleanup(context, ref renderingData);
 			}
-			
-			Cleanup(context,ref renderingData);
-			
+
+			Cleanup(context, ref renderingData);
+
 			context.ExecuteCommandBuffer(cmd);
 			CommandBufferPool.Release(cmd);
 			context.Submit();
@@ -165,8 +171,8 @@ namespace MyRenderPipeline
 				renderingData.colorBufferFormat =
 					settings.HDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
 
-				this.colorTarget = Shader.PropertyToID("_ColorTarget");
-				this.depthTarget = Shader.PropertyToID("_DepthTarget");
+				colorTarget = Shader.PropertyToID("_ColorTarget");
+				depthTarget = Shader.PropertyToID("_DepthTarget");
 				cmd.GetTemporaryRT(colorTarget, camera.pixelWidth, camera.pixelHeight, 0, FilterMode.Point,
 					renderingData.colorBufferFormat);
 				cmd.GetTemporaryRT(depthTarget, camera.pixelWidth, camera.pixelHeight, 32, FilterMode.Point,
