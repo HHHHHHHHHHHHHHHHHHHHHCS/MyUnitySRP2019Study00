@@ -4,18 +4,18 @@ using Utility;
 
 namespace MyRenderPipeline.RenderPass
 {
-	[CreateAssetMenu(fileName = "ForwardLit", menuName = "MyRP/RenderPass/ForwardLit")]
-	public class ForwardLit : MyRenderPassAsset
+	[CreateAssetMenu(fileName = "ForwardLitPass", menuName = "MyRP/RenderPass/ForwardLitPass")]
+	public class ForwardLitPass : MyRenderPassAsset
 	{
 		public override MyRenderPass CreateRenderPass()
 		{
-			return new ForwardLitPass(this);
+			return new ForwardLitPassRenderer(this);
 		}
 	}
 
-	public class ForwardLitPass : MyRenderPassRenderer<ForwardLit>
+	public class ForwardLitPassRenderer : MyRenderPassRenderer<ForwardLitPass>
 	{
-		public ForwardLitPass(ForwardLit asset) : base(asset)
+		public ForwardLitPassRenderer(ForwardLitPass asset) : base(asset)
 		{
 		}
 

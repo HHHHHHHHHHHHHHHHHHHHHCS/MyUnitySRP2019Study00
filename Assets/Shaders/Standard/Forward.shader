@@ -115,9 +115,7 @@
 			
 			#pragma vertex vert_velocity
 			#pragma fragment frag_velocity
-			
-			#define SHADERPASS SHADERPASS_MOTION_VECTORS
-			
+
 			ENDHLSL
 			
 		}

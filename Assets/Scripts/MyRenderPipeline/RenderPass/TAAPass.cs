@@ -12,7 +12,7 @@ namespace MyRenderPipeline.RenderPass
 		Uniform,
 	}
 
-	[CreateAssetMenu(fileName = "TAA", menuName = "SarRP/RenderPass/TAA")]
+	[CreateAssetMenu(fileName = "TAAPass", menuName = "MyRP/RenderPass/TAAPass")]
 	public class TAAPass : MyRenderPassAsset
 	{
 		public SamplingPatterns SamplingPatterns;

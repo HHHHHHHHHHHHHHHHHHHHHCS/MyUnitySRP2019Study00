@@ -8,7 +8,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace MyRenderPipeline.Shadow
 {
-	[CreateAssetMenu(fileName = "Shadow", menuName = "MyRP/RenderPass/ShadowMap")]
+	[CreateAssetMenu(fileName = "ShadowPass", menuName = "MyRP/RenderPass/ShadowPass")]
 	public class ShadowPass : MyRenderPassAsset
 	{
 		public override MyRenderPass CreateRenderPass()

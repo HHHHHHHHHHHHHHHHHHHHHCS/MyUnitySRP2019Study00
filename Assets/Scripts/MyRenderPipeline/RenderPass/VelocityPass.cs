@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace MyRenderPipeline.RenderPass
 {
-	[CreateAssetMenu(fileName = "VelocityPass", menuName = "MyRP/RenderPass/Velocity")]
+	[CreateAssetMenu(fileName = "VelocityPass", menuName = "MyRP/RenderPass/VelocityPass")]
 	public class VelocityPass : MyRenderPassAsset
 	{
 		public override MyRenderPass CreateRenderPass()

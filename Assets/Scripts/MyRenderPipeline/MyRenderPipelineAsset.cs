@@ -54,6 +54,8 @@ namespace MyRenderPipeline
 				if (!m_defaultMaterial)
 				{
 					m_defaultMaterial = new Material(defaultShader);
+					//https://www.sardinefish.com/blog/?pid=458
+					//我们需要禁用 motion vector pass，但是渲染的时候仍然执行该 pass 的渲染
 					m_defaultMaterial.SetShaderPassEnabled("MotionVectors", false);
 				}
 
