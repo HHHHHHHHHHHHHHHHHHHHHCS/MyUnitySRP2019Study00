@@ -88,6 +88,9 @@ namespace MyRenderPipeline.RenderPass
 				cmd.BlitFullScreen(BuiltinRenderTextureType.None, velocityBuffer, ShaderPool.Get(ShaderName),
 					(int) ShaderPass.StaticVelocity);
 
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+
 				FilteringSettings filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
 				SortingSettings sortingSettings = new SortingSettings(renderingData.camera)
 				{
