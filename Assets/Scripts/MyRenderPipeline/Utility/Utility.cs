@@ -5,6 +5,12 @@ namespace MyRenderPipeline.Utility
 {
 	public static class Utility
 	{
+		public static void ForEach<T>(this IEnumerable<T> ts, Action<T> callback)
+		{
+			foreach (var item in ts)
+				callback(item);
+		}
+
 		public static TResult MaxOf<T, TCompare, TResult>(this IEnumerable<T> collection,
 			Func<T, TCompare> comparerSelector, Func<T, TResult> resultSelector)
 			where TCompare : IComparable
