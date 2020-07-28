@@ -1,0 +1,159 @@
+﻿#pragma kernel Boid
+
+struct EntityData
+{
+	float3 position;
+	float3 velocity;
+	float3 up;
+	float4x4 rotation;
+};
+
+uint TotalSize;
+
+float SensoryRadius;
+float SeperationFactor;
+float AlignmentFactor;
+float CohesionFactor;
+float DeltaTime;
+float2 SpeedLimit;
+float AccelerationLimit;
+float3 AngularSpeedLimit;
+float4 Target;
+
+StructuredBuffer<EntityData> InputBuffer;
+RWStructuredBuffer<EntityData> OutputBuffer;
+
+float4 Quaternion(float3 axis, float angle)
+{
+	axis = normalize(axis);
+	float halfAngle = angle / 2;
+	return normalize(float4(axis.x * sin(halfAngle), axis.y * sin(halfAngle), axis.z * sin(halfAngle), cos(halfAngle)));
+}
+float4 ReverseQuaternion(float4 q)
+{
+	return normalize(float4(-q.x, -q.y, -q.z, q.w));
+}
+//四元素乘法
+float4 QuaternionMul(float4 q1, float4 q2)
+{
+	return float4
+	(
+		(q1.w * q2.x) + (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y),
+		(q1.w * q2.y) - (q1.x * q2.z) + (q1.y * q2.w) + (q1.z * q2.x),
+		(q1.w * q2.z) + (q1.x * q2.y) - (q1.y * q2.x) + (q1.z * q2.w),
+		(q1.w * q2.w) - (q1.x * q2.x) - (q1.y * q2.y) - (q1.z * q2.z)
+	);
+}
+
+//按照轴旋转角度
+float3 RotateVector(float3 axis, float3 v, float angle)
+{
+	float4 q = Quaternion(axis, angle);
+	float4 v4 = float4(v.x, v.y, v.z, 0);
+	float4 tmp = QuaternionMul(q, v4);
+	return normalize(QuaternionMul(tmp, ReverseQuaternion(q)).xyz);
+}
+
+//SV_DISPATCHTHREADID:一个线程在整个分发的全部线程组中的ID
+[numthreads(1024, 1, 1)]
+void Boid(uint3 id: SV_DISPATCHTHREADID)
+{
+	if (id.x > TotalSize)
+		return;
+	
+	EntityData self = InputBuffer[id.x];
+	
+	float3 forward = normalize(self.velocity);
+	float3 up = normalize(self.up);
+	float3 right = normalize(cross(up, forward));
+	
+	float3 alignment = 0;
+	float3 seperation = 0;
+	float3 cohesion = 0;
+	int count = 0;
+	
+	for (uint i = 0; i < TotalSize; i ++)
+	{
+		EntityData target = InputBuffer[i];
+		float dis = distance(self.position, target.position);
+		
+		if(i != id.x && dis <= SensoryRadius && dot(normalize(target.position - self.position), forward) > 0)
+		{
+			alignment += target.velocity;
+			seperation += (self.position - target.position) / dis;
+			cohesion += target.position;
+			count ++ ;
+		}
+	}
+	
+	if(count > 0)
+	{
+		alignment = alignment / count;
+		seperation = normalize(seperation / count);
+		cohesion = normalize(cohesion / count - self.position);
+		float3 targetDir = (alignment * AlignmentFactor + seperation * SeperationFactor + cohesion * CohesionFactor) / (AlignmentFactor + SeperationFactor + CohesionFactor);
+		targetDir = targetDir * (1 - Target.w) + (Target.xyz - self.position) * Target.w;
+		
+		if(1 - dot(normalize(targetDir), forward) > 0.0001)
+		{
+			float3 targetRight = normalize(cross(targetDir, forward));
+			
+			//转向角度
+			//-------------------
+			float3 steerV = cross(right, targetRight);
+			float steer = acos(dot(right, targetRight)) * sign(dot(steerV, forward));
+			steer = clamp(steer, -AngularSpeedLimit.x, AngularSpeedLimit.x);
+			float3 rotatedX = RotateVector(forward, right, steer);
+			
+			float pitch = -acos(dot(forward, normalize(targetDir)));
+			pitch = clamp(pitch, -AngularSpeedLimit.y, AngularSpeedLimit.y);
+			
+			float steerProgress = 1 - abs(steer) / AngularSpeedLimit.x;
+			pitch = pitch * pow(steerProgress, 1);
+			
+			float3 rotatedZ = RotateVector(rotatedX, forward, pitch);
+			
+			
+			//速度
+			//-----------------
+			float acceleration = 0;
+			if (dot(normalize(targetDir), forward) > .8)
+			{
+				acceleration = AccelerationLimit;
+			}
+			else if(dot(normalize(targetDir), forward) < - .5)
+			{
+				acceleration = -AccelerationLimit;
+			}
+			acceleration = clamp(acceleration, -AccelerationLimit, AccelerationLimit);
+			float speed = length(self.velocity) + acceleration;
+			speed = clamp(speed, SpeedLimit.x, SpeedLimit.y);
+			
+			//最后的加速度
+			self.velocity = rotatedZ * speed;
+			
+			forward = rotatedZ;
+			right = rotatedX;
+			up = cross(rotatedZ, rotatedX);
+		}
+		//最后的位置
+		self.position += self.velocity * DeltaTime;
+	}
+	else
+	{
+		//如果没有集群影响  则直接设置新的位置
+		self.position += self.velocity * DeltaTime;
+	}
+	
+	//形成新的旋转矩阵
+	float4x4 m;
+	m[0] = float4(right.xyz, 0);
+	m[1] = float4(up.xyz, 0);
+	m[2] = float4(forward.xyz, 0);
+	m[3] = float4(0, 0, 0, 1);
+	self.rotation = transpose(m);
+	self.up = up;
+	
+	//输出
+	OutputBuffer[id.x] = self;
+}

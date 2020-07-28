@@ -9,7 +9,7 @@ using UnityEngine;
 namespace MyRenderPipeline.Editor
 {
 	[CustomEditor(typeof(UnityEngine.Object), true), CanEditMultipleObjects]
-	class EditorHelper : UnityEditor.Editor
+	public class EditorHelper : UnityEditor.Editor
 	{
 		private Dictionary<Type, AttributeEditor> attributeEditorInstances = new Dictionary<Type, AttributeEditor>();
 		private MemberInfo[] members;
@@ -21,7 +21,45 @@ namespace MyRenderPipeline.Editor
 			{
 				CustomEditorHelper.Reload();
 			}
-			
+		}
+
+		public override void OnInspectorGUI()
+		{
+			base.OnInspectorGUI();
+
+			if (members == null)
+			{
+				members = target.GetType()
+					.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+					.Where(member => member.MemberType == MemberTypes.Field
+					                 || member.MemberType == MemberTypes.Property ||
+					                 (member.MemberType == MemberTypes.Method && !(member as MethodInfo).IsSpecialName))
+					.Where(member => member.GetCustomAttribute<CustomEditorAttribute>(true) != null)
+					.ToArray();
+				attrs = members.Select(member => member.GetCustomAttribute<CustomEditorAttribute>(true)).ToArray();
+			}
+
+			for (int i = 0; i < members.Length; i++)
+			{
+				var member = members[i];
+
+				var attr = attrs[i];
+				if (attr is null)
+					continue;
+				var attrType = attr.GetType();
+				if (!attributeEditorInstances.ContainsKey(attrType))
+				{
+					var editorType = CustomEditorHelper.customAttributeEditors[attrType];
+					if (editorType is null)
+						continue;
+
+					var editor = Activator.CreateInstance(editorType) as AttributeEditor;
+					editor.target = target;
+					attributeEditorInstances[attrType] = editor;
+				}
+
+				attributeEditorInstances[attrType].OnEdit(member, attr);
+			}
 		}
 	}
 
@@ -57,7 +95,7 @@ namespace MyRenderPipeline.Editor
 				.Where(type => type.GetCustomAttribute<CustomAttributeEditorAttribute>() != null)
 				.ForEach(type =>
 				{
-					customAttributeEditors[type.GetCustomAttribute<CustomAttributeEditorAttribute>().type] = type
+					customAttributeEditors[type.GetCustomAttribute<CustomAttributeEditorAttribute>().type] = type;
 				});
 		}
 	}

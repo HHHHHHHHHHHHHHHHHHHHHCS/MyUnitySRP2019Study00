@@ -225,6 +225,7 @@ GameObject:
   - component: {fileID: 601851035}
   - component: {fileID: 601851034}
   - component: {fileID: 601851037}
+  - component: {fileID: 601851038}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -309,4 +310,64 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c0317e0632e6c47bb855ee99f95544, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  renderPipelineAsset: {fileID: 0}
+  renderPipelineAsset: {fileID: 11400000, guid: 3c5231839ac7f8c4989ed8a0f60821dd,
+    type: 2}
+--- !u!114 &601851038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 601851033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 734323fd4e4a5cf43bab7050708ff018, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  global: 0
+  computeShader: {fileID: 7200000, guid: bb3d669aeb616e244b645522e60ea42c, type: 3}
+  material: {fileID: 2100000, guid: f37ac74403e8c8046b19bd4aa689bbde, type: 2}
+  mesh: {fileID: 7450741763379908841, guid: 387fa1b350c56bd49afd22f89139a541, type: 3}
+  spawnPoint: {fileID: 1134596683}
+  targetPoint: {fileID: 1134596683}
+  count: 8192
+  distributeRadius: 50
+  maxSpeed: 8
+  minSpeed: 3
+  angularLimit: {x: 0.1, y: 0.06, z: 1}
+  accelerationLimit: 1
+  forceTarget: 0
+  sensoryRadius: 20
+  alignment: 0.18
+  seperation: 6.8
+  cohesion: 7.16
+--- !u!1 &1134596682
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1134596683}
+  m_Layer: 0
+  m_Name: SpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1134596683
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1134596682}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
