@@ -9,6 +9,8 @@ public class GrassRendererFeature : ScriptableRendererFeature
 
 	public override void Create()
 	{
+		//Shader.globalRenderPipeline = "UniversalRenderPipeline";
+		
 		grassRenderPass = new GrassRenderPass();
 
 		// 注入渲染的哪个阶段

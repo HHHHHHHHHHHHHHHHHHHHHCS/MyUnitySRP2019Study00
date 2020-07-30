@@ -6,7 +6,7 @@
 	}
 	SubShader
 	{
-		Tags { "RenderType" = "Opaque" "RenderPipeline" = "MyRenderPipeline" }
+		Tags { "RenderType" = "Opaque" /*"RenderPipeline" = "MyRenderPipeline"*/ }
 		
 		Pass
 		{

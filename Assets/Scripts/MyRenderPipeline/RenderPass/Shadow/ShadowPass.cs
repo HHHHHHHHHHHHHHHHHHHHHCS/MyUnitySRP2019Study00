@@ -36,7 +36,10 @@ namespace MyRenderPipeline.Shadow
 		
 		protected override void Init()
 		{
-			shadowMapMat = new Material(Shader.Find(shaderName));
+			if (shadowMapMat == null)
+			{
+				shadowMapMat = new Material(Shader.Find(shaderName));
+			}
 		}
 
 		public override void Setup(ScriptableRenderContext context, ref MyRenderingData renderingData)
@@ -60,6 +63,11 @@ namespace MyRenderPipeline.Shadow
 
 		public override void Render(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
+			if (shadowMapMat == null)
+			{
+				shadowMapMat = new Material(Shader.Find(shaderName));
+			}
+			
 			for (var i = 0; i < renderingData.cullResults.visibleLights.Length; ++i)
 			{
 				var light = renderingData.cullResults.visibleLights[i];
@@ -101,6 +109,7 @@ namespace MyRenderPipeline.Shadow
 			var cmd = CommandBufferPool.Get();
 			cmd.SetGlobalMatrix("_LightViewProjection", shadowMapData.world2Light);
 			//如果用cullResults 则范围太小 , 一些摄像机外的阴影没有绘制
+			//而且现在shadowMap shader 是单独区分的
 			foreach (var renderer in GameObject.FindObjectsOfType<UnityEngine.Renderer>())
 			{
 				cmd.DrawRenderer(renderer, shadowMapMat, 0, pass);

@@ -9,6 +9,8 @@
 	
 	SubShader
 	{
+		Tags { /*"RenderPipeline" = "MyRenderPipeline"*/ }
+		
 		// #0 Simple shadow map
 		Pass
 		{

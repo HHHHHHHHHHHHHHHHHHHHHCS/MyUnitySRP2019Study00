@@ -45,6 +45,8 @@
 	
 	SubShader
 	{
+		Tags {/*"RenderPipeline" = "MyRenderPipeline"*/ }
+
 		// #0 Background Velocity Buffer Pass
 		Pass
 		{

@@ -67,6 +67,8 @@ Shader "MyRP/TAA"
 	
 	SubShader
 	{
+		Tags {/*"RenderPipeline" = "MyRenderPipeline"*/ }
+
 		// #0 Exponential TAA Blend
 		Pass
 		{
