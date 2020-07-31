@@ -28,7 +28,7 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: -4959122337603578135}
   m_RendererFeatureMap: e9166f2d82a82dbb
-  postProcessData: {fileID: 11400000, guid: 1646ef06c67856540a5fe87e6eb54ba6, type: 2}
+  postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
     copyDepthPS: {fileID: 4800000, guid: d6dae50ee9e1bfa4db75f19f99355220, type: 3}
@@ -49,4 +49,4 @@ MonoBehaviour:
     passOperation: 0
     failOperation: 0
     zFailOperation: 0
-  m_ShadowTransparentReceive: 1
+  m_ShadowTransparentReceive: 0

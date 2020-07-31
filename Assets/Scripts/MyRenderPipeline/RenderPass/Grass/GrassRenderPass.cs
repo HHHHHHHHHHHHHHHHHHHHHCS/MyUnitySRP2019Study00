@@ -39,13 +39,13 @@ public class GrassRenderPass : ScriptableRenderPass
 		//scale.z是-1，因为视图空间将查看-z，而世界空间将查看+z
 		//Matrix4x4 是 local->world的inverse = world->local = world->camera local = viewMatrix
 		Matrix4x4 viewMatrix = Matrix4x4
-			.TRS(grassRoot.position + new Vector3(0, 1, 0),
+			.TRS(grassRoot.position + new Vector3(0, 1.0f, 0),
 				Quaternion.LookRotation(Vector3.down), new Vector3(1, 1, -1)).inverse;
 
 		//ortho camera with 1:1 aspect, size = 50
 		float sizeX = grassRoot.localScale.x;
 		float sizeZ = grassRoot.localScale.z;
-		Matrix4x4 projectionMatrix = Matrix4x4.Ortho(-sizeX, sizeX, -sizeZ, sizeZ, 0.5f, 1.5f);
+		Matrix4x4 projectionMatrix = Matrix4x4.Ortho(-sizeX, sizeX, -sizeZ, sizeZ, 0.01f, 1.5f);
 
 		cmd.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
 		context.ExecuteCommandBuffer(cmd);
@@ -57,6 +57,7 @@ public class GrassRenderPass : ScriptableRenderPass
 
 		context.ExecuteCommandBuffer(cmd);
 		cmd.Clear();
+		cmd.SetViewProjectionMatrices(renderingData.cameraData.camera.worldToCameraMatrix, renderingData.cameraData.camera.projectionMatrix);
 		
 		//set global RT
 		cmd.SetGlobalTexture(grassBendingRT_pid, grassBendingRT_rti);

@@ -27,6 +27,11 @@ public class InstancedIndirectGrassRenderer : MonoBehaviour
 
 	private void LateUpdate()
 	{
+		if (instanceMaterial == null)
+		{
+			return;
+		}
+
 		UpdateBuffersIfNeeded();
 
 		//是不会被剔除的
@@ -86,7 +91,7 @@ public class InstancedIndirectGrassRenderer : MonoBehaviour
 		instanceMaterial.SetVector("_BoundSize", new Vector2(transform.localScale.x, transform.localScale.z));
 		instanceMaterial.SetFloat("_DrawDistance", drawDistance);
 
-
+ 
 		if (cachedInstanceCount == instanceCount &&
 		    argsBuffer != null &&
 		    transformBigBuffer != null)
@@ -108,8 +113,8 @@ public class InstancedIndirectGrassRenderer : MonoBehaviour
 			Vector3 pos = Vector3.zero;
 
 			//这里只是用随机的生成的
-			pos.x = Random.Range(-1, 1f);
-			pos.z = Random.Range(-1, 1f);
+			pos.x = Random.Range(-1f, 1f);
+			pos.z = Random.Range(-1f, 1f);
 
 			//TODO:旋转  也可以允许物体的旋转影响草
 
@@ -133,12 +138,12 @@ public class InstancedIndirectGrassRenderer : MonoBehaviour
 		var mesh = GetGrassMeshCache();
 
 		args[0] = (uint) mesh.GetIndexCount(0);
-		args[0] = (uint) instanceCount;
-		args[0] = (uint) mesh.GetIndexStart(0);
-		args[0] = (uint) mesh.GetBaseVertex(0);
-		args[0] = (uint) 0;
-		
-		
+		args[1] = (uint) instanceCount;
+		args[2] = (uint) mesh.GetIndexStart(0);
+		args[3] = (uint) mesh.GetBaseVertex(0);
+		args[4] = (uint) 0;
+
+
 		argsBuffer.SetData(args);
 
 		cachedInstanceCount = instanceCount;

@@ -3,27 +3,27 @@
 	Properties
 	{
 		_BaseColor ("BaseColor", Color) = (1, 1, 1, 1)
-		_GroundColor ("GroundColor", Color) = (0.5, 0.5, 0.5, 0.5)
+		_GroundColor ("GroundColor", Color) = (0.5, 0.5, 0.5, 1)
 		
 		[Header(Grass Shape)]
 		_GrassWidth ("GrassWidth", Float) = 1
-		_GrassWidth ("GrassHight", Float) = 1
+		_GrassHeight ("GrassHeight", Float) = 1
 		
 		[Header(Wind)]
-		_WindAIntensity ("WindIntensity", Float) = 1
+		_WindAIntensity ("WindIntensity", Float) = 1.77
 		_WindAFrequency ("WindFrequency", Float) = 4
 		_WindATiling ("WindTiling", Vector) = (0.1, 0.1, 0)
-		_WindAWrap ("WindTiling", Vector) = (0.5, 0.5, 0)
+		_WindAWrap ("WindWrap", Vector) = (0.5, 0.5, 0)
 		
 		_WindBIntensity ("WindIntensity", Float) = 0.25
 		_WindBFrequency ("WindFrequency", Float) = 7.7
 		_WindBTiling ("WindTiling", Vector) = (0.37, 3.0, 0)
-		_WindBWrap ("WindTiling", Vector) = (0.5, 0.5, 0)
+		_WindBWrap ("WindWrap", Vector) = (0.5, 0.5, 0)
 		
 		_WindCIntensity ("WindIntensity", Float) = 0.125
 		_WindCFrequency ("WindFrequency", Float) = 11.7
 		_WindCTiling ("WindTiling", Vector) = (0.77, 3.0, 0)
-		_WindCWrap ("WindTiling", Vector) = (0.5, 0.5, 0)
+		_WindCWrap ("WindWrap", Vector) = (0.5, 0.5, 0)
 		
 		[Header(Lighting)]
 		_RandomNormal ("RandomNormal", Float) = 0.15
@@ -111,6 +111,28 @@
 			
 			sampler2D _GrassBendingRT;
 			
+			half3 ApplySingleDirectLight(Light light, half3 N, half3 V, half3 albedo, half positionOSY)
+			{
+				half3 H = normalize(light.direction + V);
+				
+				//diffuse
+				half directDiffuse = dot(N, light.direction) * 0.5 + 0.5;//half lambert,to fake grass SSS
+				
+				//specular(8)
+				float directSpecular = saturate(dot(N, H));
+				//pow(directSpecular,8)
+				directSpecular *= directSpecular;
+				directSpecular *= directSpecular;
+				directSpecular *= directSpecular;
+				//directSpecular*=directSpecular;//if enable pow(16)
+				
+				directSpecular *= 0.1 * positionOSY;//顶端加一点反光
+				
+				half3 lighting = light.color * (light.shadowAttenuation * light.distanceAttenuation);
+				half3 result = (albedo * directDiffuse + directSpecular) * lighting;
+				
+				return result;
+			}
 			
 			v2f vert(a2v input, uint instanceID: SV_INSTANCEID)
 			{
@@ -130,12 +152,93 @@
 				//=========================================
 				float3 cameraTransformRightWS = UNITY_MATRIX_V[0].xyz;//UNITY_MATRIX_V[0].xyz == world space camera Right unit vector
 				float3 cameraTransformUpWS = UNITY_MATRIX_V[1].xyz;//UNITY_MATRIX_V[1].xyz == world space camera Up unit vector
-				float3 cameraTransformForwardWS = -UNITY_MATRIX_V[2].xyz;//UNITY_MATRIX_V[2].xyz == -1 * world space camera Forward unit vector
+				float3 cameraTransformForwardWS = -UNITY_MATRIX_V[2].xyz ;//UNITY_MATRIX_V[2].xyz == -1 * world space camera Forward unit vector
+				
+				//Expand Billboard (billboard Left+right)
+				float3 positionOS = input.vertex.x * cameraTransformRightWS * _GrassWidth;
+				//Expand Billboard (billboard Up)
+				positionOS += input.vertex.y * cameraTransformUpWS;
+				
+				//硬混合压草的RT
+				float3 bendDir = cameraTransformForwardWS;
+				bendDir.xz *= 0.5;//草弯曲的时候变得更矮
+				bendDir.y = min(-0.5, bendDir.y);//阻止贴的太近
+				positionOS = lerp(positionOS.xyz + bendDir * positionOS.y / - bendDir.y, positionOS.xyz, stepped * 0.95 + 0.05);//不能完全弯曲会产生 ZFighting
+				
+				//每颗草的高度
+				positionOS.y *= perGrassHeight;
+				
+				//和摄像机的距离过远 进行适当的放大  避免三角形过小进行闪烁
+				float3 viewWS = _WorldSpaceCameraPos - perGrassPivotPosWS;
+				float viewWSLength = length(viewWS);
+				positionOS += cameraTransformRightWS * max(0, viewWSLength * 0.0225);
+				
+				//如果超出了绘制距离  则进行光栅化优化   移到很远的地方  进行trinagle优化
+				positionOS += viewWSLength < _DrawDistance?0: 999999;//移到很远的地方
+				
+				//移动草posOS -> posWS
+				float3 positionWS = positionOS + perGrassPivotPosWS;
+				
+				//wind animation
+				float wind = 0;
+				wind += (sin(_Time.y * _WindAFrequency + perGrassPivotPosWS.x * _WindATiling.x + perGrassPivotPosWS.z * _WindATiling.y) * _WindAWrap.x + _WindAWrap.y) * _WindAIntensity; //windA
+				wind += (sin(_Time.y * _WindBFrequency + perGrassPivotPosWS.x * _WindBTiling.x + perGrassPivotPosWS.z * _WindBTiling.y) * _WindBWrap.x + _WindBWrap.y) * _WindBIntensity; //windB
+				wind += (sin(_Time.y * _WindCFrequency + perGrassPivotPosWS.x * _WindCTiling.x + perGrassPivotPosWS.z * _WindCTiling.y) * _WindCWrap.x + _WindCWrap.y) * _WindCIntensity; //windC
+				wind *= input.vertex.y;//越高偏离越强
+				float3 windOffset = cameraTransformRightWS * wind;//使用平面板效果 左右方向偏移
+				positionWS.xyz += windOffset;
+				
+				o.position = TransformWorldToHClip(positionWS);
+				
+				/////////////////////////////////////////////////////////////////////
+				//lighting & color
+				/////////////////////////////////////////////////////////////////////
+				
+				//lighting data
+				Light mainLight;
+				#if _MAIN_LIGHT_SHADOWS
+					mainLight = GetMainLight(TransformWorldToShadowCoord(positionWS));
+				#else
+					mainLight = GetMainLight();
+				#endif
+				
+				half3 randomAddToN = (_RandomNormal * sin(instanceID) + wind * - 0.25) * cameraTransformRightWS;//让每个草都是随机化发现
+				half3 N = normalize(half3(0, 1, 0) + randomAddToN - cameraTransformForwardWS * 0.5);
+				
+				half3 V = viewWS / viewWSLength;//view normalize
+				half3 albedo = lerp(_GroundColor, _BaseColor, input.vertex.y);//这里也可以用贴图
+				
+				//零阶段球谐 indirect
+				half3 lightingResult = SampleSH(0) * albedo;
+				
+				//mainLight direct
+				lightingResult += ApplySingleDirectLight(mainLight, N, V, albedo, positionOS.y);
+				
+				//Additional lights loop
+				
+				#if _ADDITIONAL_LIGHTS
+					
+					int additionalLightsCount = GetAdditionalLightsCount();
+					
+					for (int i = 0; i < additionalLightsCount; ++ i)
+					{
+						Light light = GetAdditionalLight(i, positionWS);
+						
+						lightingResult += ApplySingleDirectLight(light, N, V, albedo, positionOS.y);
+					}
+					
+				#endif
+				
+				//fog
+				float fogFactor = ComputeFogFactor(o.position.z);
+				o.color = MixFog(lightingResult, fogFactor);
+				
+				return o;
 			}
 			
-			half4 frag(Varyings IN): SV_Target
+			half4 frag(v2f i): SV_Target
 			{
-				return half4(IN.color, 1);
+				return half4(i.color, 1);
 			}
 			
 			
