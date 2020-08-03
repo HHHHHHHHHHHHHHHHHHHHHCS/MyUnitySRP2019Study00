@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32eeb9dd25da5ec4c8ef0bc09ce54852, type: 3}
+  m_Name: DepthPeelingRenderPipeline
+  m_EditorClassIdentifier: 
+  m_MaxShadowDistance: 1000
+  m_HDR: 0
+  m_ResolutionScale: 1
+  m_RenderPasses:
+  - {fileID: 11400000, guid: fd18bdfd5a3a04b40a3032d60e713a01, type: 2}
+  - {fileID: 11400000, guid: 807776ba5a0a5ba4dbf58a502f60f386, type: 2}
