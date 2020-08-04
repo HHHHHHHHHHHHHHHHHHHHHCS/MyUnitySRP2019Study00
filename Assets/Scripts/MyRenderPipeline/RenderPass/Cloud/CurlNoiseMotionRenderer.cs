@@ -17,7 +17,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 
 		public CurlNoiseMotionRenderer(Texture _curlNoise, ComputeShader _computeShader, Vector3Int _size)
 		{
-			curlNoise = curlNoise;
+			curlNoise = _curlNoise;
 			computeShader = _computeShader;
 			size = _size;
 			var arr = new Vector3[size.x * size.y * size.z];
@@ -40,7 +40,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 		{
 			currentUse++;
 			cmd.SetComputeBufferParam(computeShader,0,"CurrentBuffer",currentBuffer);
-			cmd.SetComputeBufferParam(computeShader,0,"nextBuffer",currentBuffer);
+			cmd.SetComputeBufferParam(computeShader,0,"NextBuffer",currentBuffer);
 			return nextBuffer;
 		}
 	}

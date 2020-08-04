@@ -64,5 +64,9 @@ namespace MyRenderPipeline.Utils
 			cmd.SetGlobalMatrix("_GPUViewProjectionInverseMatrix", gpuVP.inverse);
 		}
 
+		public static Matrix4x4 ProjectionToWorldMatrix(Camera camera)
+		{
+			return (camera.projectionMatrix * camera.worldToCameraMatrix).inverse;
+		}
 	}
 }
