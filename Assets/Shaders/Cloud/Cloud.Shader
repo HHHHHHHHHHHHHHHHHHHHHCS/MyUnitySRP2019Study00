@@ -7,10 +7,10 @@ Shader "MyRP/Cloud"
 		_HeightGradient ("Height Gradient", 2D) = "white" { }
 		_CoverageTex ("Coverage Texture", 2D) = "white" { }
 		_CoverageScale ("Coverage Scale", Float) = 1
-		// _Color ("Color", Color) = (1, 1, 1, 1)
-		// _LightColor ("Color", Color) = (1, 1, 1, 1)
-		// _DarkColor ("Color", Color) = (.5, .5, .5, 1)
-		// _AmbientStrength ("AmbientStrength", Float) = 1
+		_Color ("Light Color", Color) = (1, 1, 1, 1)
+		_LightColor ("Lighting Color", Color) = (1, 1, 1, 1)
+		_DarkColor ("Dark Color", Color) = (.5, .5, .5, 1)
+		_AmbientStrength ("AmbientStrength", Float) = 1
 		_Scale ("Scale", Float) = 1
 		_HeightScale ("Height Scale", Float) = 1
 		// _HeightOffset ("Height Offset", Range(0, 1)) = 0
@@ -31,7 +31,7 @@ Shader "MyRP/Cloud"
 		// _FBMOctave ("FBM Octave", Int) = 4
 		_CloudType ("Cloud Type", Range(0, 1)) = 0
 		_CloudShapeExponent ("Cloud Shape Exponent", Float) = 1
-		// _ScatterFactor ("Scatter Factor", Range(-1, 1)) = 0
+		_ScatterFactor ("Scatter Factor", Range(-1, 1)) = 0
 		_ScatterDistanceMultiply ("Scatter Distance Multiply", Float) = .5
 		// _ScatterExtend ("Scatter Extend", Float) = 1
 		// _OcclusionSampleDistance ("Occlusion Distance", Float) = 1
@@ -76,6 +76,10 @@ Shader "MyRP/Cloud"
 	sampler2D _CoverageTex;
 	
 	float _CoverageScale;
+	float4 _Color;
+	float4 _DarkColor;
+	float4 _LightColor;
+	float _AmbientStrength;
 	float _Scale;
 	float _HeightScale;
 	float4 _NoiseAmplitude;
@@ -91,6 +95,7 @@ Shader "MyRP/Cloud"
 	float _LightScale;
 	float _CloudType;
 	float _CloudShapeExponent;
+	float _ScatterFactor;
 	float _ScatterDistanceMultiply;
 	float _Absorption;
 	float _AbsorptionToLight;
@@ -100,6 +105,12 @@ Shader "MyRP/Cloud"
 	float3 _NoiseMotionVelocity;
 	float3 _DetailMotionVelocity;
 	float2 _CoverageMotionVelocity;
+	
+	
+	inline float pow2(float3 v)
+	{
+		return pow(length(v), 2);
+	}
 	
 	inline float2 CurlNoiseMotion(float2 uv, float uvScale, float strength)
 	{
@@ -139,9 +150,14 @@ Shader "MyRP/Cloud"
 		return n * coverage;
 	}
 	
-	inline float pow2(float3 v)
+	
+	
+	#define PI (3.14159265358979323846264338327950288419716939937510)
+	
+	//空气散射
+	inline float PhaseHG(float VdotL)
 	{
-		return pow(length(v), 2);
+		return 1 / (4 * PI) * (1 - pow(_ScatterFactor, 2)) / pow(1 + pow(_ScatterFactor, 2) - 2 * _ScatterFactor * VdotL, 3 / 2);
 	}
 	
 	//射线距离检测 只是粗略检测一次距离
@@ -228,14 +244,14 @@ Shader "MyRP/Cloud"
 		//利用高度图计算云的形状
 		float4 heightGradient = tex2D(_HeightGradient, float2(0.5, height));
 		
-		float a = lerp(heightGradient.r, heightGradient.g, smoothstep(0, 0.5, _CloudType)),
+		float a = lerp(heightGradient.r, heightGradient.g, smoothstep(0, 0.5, _CloudType));
 		float b = lerp(a, heightGradient.b, smoothstep(.5, 1, _CloudType));
 		float c = pow(b * heightGradient.a, _CloudShapeExponent);
 		return c;
 	}
 	
 	//云的强度
-	inline float cloudDensity(float noise)
+	inline float CloudDensity(float noise)
 	{
 		//(噪音-云的阀值)*强度
 		return saturate((noise - _CloudThreshold) / (1 - _CloudThreshold)) * _DensityScale;
@@ -255,7 +271,7 @@ Shader "MyRP/Cloud"
 	}
 	
 	//像光的方向计算遮挡
-	float RayMarchOcclusion(float3 pos)
+	float RayMarchOcclusion(float3 pos, float3 earthCenter)
 	{
 		float occlusion = 0;
 		float scatterDistance = (_CloudTop - _CloudBottom) * _ScatterDistanceMultiply;
@@ -263,7 +279,7 @@ Shader "MyRP/Cloud"
 		[unroll]
 		for (float i = 1; i < 6; i ++)
 		{
-			occlusion += CloudDensityAt(pos + (-_MainLightDirection * scatterDistance * (i / 5))) * (scatterDistance * .2);
+			occlusion += CloudDensityAt(pos + (-_MainLightDirection * scatterDistance * (i / 5)), earthCenter) * (scatterDistance * .2);
 		}
 		return occlusion;
 	}
@@ -271,7 +287,7 @@ Shader "MyRP/Cloud"
 	#define MAX_ITERATION 128
 	#define IGNORE_DENSITY_THRESHOLD (0.00001) // 小于这个值的   不继续计算光照
 	
-	//云
+	//云 返回遮挡系数
 	float RayMarchingCloud(float3 ray, float3 cameraCoord, float3 earthCenter, out float3 light)
 	{
 		light = 0;
@@ -281,7 +297,6 @@ Shader "MyRP/Cloud"
 		
 		bool bf = RayHitSphere(earthCenter, _WorldCameraPos, ray, _GroundRadius + _CloudBottom, near);
 		bool bn = RayHitSphere(earthCenter, _WorldCameraPos, ray, _GroundRadius + _CloudTop, far);
-		
 		
 		
 		if (r < _GroundRadius + _CloudBottom)//云下面
@@ -329,7 +344,7 @@ Shader "MyRP/Cloud"
 			float dist = lerp(near, far, i / _Samples);
 			
 			float3 pos = _WorldCameraPos + dist * ray;
-			float density = CloudDensityAt(pos);
+			float density = CloudDensityAt(pos, earthCenter);
 			
 			//厚度叠加
 			transmittance *= exp(-density * stepSize * _Absorption);
@@ -338,13 +353,13 @@ Shader "MyRP/Cloud"
 			if (density < IGNORE_DENSITY_THRESHOLD)
 				continue;
 			
-			float occlusion = RayMarchOcclusion(pos);
+			float occlusion = RayMarchOcclusion(pos, earthCenter);
 			
 			//遮挡
 			float lightTransmittance = exp(-occlusion * _AbsorptionToLight) * (1 - exp( - (occlusion + 0.01) * 2 * _PowderEffectScale));
 			
-			//TODO:
-			light += _Color * _MainLightColor * _LightScale * lightTransmittance * density * transmittance * stepSize * phaseHG(dot(-ray, -_MainLightDirection));
+			//光照
+			light += _Color * _MainLightColor * _LightScale * lightTransmittance * density * transmittance * stepSize * PhaseHG(dot(-ray, -_MainLightDirection));
 			
 			
 			//如果已经太小了 则跳出
@@ -368,12 +383,13 @@ Shader "MyRP/Cloud"
 		return o;
 	}
 	
-	float4 CloudOnSkyFrag(v2f i): SV_TARGET
+	float4 cloudOnSkyFrag(v2f i): SV_TARGET
 	{
 		float3 ray = normalize(i.ray);
 		float3 earthCenter = float3(0, -_GroundRadius, 0);
 		float d = 0;
 		float hit = RayHitSphere(earthCenter, _WorldCameraPos, ray, _GroundRadius + _CloudBottom, d);
+		
 		float3 pos = _WorldCameraPos + ray * d;
 		float3 coord = ToSphereCoord(pos - earthCenter);
 		
@@ -383,6 +399,14 @@ Shader "MyRP/Cloud"
 		float3 light;
 		float transmittance;
 		transmittance = RayMarchingCloud(ray, coord, earthCenter, light);
+		
+		
+		light = light / saturate(1 - transmittance + 0.0001);
+		light += _AmbientSkyColor * _AmbientStrength;
+		
+		float3 color = lerp(_DarkColor, _LightColor, light) * saturate(1 - transmittance);
+		
+		return float4(color, saturate(1 - transmittance));
 	}
 	
 	ENDHLSL
@@ -405,7 +429,7 @@ Shader "MyRP/Cloud"
 			
 		}
 		
-		
+		/*
 		Pass
 		{
 			Cull Back
@@ -421,5 +445,6 @@ Shader "MyRP/Cloud"
 			ENDHLSL
 			
 		}
+		*/
 	}
 }

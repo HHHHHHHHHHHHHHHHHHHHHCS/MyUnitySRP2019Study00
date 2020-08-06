@@ -38,6 +38,12 @@ namespace MyRenderPipeline.RenderPass.Cloud
 		[EditorButton]
 		public void RenderNoise()
 		{
+			if (output == null)
+			{
+				return;
+			}
+			
+			
 			if (permuteBuffer == null)
 			{
 				permuteBuffer = new ComputeBuffer(256, sizeof(int));

@@ -25,6 +25,11 @@ namespace MyRenderPipeline.RenderPass.Cloud
         [EditorButton]
         public void RenderNoise()
         {
+            if (output == null)
+            {
+                return;
+            }
+            
             if (!output.enableRandomWrite)
             {
                 output.Release();

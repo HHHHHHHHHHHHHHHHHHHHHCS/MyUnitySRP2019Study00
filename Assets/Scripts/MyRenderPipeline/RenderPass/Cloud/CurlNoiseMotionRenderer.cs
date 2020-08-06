@@ -20,6 +20,11 @@ namespace MyRenderPipeline.RenderPass.Cloud
 			curlNoise = _curlNoise;
 			computeShader = _computeShader;
 			size = _size;
+			buffers = new ComputeBuffer[2]
+            {
+                new ComputeBuffer(size.x*size.y*size.z, 3 * 4), // sizeof(float3)
+                new ComputeBuffer(size.x*size.y*size.z, 3 * 4),
+            };
 			var arr = new Vector3[size.x * size.y * size.z];
 
 			for (long i = 0; i < arr.LongLength; i++)
@@ -40,7 +45,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 		{
 			currentUse++;
 			cmd.SetComputeBufferParam(computeShader,0,"CurrentBuffer",currentBuffer);
-			cmd.SetComputeBufferParam(computeShader,0,"NextBuffer",currentBuffer);
+			cmd.SetComputeBufferParam(computeShader,0,"NextBuffer", nextBuffer);
 			return nextBuffer;
 		}
 	}

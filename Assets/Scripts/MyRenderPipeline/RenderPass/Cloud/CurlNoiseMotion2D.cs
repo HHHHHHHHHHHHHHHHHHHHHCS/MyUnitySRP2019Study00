@@ -18,8 +18,11 @@ namespace MyRenderPipeline.RenderPass.Cloud
 
 		private int currentIdx;
 
-		public RenderTexture currentMotionTexture => motionTextures[currentIdx % 2];
-		public RenderTexture previousMotionTexture => motionTextures[(currentIdx + 1) % 2];
+		public RenderTexture currentMotionTexture =>
+			motionTextures.Length >= 2 ? motionTextures[currentIdx % 2] : null;
+
+		public RenderTexture previousMotionTexture =>
+			motionTextures.Length >= 2 ? motionTextures[(currentIdx + 1) % 2] : null;
 
 		[EditorButton("Reload")]
 		private void Awake()

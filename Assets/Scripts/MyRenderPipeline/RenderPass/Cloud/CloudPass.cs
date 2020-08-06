@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 
 namespace MyRenderPipeline.RenderPass.Cloud
 {
+	[CreateAssetMenu(fileName ="CloudPass", menuName ="MyRP/RenderPass/CloudPass")]
 	public class CloudPass : MyRenderPassAsset
 	{
 		public bool drawFullScreen = false;
@@ -97,10 +98,8 @@ namespace MyRenderPipeline.RenderPass.Cloud
 			
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
+				CommandBufferPool.Release(cmd);
 			}
-
-
-			CommandBufferPool.Release(cmd);
 		}
 		
 		

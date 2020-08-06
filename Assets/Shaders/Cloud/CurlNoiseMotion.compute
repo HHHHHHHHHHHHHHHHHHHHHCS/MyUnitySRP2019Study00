@@ -14,7 +14,7 @@ float DeltaTime;
 void GenNoise(uint3 id: SV_DispatchThreadID)
 {
 	float2 pos = id.xy - CurlNoise[id.xy].xy * Speed * DeltaTime;
-	pos = (pos + TextureSize) % TextureSize;
+	pos = (pos + TextureSize) % TextureSize;//避免负的取余
 	
 	NextMotion[id.xy] = CurrentMotion[pos];
 }
