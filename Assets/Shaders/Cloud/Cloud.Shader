@@ -288,10 +288,10 @@ Shader "MyRP/Cloud"
 	#define IGNORE_DENSITY_THRESHOLD (0.00001) // 小于这个值的   不继续计算光照
 	
 	//云 返回遮挡系数
-	float RayMarchingCloud(float3 ray, float3 cameraCoord, float3 earthCenter, out float3 light)
+	float RayMarchingCloud(float3 ray, float3 earthCenter, out float3 light)
 	{
 		light = 0;
-		
+		float3 cameraCoord = ToSphereCoord(_WorldCameraPos - earthCenter);
 		float near = 0, far = 0;
 		float r = cameraCoord.z;
 		
@@ -398,7 +398,7 @@ Shader "MyRP/Cloud"
 		// return float4(frac(coord.xy), 0, 1);
 		float3 light;
 		float transmittance;
-		transmittance = RayMarchingCloud(ray, coord, earthCenter, light);
+		transmittance = RayMarchingCloud(ray, earthCenter, light);
 		
 		
 		light = light / saturate(1 - transmittance + 0.0001);
