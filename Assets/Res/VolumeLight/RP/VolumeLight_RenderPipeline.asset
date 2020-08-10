@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32eeb9dd25da5ec4c8ef0bc09ce54852, type: 3}
+  m_Name: VolumeLight_RenderPipeline
+  m_EditorClassIdentifier: 
+  m_MaxShadowDistance: 0
+  m_HDR: 0
+  m_ResolutionScale: 1
+  m_RenderPasses:
+  - {fileID: 11400000, guid: c48ce07c93cc5b840b00b745b1ce2869, type: 2}
+  - {fileID: 11400000, guid: 342179a9250d8624a9f25e5bc5eabdf2, type: 2}
+  - {fileID: 11400000, guid: 16f92aa3f76de6e4084b474376c72ff5, type: 2}
+  - {fileID: 11400000, guid: 14685c54f969a2e43b47bb8431148d8f, type: 2}
+  - {fileID: 11400000, guid: 4e2789880f47f584aae205eb32585f88, type: 2}

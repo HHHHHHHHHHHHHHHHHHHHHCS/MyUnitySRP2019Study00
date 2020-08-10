@@ -116,6 +116,7 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 				var m2 = viewProjection.GetRow(2); //z偏移
 				var m3 = viewProjection.GetRow(3); //中心点
 
+				//shader处理负数
 				planes.Add(-(m3 + m0));
 				planes.Add(-(m3 - m0));
 				planes.Add(-(m3 + m1));
@@ -129,6 +130,7 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 				viewProjection = camera.projectionMatrix * camera.worldToCameraMatrix;
 				var m2 = viewProjection.GetRow(2);
 				var m3 = viewProjection.GetRow(3);
+				//shader处理负数
 				planes.Add(-(m3 + m2)); //only near plane
 			}
 

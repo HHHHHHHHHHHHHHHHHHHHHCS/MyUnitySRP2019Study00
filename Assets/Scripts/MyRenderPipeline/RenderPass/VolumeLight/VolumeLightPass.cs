@@ -6,10 +6,13 @@ using Utility;
 
 namespace MyRenderPipeline.RenderPass.VolumeLight
 {
-	[CreateAssetMenu(fileName = "VolumeLight", menuName = "MyRP/RenderPass/VolumeLight")]
+	[CreateAssetMenu(fileName = "VolumeLightPass", menuName = "MyRP/RenderPass/VolumeLightPass")]
 	public class VolumeLightPass : MyRenderPassAsset
 	{
-		public int volumeResolutionScale = 2;
+		public int volumeResolutionScale = 1;
+
+		public bool globalFog = true;
+		
 		public float visibilityDistance = 20;
 
 		[ColorUsage(false, true)] public Color fogLight;
@@ -138,15 +141,16 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 				if (light.lightType == LightType.Directional)
 				{
 					lightPos = (-light.light.transform.forward).ToVector4(0);
+					cmd.SetGlobalFloat("_LightCosHalfAngle", -2);
 				}
 				else
 				{
 					lightPos = light.light.transform.position.ToVector4(1);
+					cmd.SetGlobalFloat("_LightCosHalfAngle", Mathf.Cos(Mathf.Deg2Rad * light.spotAngle / 2));
 				}
 
 				cmd.SetGlobalVector("_LightPosition", lightPos);
 				cmd.SetGlobalVector("_LightDirection", -light.light.transform.forward);
-				cmd.SetGlobalFloat("_LightAngle", Mathf.Cos(Mathf.Deg2Rad * light.spotAngle / 2));
 				cmd.SetGlobalVector("_LightColor", light.finalColor * volumeData.volume.intensityMultiplier);
 				cmd.SetGlobalVector("_WorldCameraPos", renderingData.camera.transform.position);
 				cmd.SetGlobalVector("_FrameSize",
@@ -201,10 +205,13 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 				}
 			}
 
-			cmd.SetGlobalTexture("_CameraDepthTex", renderingData.depthTarget);
-			cmd.SetGlobalFloat("_GlobalFogExtinction", globalExtinction);
-			cmd.SetGlobalColor("_AmbientLight", asset.fogLight);
-			cmd.BlitFullScreen(BuiltinRenderTextureType.None, renderingData.colorTarget, volumeMat, globalFogPass);
+			if (asset.globalFog)
+			{
+				cmd.SetGlobalTexture("_CameraDepthTex", renderingData.depthTarget);
+				cmd.SetGlobalFloat("_GlobalFogExtinction", globalExtinction);
+				cmd.SetGlobalColor("_AmbientLight", asset.fogLight);
+				cmd.BlitFullScreen(BuiltinRenderTextureType.None, renderingData.colorTarget, volumeMat, globalFogPass);
+			}
 
 			cmd.Blit(rt, renderingData.colorTarget, volumeMat, volumeResolvePass);
 
