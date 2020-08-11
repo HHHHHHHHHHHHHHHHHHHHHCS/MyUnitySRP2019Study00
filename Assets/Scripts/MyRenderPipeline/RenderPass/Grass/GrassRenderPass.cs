@@ -25,7 +25,7 @@ public class GrassRenderPass : ScriptableRenderPass
 
 	public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 	{
-		if (!InstancedIndirectGrassRenderer.instance)
+		if (!GrassRenderer.instance)
 		{
 			Debug.LogWarning("InstancedIndirectGrassRenderer not found, abort GrassBendingRTPrePass's Execute");
 			return;
@@ -33,7 +33,7 @@ public class GrassRenderPass : ScriptableRenderPass
 
 		CommandBuffer cmd = CommandBufferPool.Get("GrassBendingRT");
 
-		Transform grassRoot = InstancedIndirectGrassRenderer.instance.transform;
+		Transform grassRoot = GrassRenderer.instance.transform;
 
 		//创建一个新的视图矩阵，它与草地中心1单位上方的假想摄影机相同，并观察草地（鸟瞰图）
 		//scale.z是-1，因为视图空间将查看-z，而世界空间将查看+z

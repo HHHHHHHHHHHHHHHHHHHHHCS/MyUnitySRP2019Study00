@@ -20,6 +20,7 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 
 		private float previousAngle;
 		private float previousRange;
+		private LightType previousLightType;
 
 		public Light TheLight { get; private set; }
 		public Mesh VolumeMesh { get; private set; }
@@ -31,49 +32,24 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 			UpdateMesh();
 			previousAngle = TheLight.spotAngle;
 			previousRange = TheLight.range;
+			previousLightType = TheLight.type;
 		}
 
 		private void Update()
 		{
-			if (TheLight.spotAngle != previousAngle || TheLight.range != previousRange)
+			if (TheLight.spotAngle != previousAngle || TheLight.range != previousRange ||
+			    TheLight.type != previousLightType )
 			{
 				previousAngle = TheLight.spotAngle;
 				previousRange = TheLight.range;
+				previousLightType = TheLight.type;
 				UpdateMesh();
 			}
 		}
 
-		private void Reset()
-		{
-			VolumeMesh.vertices = new Vector3[]
-			{
-				new Vector3(-1, -1, -1),
-				new Vector3(-1, 1, -1),
-				new Vector3(1, 1, -1),
-				new Vector3(1, -1, -1),
-				new Vector3(-1, -1, 1),
-				new Vector3(-1, 1, 1),
-				new Vector3(1, 1, 1),
-				new Vector3(1, -1, 1),
-			};
-
-			VolumeMesh.triangles = new int[]
-			{
-				0, 1, 2, 0, 2, 3,
-				0, 4, 5, 0, 5, 1,
-				1, 5, 6, 1, 6, 2,
-				2, 6, 7, 2, 7, 3,
-				0, 3, 7, 0, 7, 4,
-				4, 6, 5, 4, 7, 6,
-			};
-
-			VolumeMesh.RecalculateNormals();
-			UpdateMesh();
-		}
-
-		//灯光的椎体 mesh
 		private void UpdateMesh()
 		{
+			//灯光的椎体 mesh
 			if (TheLight.type == LightType.Spot)
 			{
 				var tanFOV = Mathf.Tan(TheLight.spotAngle / 2 * Mathf.Deg2Rad);
@@ -99,6 +75,35 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 				};
 				VolumeMesh.RecalculateNormals();
 			}
+			else if (TheLight.type == LightType.Directional)
+			{//平行光还是要有mesh  避免不渲染
+				VolumeMesh.Clear();
+
+				VolumeMesh.vertices = new Vector3[]
+				{
+					new Vector3(-1, -1, -1),
+					new Vector3(-1, 1, -1),
+					new Vector3(1, 1, -1),
+					new Vector3(1, -1, -1),
+					new Vector3(-1, -1, 1),
+					new Vector3(-1, 1, 1),
+					new Vector3(1, 1, 1),
+					new Vector3(1, -1, 1),
+				};
+
+				VolumeMesh.triangles = new int[]
+				{
+					0, 1, 2, 0, 2, 3,
+					0, 4, 5, 0, 5, 1,
+					1, 5, 6, 1, 6, 2,
+					2, 6, 7, 2, 7, 3,
+					0, 3, 7, 0, 7, 4,
+					4, 6, 5, 4, 7, 6,
+				};
+
+				VolumeMesh.RecalculateNormals();
+			}
+			
 		}
 
 		public List<Vector4> GetVolumeBoundFaces(Camera camera)
