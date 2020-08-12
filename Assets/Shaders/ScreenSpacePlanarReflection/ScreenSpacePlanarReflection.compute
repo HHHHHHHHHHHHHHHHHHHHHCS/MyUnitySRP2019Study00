@@ -1,0 +1,263 @@
+﻿#define NUMTHREAD_X 8
+#define NUMTHREAD_Y 8
+
+#define MAX_UINT uint(4294967295)
+
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+
+SamplerState PointClampSampler;
+SamplerState LinearClampSampler;
+
+//common uniform input from MobileSSPRRendererFeature.cs
+float2 _RTSize;
+float _HorizontalPlaneHeightWS;
+float _FadeOutScreenBorderWidthVertical;
+float _FadeOutScreenBorderWidthHorizontal;//compute shader 不能用 half  所以这里用float
+float3 _CameraDirection;
+float _ScreenLRStretchIntensity;
+float _ScreenLRStretchThreshold;
+float4 _FinalTintColor;
+
+RWTexture2D<half4> ColorRT;
+Texture2D<half4> _CameraOpaqueTexture;
+Texture2D<float> _CameraDepthTexture;
+
+//Editor/PC
+RWTexture2D<uint> HashRT;
+
+//Mobile
+RWTexture2D<float> PosWSyRT;
+
+
+
+//-----------------------------------
+
+//根据屏幕UV 重建世界坐标
+float3 ConvertScreenIDToPosWS(uint2 id)
+{
+	float2 screenUV = float2(id.x / (_RTSize.x), id.y / (_RTSize.y));//UV:[0,1]
+	float inputPixelRawDepth = _CameraDepthTexture.SampleLevel(PointClampSampler, screenUV, 0);//get screen depth
+	
+	float4 posCS = float4(screenUV * 2.0 - 1.0, inputPixelRawDepth, 1.0);
+	float4 posHWS = mul(UNITY_MATRIX_I_VP, posCS);//worldPos 齐次
+	float3 posWS = posHWS.xyz / posHWS.w;//world pos
+	
+	return posWS;
+}
+
+//镜子效果 worldPos
+float3 MirrorPosWS(float3 inputPosWS)
+{
+	float3 reflectedPosWS = inputPosWS;
+	reflectedPosWS.y -= _HorizontalPlaneHeightWS;
+	reflectedPosWS.y *= -1;//
+	reflectedPosWS.y += _HorizontalPlaneHeightWS;
+	
+	return reflectedPosWS;
+}
+
+//反射的世界坐标 转换到屏幕坐标 再转换到 偏移的反射屏幕坐标
+//离得越高 越左右     则反射UV.x偏移越大
+float2 ConvertReflectedPosWSToScreenUV(float3 reflectedPosWS)
+{
+	float4 reflectedPosCS = mul(UNITY_MATRIX_VP, float4(reflectedPosWS, 1));
+	float2 reflectedPosNDCxy = reflectedPosCS.xy / reflectedPosCS.w;//screenPos
+	float2 reflectedScreenUV = reflectedPosNDCxy * 0.5 + 0.5;//screenUV
+	
+	
+	float threshold = _ScreenLRStretchThreshold;
+	float intensity = _ScreenLRStretchIntensity;
+	
+	//height (reflectPos - plane)
+	float heightStretch = abs(reflectedPosWS.y - _HorizontalPlaneHeightWS);
+	//摄像机倒转的角度
+	float angleStretch = -_CameraDirection.y;
+	//左右两边 阀值保护
+	float screenStretch = saturate(abs(reflectedScreenUV.x * 2 - 1) - threshold);
+	
+	//采样的UV.x 偏移
+	reflectedScreenUV.x = reflectedScreenUV.x * 2 - 1;
+	reflectedScreenUV.x *= 1 + heightStretch * angleStretch * screenStretch * intensity;
+	reflectedScreenUV.x = saturate(reflectedScreenUV.x * 0.5 + 0.5);
+	
+	#if UNITY_UV_STARTS_AT_TOP
+		reflectedScreenUV.y = 1.0 - reflectedScreenUV.y;
+	#endif
+	
+	return reflectedScreenUV;
+}
+
+//越往上面越alpha越小  越往左右 alpha越小
+half ConvertOpaqueColorRTScreenUVToFadeAlphaParam(float2 screenUV, float reflectedPosWSy)
+{
+	half fadeoutAlpha = smoothstep(1, 1 - _FadeOutScreenBorderWidthVertical, screenUV.y);
+	//反射越往上  左右偏移越小
+	fadeoutAlpha *= smoothstep(1, 1 + _FadeOutScreenBorderWidthHorizontal * reflectedPosWSy, abs(screenUV.x * 2 - 1));
+	return fadeoutAlpha;
+}
+
+//0.NonMobilePathClear
+#pragma kernel NonMobilePathClear
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathClear(uint3 id: SV_DispatchThreadID)
+{
+	HashRT[id.xy] = MAX_UINT;//max value as clear, because we want to sort by InterlockedMin()
+	ColorRT[uint2(id.xy)] = half4(0, 0, 0, 0);
+}
+
+//1.NonMobilePathRenderHashRT
+#pragma kernel NonMobilePathRenderHashRT
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathRenderHashRT(uint3 id: SV_DispatchThreadID)
+{
+	float3 posWS = ConvertScreenIDToPosWS(id.xy);//world Pos
+	
+	//低于平面板子高度的return
+	if (posWS.y <= _HorizontalPlaneHeightWS)
+	{
+		return;
+	}
+	
+	float3 reflectedPosWS = MirrorPosWS(posWS);
+	
+	float2 reflectedScreenUV = ConvertReflectedPosWSToScreenUV(reflectedPosWS);
+	
+	//偏移超出屏幕范围了 return
+	float2 earlyExitTest = abs(reflectedScreenUV - 0.5);
+	if (earlyExitTest.x >= 0.5 || earlyExitTest.y >= 0.5)
+	{
+		return;
+	}
+	
+	uint2 reflectedScreenID = reflectedScreenUV * _RTSize;//uv[0,1] -> [0,_RTSize-1]
+	
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	//write "original RT position ID.xy and alpha" as "12bit yID,12bit xID, 8bit alpha" hash at location "reflected RT position"
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
+	ref: http://remi-genin.fr/blog/screen-space-plane-indexed-reflection-in-ghost-recon-wildlands/#hash-resolve-jump
+	Read-write max when accessing the projection hash UAV
+	
+	//sample code from above site, "Hash resolve" section
+	uint projectionHash = SrcPosPixel.y << 16 | SrcPosPixel.x;
+	InterlockedMax(ProjectionHashUAV[ReflPosPixel], projectionHash, dontCare);
+	*/
+	
+	//ghost-recon-wildlands method use 16bit y, 16bit x encode
+	//but in our implementation, 16bit is overkill because we don't need a RT that is 65536*65536
+	//instead we save 8 bits for fadeout alpha info, result in:
+	//-first 12 bits for id.y (0~4095)
+	//-then  12 bits for id.x (0~4095)
+	//-last  8  bits for alpha (0~255)
+	float2 screenUV = id.xy / _RTSize;
+	half fadeoutAlpha = ConvertOpaqueColorRTScreenUVToFadeAlphaParam(screenUV, reflectedPosWS.y);
+	
+	uint fadeoutAlphaInt = fadeoutAlpha * 255;// 8 bit
+	//12位 因为最大是 4096
+	uint hash = id.y << 20 | id.x << 8 | fadeoutAlphaInt;
+	//当前的数值和hash 选择一个min 写入
+	InterlockedMin(HashRT[reflectedScreenID], hash); //按照p.y的顺序写
+	//HashRT[reflectedScreenID] = hash; //不要使用这个  这个会随机写入  导致闪烁
+}
+
+//2.NonMobilePathResolveColorRT
+#pragma kernel NonMobilePathResolveColorRT
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void NonMobilePathResolveColorRT(uint3 id: SV_DispatchThreadID)
+{
+	uint packedData = HashRT[id.xy];
+	if (packedData == MAX_UINT)
+	{
+		ColorRT[id.xy] = 0;
+		return;
+	}
+	
+	uint2 sampleID = uint2((packedData >> 8) & 0xFFF, packedData >> 20);//decode xy
+	uint alphaAsInt = packedData & 0xFF;
+	half alphaAsFloatingPoint = alphaAsInt / 255.0;
+	
+	float2 sampleUV = sampleID.xy / _RTSize;
+	half3 sampledColor = _CameraOpaqueTexture.SampleLevel(LinearClampSampler, sampleUV, 0).rgb;
+	
+	half4 finalColor = half4(sampledColor, alphaAsFloatingPoint) * _FinalTintColor;
+	finalColor.a = saturate(finalColor.a);
+	ColorRT[id.xy] = finalColor;
+}
+
+//3.MobilePathSinglePassColorRTDirectResolve
+#pragma kernel MobilePathSinglePassColorRTDirectResolve
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void MobilePathSinglePassColorRTDirectResolve(uint3 id: SV_DispatchThreadID)
+{
+	//Clear
+	ColorRT[uint2(id.xy)] = half4(0, 0, 0, 0);
+	PosWSyRT[uint2(id.xy)] = 9999999;
+	
+	
+	float3 posWS = ConvertScreenIDToPosWS(id.xy);
+	
+	if (posWS.y <= _HorizontalPlaneHeightWS)
+	{
+		return;
+	}
+	
+	float3 reflectedPosWS = MirrorPosWS(posWS);
+	
+	float2 reflectedScreenUV = ConvertReflectedPosWSToScreenUV(reflectedPosWS);
+	
+	float2 earlyExitTest = abs(reflectedScreenUV - 0.5);
+	if(earlyExitTest.x >= 0.5 || earlyExitTest.y >= 0.5)
+	{
+		return;
+	}
+	uint2 reflectedScreenID = reflectedScreenUV * _RTSize;
+	
+	// 新的深度世界坐标Y 如果比较低
+	if (posWS.y < PosWSyRT[reflectedScreenID])
+	{
+		float2 screenUV = id.xy / _RTSize;
+		half3 inputPixelSceneColor = _CameraOpaqueTexture.SampleLevel(LinearClampSampler, screenUV, 0).rgb;
+		
+		half fadeoutAlpha = ConvertOpaqueColorRTScreenUVToFadeAlphaParam(screenUV, reflectedPosWS.y);
+		
+		half4 color = half4(inputPixelSceneColor, fadeoutAlpha) * _FinalTintColor;
+		
+		color.a = saturate(color.a);
+		ColorRT[reflectedScreenID] = color;
+		PosWSyRT[reflectedScreenID] = posWS.y;
+	}
+}
+
+//4.FillHoles
+#pragma kernel FillHoles
+
+[numthreads(NUMTHREAD_X, NUMTHREAD_Y, 1)]
+void FillHoles(uint3 id: SV_DispatchThreadID)
+{
+	//跳格子分辨率
+	id.xy *= 2;
+	
+	half4 center = ColorRT[id.xy + uint2(0, 0)];
+	half4 right = ColorRT[id.xy + uint2(0, 1)];
+	half4 bottom = ColorRT[id.xy + uint2(1, 0)];
+	half4 bottomRight = ColorRT[id.xy + uint2(1, 1)];
+	
+	//2*2 找出最大的a     然后把最低且跟最大的插值>0.5 的a  换成最大的a
+
+	//2*2 最大值的alpha
+	half4 best = center;
+	best = right.a > best.a + 0.5 ? right: best;
+	best = bottom.a > best.a + 0.5 ? bottom: best;
+	best = bottomRight.a > best.a + 0.5 ? bottomRight: best;
+	
+	//write better rgba
+	ColorRT[id.xy + uint2(0, 0)] = best.a > center.a + 0.5 ? best: center;
+	ColorRT[id.xy + uint2(0, 1)] = best.a > right.a + 0.5 ? best: right;
+	ColorRT[id.xy + uint2(1, 0)] = best.a > bottom.a + 0.5 ? best: bottom;
+	ColorRT[id.xy + uint2(1, 1)] = best.a > bottomRight.a + 0.5 ? best: bottomRight;
+}

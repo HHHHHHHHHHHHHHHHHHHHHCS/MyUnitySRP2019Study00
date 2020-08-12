@@ -45,7 +45,7 @@ namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 		public override void Create()
 		{
 			instance = this;
-			return;
+			
 			rendererPass = new ScreenSpacePlanarReflectionRenderer(this);
 
 			rendererPass.renderPassEvent =
@@ -54,7 +54,6 @@ namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
-			return;
 			renderer.EnqueuePass(rendererPass);
 		}
 	}

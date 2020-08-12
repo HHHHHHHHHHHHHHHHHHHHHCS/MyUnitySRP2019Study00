@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
-  m_Name: ScreenSpacePlanarReflection_RenderPipeline_Renderer
+  m_Name: MobileSSPR_ExampleForwardRenderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
-  - {fileID: 8699206052471681085}
-  m_RendererFeatureMap: 3db08079d0c9b978
+  - {fileID: 387165793419896473}
+  m_RendererFeatureMap: 99a6f9e13c7d5f05
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -37,7 +37,7 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 0
---- !u!114 &8699206052471681085
+--- !u!114 &387165793419896473
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -46,20 +46,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca78d5006770a354cbfe739dd2af88e8, type: 3}
-  m_Name: ScreenSpacePlanarReflectionFeature
+  m_Script: {fileID: 11500000, guid: aaad5c85f2c809042933d794a0ae6d8c, type: 3}
+  m_Name: NewMobileSSPRRendererFeature
   m_EditorClassIdentifier: 
   m_Active: 1
-  computeShader: {fileID: 7200000, guid: 3793ec9990aedce4e81cf606c4ae99d2, type: 3}
-  shouldRenderSSPR: 1
-  horizontalReflectionPlaneHeightWS: 0.01
-  fadeOutScreenBorderWidthVertical: 0.25
-  fadeOutScreenBorderWidthHorizontal: 0.35
-  screenLRStretchIntensity: 4
-  screenLRStretchThreshold: 0.7
-  tintColor: {r: 1, g: 1, b: 1, a: 1}
-  rt_height: 1024
-  useHDR: 1
-  applyFillHoleFix: 1
-  shouldRemoveFlickerFinalControl: 1
-  enablePerPlatformAutoSafeGuard: 1
+  Settings:
+    ShouldRenderSSPR: 1
+    HorizontalReflectionPlaneHeightWS: 0.01
+    FadeOutScreenBorderWidthVerticle: 0.25
+    FadeOutScreenBorderWidthHorizontal: 0.35
+    ScreenLRStretchIntensity: 4
+    ScreenLRStretchThreshold: 0.7
+    TintColor: {r: 1, g: 1, b: 1, a: 1}
+    RT_height: 1024
+    UseHDR: 1
+    ApplyFillHoleFix: 1
+    ShouldRemoveFlickerFinalControl: 0
+    EnablePerPlatformAutoSafeGuard: 0
