@@ -88,7 +88,7 @@ float2 ConvertReflectedPosWSToScreenUV(float3 reflectedPosWS)
 	return reflectedScreenUV;
 }
 
-//越往上面越alpha越小  越往左右 alpha越小
+//离得越近  越往左右 alpha越小
 half ConvertOpaqueColorRTScreenUVToFadeAlphaParam(float2 screenUV, float reflectedPosWSy)
 {
 	half fadeoutAlpha = smoothstep(1, 1 - _FadeOutScreenBorderWidthVertical, screenUV.y);

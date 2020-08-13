@@ -30,7 +30,7 @@ public class SSPRCtrl : MonoBehaviour
         
         if (GUI.Button(new Rect(200, 200, 100, 100), "SwitchSkyBox"))
         {
-	        skyboxIndex = (skyboxIndex + 1) / skyboxs.Count;
+	        skyboxIndex = (skyboxIndex + 1) % skyboxs.Count;
 	        RenderSettings.skybox = skyboxs[skyboxIndex];
         }
         
