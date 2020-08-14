@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-//Copy by https://github.com/ColinLeung-NiloCat/UnityURP-MobileScreenSpacePlanarReflection
 namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 {
+	//Copy by https://github.com/ColinLeung-NiloCat/UnityURP-MobileScreenSpacePlanarReflection
 	public class ScreenSpacePlanarReflectionFeature : ScriptableRendererFeature
 	{
 		public static ScreenSpacePlanarReflectionFeature instance;

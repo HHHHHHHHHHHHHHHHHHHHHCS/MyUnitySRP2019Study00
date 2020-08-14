@@ -73,10 +73,10 @@
 			half4 frag(v2f input): SV_TARGET
 			{
 				//base color
-				half3 baseColor = _BaseColor.rgb * SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv);
+				half3 baseColor = _BaseColor.rgb * SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).rgb;
 				
 				//noise
-				float2 noise = SAMPLE_TEXTURE2D(_SSPR_UVNoiseTex, sampler_SSPR_UVNoiseTex, input.uv);
+				float2 noise = SAMPLE_TEXTURE2D(_SSPR_UVNoiseTex, sampler_SSPR_UVNoiseTex, input.uv).xy;
 				noise = noise * 2 - 1;
 				noise.y = -abs(noise.y);//朝一个方向移动
 				noise.x *= 0.25;

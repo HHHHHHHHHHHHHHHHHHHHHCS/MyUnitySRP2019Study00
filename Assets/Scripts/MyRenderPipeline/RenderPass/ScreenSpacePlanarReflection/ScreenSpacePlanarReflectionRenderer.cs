@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 {
-	//TODO:URP7.3.1 是好的 7.4.3 是坏的  多半是camera RT 问题
+
 	public class ScreenSpacePlanarReflectionRenderer : ScriptableRenderPass
 	{
 		private static readonly int sspr_ColorRT_pid = Shader.PropertyToID("_MobileSSPR_ColorRT");

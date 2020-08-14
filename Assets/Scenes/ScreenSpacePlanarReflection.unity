@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.13333334, g: 0.19215687, b: 0.34117648, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 3457b412defd59c449c9f11d3785ecd6, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 1ef512a8b76017748942bb645eda978e, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 52813594}
-  m_IndirectSpecularColor: {r: 0.46353558, g: 0.48208728, b: 0.49312598, a: 1}
+  m_IndirectSpecularColor: {r: 0.2850269, g: 0.3713935, b: 0.49601045, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -196,7 +196,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 2.2875e-41, z: 0, w: 0}
+  m_BoundingSphereOverride: {x: 0, y: 1.8312e-41, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -293,6 +293,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5714813186863985465, guid: 86069673f5a6ad84e87472755dab397e,
+        type: 3}
+      propertyPath: m_BoundingSphereOverride.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5714813186863985465, guid: 86069673f5a6ad84e87472755dab397e,
+        type: 3}
+      propertyPath: m_BoundingSphereOverride.w
+      value: 1e-45
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 86069673f5a6ad84e87472755dab397e, type: 3}
@@ -441,14 +451,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotationSpeed: 20
   skyboxs:
-  - {fileID: 2100000, guid: 6cbad82bdd84ec947baa8c7bfe3fdcd4, type: 2}
-  - {fileID: 2100000, guid: fa3c128d352652b499f6d2a282d8ed36, type: 2}
-  - {fileID: 2100000, guid: c6009c518b3fa764d960a012396d76fb, type: 2}
-  - {fileID: 2100000, guid: 3457b412defd59c449c9f11d3785ecd6, type: 2}
-  - {fileID: 2100000, guid: 3fa57515b92c25c40b51f2e44abf4bae, type: 2}
-  - {fileID: 2100000, guid: 5cb3d412579e6544b8718b834394cdf5, type: 2}
-  - {fileID: 2100000, guid: 7e5a112e73be3ad43a6d0e76cd73f569, type: 2}
-  - {fileID: 2100000, guid: 361036c8e272d0143b58251b16804d31, type: 2}
+  - {fileID: 2100000, guid: 1ef512a8b76017748942bb645eda978e, type: 2}
+  - {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 1e06cbba0b19aed408114ec2ca997963, type: 2}
 --- !u!1 &964374897
 GameObject:
   m_ObjectHideFlags: 0

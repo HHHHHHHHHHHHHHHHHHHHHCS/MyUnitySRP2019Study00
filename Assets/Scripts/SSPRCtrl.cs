@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection;
 using UnityEngine;
 
+//Copy by https://github.com/ColinLeung-NiloCat/UnityURP-MobileScreenSpacePlanarReflection
+//并且可以下载到更多的天空球 
+//这里为了节省空间
 public class SSPRCtrl : MonoBehaviour
 {
 	public float rotationSpeed = 22.5f;
