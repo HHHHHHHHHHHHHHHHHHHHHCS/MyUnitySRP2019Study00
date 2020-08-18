@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Rendering;
 
 namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 {
@@ -75,18 +76,48 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			}
 
 			lastIndirectRenderingEnabled = indirectRenderingEnabled;
-			//TODO:
-			//lastIndirectDrawShadows = indirectRenderer.drawInstanceShadows;
+			lastIndirectDrawShadows = indirectRenderer.drawInstanceShadows;
 
 			if (shouldInstantiatePrefabs)
 			{
 				InstantiateInstance();
 			}
+			
+			indirectRenderer.Initialize(ref instances);
+			indirectRenderer.StartDrawing();
 		}
 
-		//TODO:
 		private void Update()
 		{
+			if (lastIndirectRenderingEnabled != indirectRenderingEnabled)
+			{
+				lastIndirectRenderingEnabled = indirectRenderingEnabled;
+
+				if (normalInstancesParent != null)
+				{
+					normalInstancesParent.SetActive(!indirectRenderingEnabled);
+				}
+
+				if (indirectRenderingEnabled)
+				{
+					indirectRenderer.Initialize(ref instances);
+					indirectRenderer.StartDrawing();
+				}
+				else
+				{
+					indirectRenderer.StopDrawing(true);
+				}
+			}
+			
+			if (lastIndirectDrawShadows != indirectRenderer.drawInstanceShadows)
+			{
+				lastIndirectDrawShadows = indirectRenderer.drawInstanceShadows;
+            
+				if (normalInstancesParent != null)
+				{
+					SetShadowCastingMode(lastIndirectDrawShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
+				}
+			}
 		}
 
 		#endregion
@@ -94,50 +125,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		#region Private Function
 
-		private bool AssertInstanceData()
-		{
-			for (int i = 0; i < instances.Length; i++)
-			{
-				if (instances[i].prefab == null)
-				{
-					Debug.LogError("Missing Prefab on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
-				if (instances[i].normalMaterial == null)
-				{
-					Debug.LogError("Missing normalMaterial on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
-				if (instances[i].indirectMaterial == null)
-				{
-					Debug.LogError("Missing indirectMaterial on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
-				if (instances[i].lod00Mesh == null)
-				{
-					Debug.LogError("Missing lod00Mesh on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
-				if (instances[i].lod01Mesh == null)
-				{
-					Debug.LogError("Missing lod01Mesh on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
-				if (instances[i].lod02Mesh == null)
-				{
-					Debug.LogError("Missing lod02Mesh on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-			}
-
-			return true;
-		}
-
+		
 		[ContextMenu("CreateInstancesData()")]
 		private void CreateInstancesData()
 		{
@@ -206,7 +194,59 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			Profiler.EndSample();
 		}
+		
+		private bool AssertInstanceData()
+		{
+			for (int i = 0; i < instances.Length; i++)
+			{
+				if (instances[i].prefab == null)
+				{
+					Debug.LogError("Missing Prefab on instance at index: " + i + "! Aborting.");
+					return false;
+				}
 
+				if (instances[i].normalMaterial == null)
+				{
+					Debug.LogError("Missing normalMaterial on instance at index: " + i + "! Aborting.");
+					return false;
+				}
+
+				if (instances[i].indirectMaterial == null)
+				{
+					Debug.LogError("Missing indirectMaterial on instance at index: " + i + "! Aborting.");
+					return false;
+				}
+
+				if (instances[i].lod00Mesh == null)
+				{
+					Debug.LogError("Missing lod00Mesh on instance at index: " + i + "! Aborting.");
+					return false;
+				}
+
+				if (instances[i].lod01Mesh == null)
+				{
+					Debug.LogError("Missing lod01Mesh on instance at index: " + i + "! Aborting.");
+					return false;
+				}
+
+				if (instances[i].lod02Mesh == null)
+				{
+					Debug.LogError("Missing lod02Mesh on instance at index: " + i + "! Aborting.");
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		private void SetShadowCastingMode(ShadowCastingMode newMode)
+		{
+			Renderer[] rends = normalInstancesParent.GetComponentsInChildren<Renderer>();
+			for (int i = 0; i < rends.Length; i++)
+			{
+				rends[i].shadowCastingMode = newMode;
+			}
+		}
 
 		// Taken from:
 		// http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/

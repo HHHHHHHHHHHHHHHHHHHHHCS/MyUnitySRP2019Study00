@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections;
@@ -7,7 +6,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
+using ShadowQuality = UnityEngine.ShadowQuality;
 
 namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 {
@@ -79,9 +78,15 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		[Range(0, 10)] public int debugHiZLOD;
 		public GameObject debugUIPrefab;
 
+		/// <summary>
+		/// 实例化go的center和extends
+		/// </summary>
 		[Header("Data")] [ReadOnly]
 		public List<IndirectInstanceCSInput> instancesInputData = new List<IndirectInstanceCSInput>();
 
+		/// <summary>
+		/// 要画的数据种类
+		/// </summary>
 		[ReadOnly] public IndirectRenderingMesh[] indirectMeshes;
 
 		[Header("Logging")] public bool logInstanceDrawMatrices = false;
@@ -153,7 +158,12 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		private int m_copyInstanceDataGroupX;
 		private bool m_debugLastDrawLOD = false;
 		private bool m_isEnabled;
+
+		/// <summary>
+		/// instanceCount * 15  3个lod * |vertexCount,instanceCount,startIndex,baseVertexIndex,startInstance|
+		/// </summary>
 		private uint[] m_args;
+
 		private Bounds m_bounds;
 		private Vector3 m_camPosition = Vector3.zero;
 		private Vector3 m_lastCamPosition = Vector3.zero;
@@ -189,8 +199,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		private const string DEBUG_SHADER_LOD_KEYWORD = "INDIRECT_DEBUG_LOD";
 
 		// Shader Property ID's
-		private static readonly int _Data = Shader.PropertyToID("_Data");
-		private static readonly int _Input = Shader.PropertyToID("_Input");
+		private static readonly int _Data_ID = Shader.PropertyToID("_Data");
+		private static readonly int _Input_ID = Shader.PropertyToID("_Input");
 		private static readonly int _ShouldFrustumCull_ID = Shader.PropertyToID("_ShouldFrustumCull");
 		private static readonly int _ShouldOcclusionCull_ID = Shader.PropertyToID("_ShouldOcclusionCull");
 		private static readonly int _ShouldLOD_ID = Shader.PropertyToID("_ShouldLOD");
@@ -198,38 +208,38 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		private static readonly int _ShouldOnlyUseLOD02Shadows_ID = Shader.PropertyToID("_ShouldOnlyUseLOD02Shadows");
 		private static readonly int _UNITY_MATRIX_MVP_ID = Shader.PropertyToID("_UNITY_MATRIX_MVP");
 		private static readonly int _CamPosition_ID = Shader.PropertyToID("_CamPosition");
-		private static readonly int _HiZTextureSize = Shader.PropertyToID("_HiZTextureSize");
-		private static readonly int _Level = Shader.PropertyToID("_Level");
-		private static readonly int _LevelMask = Shader.PropertyToID("_LevelMask");
-		private static readonly int _Width = Shader.PropertyToID("_Width");
-		private static readonly int _Height = Shader.PropertyToID("_Height");
+		private static readonly int _HiZTextureSize_ID = Shader.PropertyToID("_HiZTextureSize");
+		private static readonly int _Level_ID = Shader.PropertyToID("_Level");
+		private static readonly int _LevelMask_ID = Shader.PropertyToID("_LevelMask");
+		private static readonly int _Width_ID = Shader.PropertyToID("_Width");
+		private static readonly int _Height_ID = Shader.PropertyToID("_Height");
 		private static readonly int _ShadowDistance_ID = Shader.PropertyToID("_ShadowDistance");
 
 		private static readonly int _DetailCullingScreenPercentage_ID =
 			Shader.PropertyToID("_DetailCullingScreenPercentage");
 
-		private static readonly int _HiZMap = Shader.PropertyToID("_HiZMap");
-		private static readonly int _NumOfGroups = Shader.PropertyToID("_NumOfGroups");
-		private static readonly int _NumOfDrawcalls = Shader.PropertyToID("_NumOfDrawcalls");
-		private static readonly int _ArgsOffset = Shader.PropertyToID("_ArgsOffset");
-		private static readonly int _Positions = Shader.PropertyToID("_Positions");
-		private static readonly int _Scales = Shader.PropertyToID("_Scales");
-		private static readonly int _Rotations = Shader.PropertyToID("_Rotations");
-		private static readonly int _ArgsBuffer = Shader.PropertyToID("_ArgsBuffer");
-		private static readonly int _ShadowArgsBuffer = Shader.PropertyToID("_ShadowArgsBuffer");
-		private static readonly int _IsVisibleBuffer = Shader.PropertyToID("_IsVisibleBuffer");
-		private static readonly int _ShadowIsVisibleBuffer = Shader.PropertyToID("_ShadowIsVisibleBuffer");
+		private static readonly int _HiZMap_ID = Shader.PropertyToID("_HiZMap");
+		private static readonly int _NumOfGroups_ID = Shader.PropertyToID("_NumOfGroups");
+		private static readonly int _NumOfDrawcalls_ID = Shader.PropertyToID("_NumOfDrawcalls");
+		private static readonly int _ArgsOffset_ID = Shader.PropertyToID("_ArgsOffset");
+		private static readonly int _Positions_ID = Shader.PropertyToID("_Positions");
+		private static readonly int _Scales_ID = Shader.PropertyToID("_Scales");
+		private static readonly int _Rotations_ID = Shader.PropertyToID("_Rotations");
+		private static readonly int _ArgsBuffer_ID = Shader.PropertyToID("_ArgsBuffer");
+		private static readonly int _ShadowArgsBuffer_ID = Shader.PropertyToID("_ShadowArgsBuffer");
+		private static readonly int _IsVisibleBuffer_ID = Shader.PropertyToID("_IsVisibleBuffer");
+		private static readonly int _ShadowIsVisibleBuffer_ID = Shader.PropertyToID("_ShadowIsVisibleBuffer");
 		private static readonly int _GroupSumArray_ID = Shader.PropertyToID("_GroupSumArray");
 		private static readonly int _ScannedInstancePredicates_ID = Shader.PropertyToID("_ScannedInstancePredicates");
 		private static readonly int _GroupSumArrayIn_ID = Shader.PropertyToID("_GroupSumArrayIn");
 		private static readonly int _GroupSumArrayOut_ID = Shader.PropertyToID("_GroupSumArrayOut");
 		private static readonly int _DrawcallDataOut_ID = Shader.PropertyToID("_DrawcallDataOut");
-		private static readonly int _SortingData = Shader.PropertyToID("_SortingData");
-		private static readonly int _InstanceDataBuffer = Shader.PropertyToID("_InstanceDataBuffer");
+		private static readonly int _SortingData_ID = Shader.PropertyToID("_SortingData");
+		private static readonly int _InstanceDataBuffer_ID = Shader.PropertyToID("_InstanceDataBuffer");
 		private static readonly int _InstancePredicatesIn_ID = Shader.PropertyToID("_InstancePredicatesIn");
-		private static readonly int _InstancesDrawMatrixRows01 = Shader.PropertyToID("_InstancesDrawMatrixRows01");
-		private static readonly int _InstancesDrawMatrixRows23 = Shader.PropertyToID("_InstancesDrawMatrixRows23");
-		private static readonly int _InstancesDrawMatrixRows45 = Shader.PropertyToID("_InstancesDrawMatrixRows45");
+		private static readonly int _InstancesDrawMatrixRows01_ID = Shader.PropertyToID("_InstancesDrawMatrixRows01");
+		private static readonly int _InstancesDrawMatrixRows23_ID = Shader.PropertyToID("_InstancesDrawMatrixRows23");
+		private static readonly int _InstancesDrawMatrixRows45_ID = Shader.PropertyToID("_InstancesDrawMatrixRows45");
 
 		private static readonly int _InstancesCulledMatrixRows01_ID =
 			Shader.PropertyToID("_InstancesCulledMatrixRows01");
@@ -271,14 +281,468 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				CalculateVisibleInstances();
 				Profiler.EndSample();
 			}
-			
-			//TODO:
+
+			if (drawInstances)
+			{
+				Profiler.BeginSample("DrawInstances()");
+				DrawInstances();
+				Profiler.EndSample();
+			}
+
+			if (drawInstanceShadows)
+			{
+				Profiler.BeginSample("DrawInstanceShadows()");
+				DrawInstanceShadows();
+				Profiler.EndSample();
+			}
+
+			if (debugDrawHiZ)
+			{
+				Vector3 pos = transform.position;
+				pos.y = debugCamera.transform.position.y;
+				debugCamera.transform.position = pos;
+				debugCamera.Render();
+			}
+		}
+
+		private void OnDestroy()
+		{
+			ReleaseBuffers();
+
+			if (debugDrawLOD)
+			{
+				for (int i = 0; i < indirectMeshes.Length; i++)
+				{
+					indirectMeshes[i].material.DisableKeyword(DEBUG_SHADER_LOD_KEYWORD);
+				}
+			}
+		}
+
+		private void OnDrawGizmos()
+		{
+			if (!Application.isPlaying)
+			{
+				return;
+			}
+
+			if (debugDrawBoundsInSceneView)
+			{
+				Gizmos.color = new Color(1f, 0f, 0f, 0.333f);
+				for (int i = 0; i < instancesInputData.Count; i++)
+				{
+					Gizmos.DrawWireCube(instancesInputData[i].boundsCenter, instancesInputData[i].boundsExtents * 2f);
+				}
+			}
 		}
 
 		#endregion
 
 
+		#region Public Functions
+
+		public void Initialize(ref HiZIndirectInstanceData[] instances)
+		{
+			if (!m_isInitialized)
+			{
+				m_isInitialized = InitializeRenderer(ref instances);
+			}
+		}
+
+		public void StartDrawing()
+		{
+			if (!m_isInitialized)
+			{
+				Debug.LogError("IndirectRenderer: Unable to start drawing because it's not initialized");
+				return;
+			}
+
+			m_isEnabled = true;
+		}
+
+		public void StopDrawing(bool shouldReleaseBuffers = false)
+		{
+			m_isEnabled = false;
+
+			if (shouldReleaseBuffers)
+			{
+				ReleaseBuffers();
+				m_isInitialized = false;
+				hiZBuffer.enabled = false;
+			}
+		}
+
+		#endregion
+
 		#region Private Functions
+
+		private static bool TryGetKernel(string kernelName, ref ComputeShader cs, ref int kernelID)
+		{
+			if (!cs.HasKernel(kernelName))
+			{
+				Debug.LogError(kernelName + " kernel not found in " + cs.name + "!");
+				return false;
+			}
+
+			kernelID = cs.FindKernel(kernelName);
+			return true;
+		}
+
+		private static void ReleaseCommandBuffer(ref CommandBuffer _buffer)
+		{
+			if (_buffer == null)
+			{
+				return;
+			}
+
+			_buffer.Release();
+			_buffer = null;
+		}
+
+		private static void ReleaseComputeBuffer(ref ComputeBuffer _buffer)
+		{
+			if (_buffer == null)
+			{
+				return;
+			}
+
+			_buffer.Release();
+			_buffer = null;
+		}
+
+		/// <summary>
+		/// 根据传入的 要绘制的数据  进行初始化
+		/// </summary>
+		/// <param name="_instances"></param>
+		/// <returns></returns>
+		private bool InitializeRenderer(ref HiZIndirectInstanceData[] _instances)
+		{
+			if (!TryGetKernels())
+			{
+				return false;
+			}
+
+			ReleaseBuffers();
+			instancesInputData.Clear();
+			m_numberOfInstanceTypes = _instances.Length;
+			m_numberOfInstances = 0;
+			m_camPosition = mainCamera.transform.position;
+			m_bounds.center = m_camPosition;
+			m_bounds.extents = Vector3.one * 10000;
+			hiZBuffer.enabled = true;
+			//TODO:InitializeTexture
+			//hiZBuffer.InitializeTexture();
+			indirectMeshes = new IndirectRenderingMesh[m_numberOfInstanceTypes];
+			m_args = new uint[m_numberOfInstanceTypes * NUMBER_OF_ARGS_PER_INSTANCE_TYPE];
+
+			List<Vector3> positions = new List<Vector3>();
+			List<Vector3> scales = new List<Vector3>();
+			List<Vector3> rotations = new List<Vector3>();
+			List<SortingData> sortingData = new List<SortingData>();
+
+			for (int i = 0; i < m_numberOfInstanceTypes; i++)
+			{
+				IndirectRenderingMesh irm = new IndirectRenderingMesh();
+				HiZIndirectInstanceData iid = _instances[i];
+
+				irm.numOfVerticesLod00 = (uint) iid.lod00Mesh.vertexCount;
+				irm.numOfVerticesLod01 = (uint) iid.lod01Mesh.vertexCount;
+				irm.numOfVerticesLod02 = (uint) iid.lod02Mesh.vertexCount;
+				irm.numOfIndicesLod00 = iid.lod00Mesh.GetIndexCount(0);
+				irm.numOfIndicesLod01 = iid.lod01Mesh.GetIndexCount(0);
+				irm.numOfIndicesLod02 = iid.lod02Mesh.GetIndexCount(0);
+
+
+				irm.mesh = new Mesh();
+				irm.mesh.name = iid.prefab.name;
+				irm.mesh.CombineMeshes(
+					new CombineInstance[]
+					{
+						new CombineInstance() {mesh = iid.lod00Mesh},
+						new CombineInstance() {mesh = iid.lod01Mesh},
+						new CombineInstance() {mesh = iid.lod02Mesh},
+					},
+					true, //merge subMeshes
+					false, //use matrices
+					false //has lightmap data
+				);
+
+				// Arguments
+				int argsIndex = i * NUMBER_OF_ARGS_PER_INSTANCE_TYPE;
+
+				// Buffer with arguments has to have five integer numbers
+				// LOD00
+				m_args[argsIndex + 0] = irm.numOfIndicesLod00; // 0 - index count per instance, 
+				m_args[argsIndex + 1] = 0; // 1 - instance count
+				m_args[argsIndex + 2] = 0; // 2 - start index location
+				m_args[argsIndex + 3] = 0; // 3 - base vertex location
+				m_args[argsIndex + 4] = 0; // 4 - start instance location
+
+				// LOD01
+				m_args[argsIndex + 5] = irm.numOfIndicesLod01; // 0 - index count per instance, 
+				m_args[argsIndex + 6] = 0; // 1 - instance count
+				m_args[argsIndex + 7] = m_args[argsIndex + 0] + m_args[argsIndex + 2]; // 2 - start index location
+				m_args[argsIndex + 8] = 0; // 3 - base vertex location
+				m_args[argsIndex + 9] = 0; // 4 - start instance location
+
+				// LOD02
+				m_args[argsIndex + 10] = irm.numOfIndicesLod02; // 0 - index count per instance, 
+				m_args[argsIndex + 11] = 0; // 1 - instance count
+				m_args[argsIndex + 12] = m_args[argsIndex + 5] + m_args[argsIndex + 7]; // 2 - start index location
+				m_args[argsIndex + 13] = 0; // 3 - base vertex location
+				m_args[argsIndex + 14] = 0; // 4 - start instance location
+
+				irm.material = iid.indirectMaterial;
+				Bounds originalBounds = CalculateBounds(iid.prefab);
+
+				// Add the instance data (positions, rotations, scaling, bounds...)
+				for (int j = 0; j < iid.positions.Length; j++)
+				{
+					positions.Add(iid.positions[j]);
+					rotations.Add(iid.rotations[j]);
+					scales.Add(iid.scales[j]);
+
+					sortingData.Add(new SortingData()
+					{
+						//drawCallInstanceIndex = 大组index*15 + 实例化index
+						drawCallInstanceIndex = ((((uint) i * NUMBER_OF_ARGS_PER_INSTANCE_TYPE) << 16) +
+						                         ((uint) m_numberOfInstances)),
+						distanceToCam = Vector3.Distance(iid.positions[j], m_camPosition)
+					});
+
+					Bounds b = new Bounds();
+					b.center = iid.positions[j];
+					Vector3 s = originalBounds.size;
+					s.Scale(iid.scales[j]);
+					b.size = s;
+
+					instancesInputData.Add(new IndirectInstanceCSInput()
+					{
+						boundsCenter = b.center,
+						boundsExtents = b.extents,
+					});
+
+					m_numberOfInstances++;
+				}
+
+				indirectMeshes[i] = irm;
+			}
+
+			//Marshal.SizeOf 可以sizeof(自定义的引用类型)
+			//类需要 内存排序  就是加属性 [StructLayout(LayoutKind.Sequential)]
+			//Marshal.SizeOf完全不支持泛型
+			int computeShaderInputSize = Marshal.SizeOf(typeof(IndirectInstanceCSInput));
+			int computeShaderDrawMatrixSize = Marshal.SizeOf(typeof(Indirect2x2Matrix));
+			int computeSortingDataSize = Marshal.SizeOf(typeof(SortingData));
+
+
+			m_instancesArgsBuffer = new ComputeBuffer(m_numberOfInstanceTypes * NUMBER_OF_ARGS_PER_INSTANCE_TYPE,
+				sizeof(uint), ComputeBufferType.IndirectArguments);
+
+			m_instanceDataBuffer =
+				new ComputeBuffer(m_numberOfInstances, computeShaderInputSize, ComputeBufferType.Default);
+			m_instancesSortingData =
+				new ComputeBuffer(m_numberOfInstances, computeSortingDataSize, ComputeBufferType.Default);
+			m_instancesSortingDataTemp =
+				new ComputeBuffer(m_numberOfInstances, computeSortingDataSize, ComputeBufferType.Default);
+			m_instancesMatrixRows01 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesMatrixRows23 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesMatrixRows45 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesCulledMatrixRows01 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesCulledMatrixRows23 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesCulledMatrixRows45 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_instancesIsVisibleBuffer =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_instancesScannedPredicates =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_instancesGroupSumArrayBuffer =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_instancesScannedGroupSumBuffer =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+
+			m_shadowArgsBuffer = new ComputeBuffer(m_numberOfInstanceTypes * NUMBER_OF_ARGS_PER_INSTANCE_TYPE,
+				sizeof(uint), ComputeBufferType.IndirectArguments);
+			m_shadowCulledMatrixRows01 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_shadowCulledMatrixRows23 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_shadowCulledMatrixRows45 = new ComputeBuffer(m_numberOfInstances, computeShaderDrawMatrixSize,
+				ComputeBufferType.Default);
+			m_shadowsIsVisibleBuffer = new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_shadowScannedInstancePredicates =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_shadowGroupSumArrayBuffer =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+			m_shadowsScannedGroupSumBuffer =
+				new ComputeBuffer(m_numberOfInstances, sizeof(uint), ComputeBufferType.Default);
+
+			m_instancesArgsBuffer.SetData(m_args);
+			m_shadowArgsBuffer.SetData(m_args);
+			m_instancesSortingData.SetData(sortingData);
+			m_instancesSortingDataTemp.SetData(sortingData);
+			m_instanceDataBuffer.SetData(instancesInputData);
+
+			for (int i = 0; i < indirectMeshes.Length; i++)
+			{
+				IndirectRenderingMesh irm = indirectMeshes[i];
+				int argsIndex = i * NUMBER_OF_ARGS_PER_INSTANCE_TYPE;
+
+				irm.lod00MatPropBlock = new MaterialPropertyBlock();
+				irm.lod01MatPropBlock = new MaterialPropertyBlock();
+				irm.lod02MatPropBlock = new MaterialPropertyBlock();
+				irm.shadowLod00MatPropBlock = new MaterialPropertyBlock();
+				irm.shadowLod01MatPropBlock = new MaterialPropertyBlock();
+				irm.shadowLod02MatPropBlock = new MaterialPropertyBlock();
+
+				irm.lod00MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 4);
+				irm.lod01MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 9);
+				irm.lod02MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 14);
+
+				irm.shadowLod00MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 4);
+				irm.shadowLod01MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 9);
+				irm.shadowLod02MatPropBlock.SetInt(_ArgsOffset_ID, argsIndex + 14);
+
+				irm.lod00MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_instancesArgsBuffer);
+				irm.lod01MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_instancesArgsBuffer);
+				irm.lod02MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_instancesArgsBuffer);
+
+				irm.shadowLod00MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_shadowArgsBuffer);
+				irm.shadowLod01MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_shadowArgsBuffer);
+				irm.shadowLod02MatPropBlock.SetBuffer(_ArgsBuffer_ID, m_shadowArgsBuffer);
+
+				irm.lod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_instancesCulledMatrixRows01);
+				irm.lod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_instancesCulledMatrixRows01);
+				irm.lod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_instancesCulledMatrixRows01);
+
+				irm.lod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_instancesCulledMatrixRows23);
+				irm.lod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_instancesCulledMatrixRows23);
+				irm.lod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_instancesCulledMatrixRows23);
+
+				irm.lod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_instancesCulledMatrixRows45);
+				irm.lod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_instancesCulledMatrixRows45);
+				irm.lod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_instancesCulledMatrixRows45);
+
+				irm.shadowLod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_shadowCulledMatrixRows01);
+				irm.shadowLod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_shadowCulledMatrixRows01);
+				irm.shadowLod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows01_ID, m_shadowCulledMatrixRows01);
+
+				irm.shadowLod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_shadowCulledMatrixRows23);
+				irm.shadowLod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_shadowCulledMatrixRows23);
+				irm.shadowLod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows23_ID, m_shadowCulledMatrixRows23);
+
+				irm.shadowLod00MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_shadowCulledMatrixRows45);
+				irm.shadowLod01MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_shadowCulledMatrixRows45);
+				irm.shadowLod02MatPropBlock.SetBuffer(_InstancesDrawMatrixRows45_ID, m_shadowCulledMatrixRows45);
+			}
+
+			//-----------------------------------
+			// InitializeDrawData
+			//-----------------------------------
+
+			ComputeBuffer positionsBuffer = new ComputeBuffer(m_numberOfInstances, Marshal.SizeOf(typeof(Vector3)),
+				ComputeBufferType.Default);
+			ComputeBuffer scaleBuffer = new ComputeBuffer(m_numberOfInstances, Marshal.SizeOf(typeof(Vector3)),
+				ComputeBufferType.Default);
+			ComputeBuffer rotationBuffer = new ComputeBuffer(m_numberOfInstances, Marshal.SizeOf(typeof(Vector3)),
+				ComputeBufferType.Default);
+
+			positionsBuffer.SetData(positions);
+			scaleBuffer.SetData(scales);
+			rotationBuffer.SetData(rotations);
+
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Positions_ID, positionsBuffer);
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Scales_ID, scaleBuffer);
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Rotations_ID, rotationBuffer);
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows01_ID,
+				m_instancesMatrixRows01);
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows23_ID,
+				m_instancesMatrixRows23);
+			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows45_ID,
+				m_instancesMatrixRows45);
+			int groupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+			createDrawDataBufferCS.Dispatch(m_createDrawDataBufferKernelID, groupX, 1, 1);
+
+			ReleaseComputeBuffer(ref positionsBuffer);
+			ReleaseComputeBuffer(ref scaleBuffer);
+			ReleaseComputeBuffer(ref rotationBuffer);
+
+
+			//-----------------------------------
+			// InitConstantComputeVariables
+			//-----------------------------------
+
+			m_occlusionGroupX = Mathf.Max(1, m_numberOfInstances / 64);
+			m_scanInstancesGroupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+			m_scanThreadGroupsGroupX = 1;
+			m_copyInstanceDataGroupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+
+			occlusionCS.SetInt(_ShouldFrustumCull_ID, enableFrustumCulling ? 1 : 0);
+			occlusionCS.SetInt(_ShouldOcclusionCull_ID, enableOcclusionCulling ? 1 : 0);
+			occlusionCS.SetInt(_ShouldDetailCull_ID, enableDetailCulling ? 1 : 0);
+			occlusionCS.SetInt(_ShouldLOD_ID, enableLOD ? 1 : 0);
+			occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, enableOnlyLOD02Shadows ? 1 : 0);
+			occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
+			occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, detailCullingPercentage);
+			occlusionCS.SetVector(_HiZTextureSize_ID, hiZBuffer.TextureSize);
+			occlusionCS.SetTexture(m_occlusionKernelID, _HiZMap_ID, hiZBuffer.Texture);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _ArgsBuffer_ID, m_instancesArgsBuffer);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowArgsBuffer_ID, m_shadowArgsBuffer);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _IsVisibleBuffer_ID, m_instancesIsVisibleBuffer);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowIsVisibleBuffer_ID, m_shadowsIsVisibleBuffer);
+			occlusionCS.SetBuffer(m_occlusionKernelID, _SortingData_ID, m_instancesSortingData);
+
+			scanGroupSumsCS.SetInt(_NumOfGroups_ID, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+
+			copyInstanceDataCS.SetInt(_NumOfDrawcalls_ID, m_numberOfInstanceTypes * NUMBER_OF_DRAW_CALLS);
+			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
+			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows01_ID,
+				m_instancesMatrixRows01);
+			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows23_ID,
+				m_instancesMatrixRows23);
+			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows45_ID,
+				m_instancesMatrixRows45);
+			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _SortingData_ID, m_instancesSortingData);
+
+			CreateCommandBuffers();
+
+			return true;
+		}
+
+		private void ReleaseBuffers()
+		{
+			ReleaseCommandBuffer(ref m_sortingCommandBuffer);
+			//ReleaseCommandBuffer(ref visibleInstancesCB);
+
+			ReleaseComputeBuffer(ref m_instancesIsVisibleBuffer);
+			ReleaseComputeBuffer(ref m_instancesGroupSumArrayBuffer);
+			ReleaseComputeBuffer(ref m_instancesScannedGroupSumBuffer);
+			ReleaseComputeBuffer(ref m_instancesScannedPredicates);
+			ReleaseComputeBuffer(ref m_instanceDataBuffer);
+			ReleaseComputeBuffer(ref m_instancesSortingData);
+			ReleaseComputeBuffer(ref m_instancesSortingDataTemp);
+			ReleaseComputeBuffer(ref m_instancesMatrixRows01);
+			ReleaseComputeBuffer(ref m_instancesMatrixRows23);
+			ReleaseComputeBuffer(ref m_instancesMatrixRows45);
+			ReleaseComputeBuffer(ref m_instancesCulledMatrixRows01);
+			ReleaseComputeBuffer(ref m_instancesCulledMatrixRows23);
+			ReleaseComputeBuffer(ref m_instancesCulledMatrixRows45);
+			ReleaseComputeBuffer(ref m_instancesArgsBuffer);
+
+			ReleaseComputeBuffer(ref m_shadowArgsBuffer);
+			ReleaseComputeBuffer(ref m_shadowsIsVisibleBuffer);
+			ReleaseComputeBuffer(ref m_shadowGroupSumArrayBuffer);
+			ReleaseComputeBuffer(ref m_shadowsScannedGroupSumBuffer);
+			ReleaseComputeBuffer(ref m_shadowScannedInstancePredicates);
+			ReleaseComputeBuffer(ref m_shadowCulledMatrixRows01);
+			ReleaseComputeBuffer(ref m_shadowCulledMatrixRows23);
+			ReleaseComputeBuffer(ref m_shadowCulledMatrixRows45);
+		}
 
 		private void CalculateVisibleInstances()
 		{
@@ -443,8 +907,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				}
 			}
 			Profiler.EndSample();
-			
-			
+
+
 			Profiler.BeginSample("LOD Sorting");
 			{
 				m_lastCamPosition = m_camPosition;
@@ -452,12 +916,180 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				Graphics.ExecuteCommandBufferAsync(m_sortingCommandBuffer, ComputeQueueType.Background);
 			}
 			Profiler.EndSample();
-        
+
 			if (logSortingData)
 			{
 				logSortingData = false;
 				LogSortingData("LogSortingData())");
 			}
+		}
+
+		private void DrawInstances()
+		{
+			for (int i = 0; i < indirectMeshes.Length; i++)
+			{
+				// 3*lod * 5 * sizeof(uint) => 3 * 5 * 4(32Bit)
+				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
+				IndirectRenderingMesh irm = indirectMeshes[i];
+
+				if (enableLOD)
+				{
+					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 0, irm.lod00MatPropBlock, ShadowCastingMode.Off);
+					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 1, irm.lod01MatPropBlock, ShadowCastingMode.Off);
+				}
+
+				Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
+					argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 2, irm.lod02MatPropBlock, ShadowCastingMode.Off);
+			}
+		}
+
+		private void DrawInstanceShadows()
+		{
+			for (int i = 0; i < indirectMeshes.Length; i++)
+			{
+				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
+				IndirectRenderingMesh irm = indirectMeshes[i];
+
+				if (!enableOnlyLOD02Shadows)
+				{
+					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 0, irm.shadowLod00MatPropBlock,
+						ShadowCastingMode.ShadowsOnly);
+					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 1, irm.shadowLod01MatPropBlock,
+						ShadowCastingMode.ShadowsOnly);
+				}
+
+				Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,
+					argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 2, irm.shadowLod02MatPropBlock,
+					ShadowCastingMode.ShadowsOnly);
+			}
+		}
+
+		/// <summary>
+		/// 创建cmd 和 commandBuffer
+		/// </summary>
+		private void CreateCommandBuffers()
+		{
+			CreateSortingCommandBuffer();
+		}
+
+		/// <summary>
+		/// 创建排序的cmd   并且对 sortData 进行排序
+		/// </summary>
+		private void CreateSortingCommandBuffer()
+		{
+			uint BITONIC_BLOCK_SIZE = 256;
+			uint TRANSPOSE_BLOCK_SIZE = 8;
+
+			// Determine parameters.
+			uint NUM_ELEMENTS = (uint) m_numberOfInstances;
+			uint MATRIX_WIDTH = BITONIC_BLOCK_SIZE;
+			uint MATRIX_HEIGHT = (uint) NUM_ELEMENTS / BITONIC_BLOCK_SIZE;
+
+			m_sortingCommandBuffer = new CommandBuffer {name = "AsyncGPUSorting"};
+
+			//对数据进行排序
+			//首先将<=级别的行 block size 排序
+			for (uint level = 2; level <= BITONIC_BLOCK_SIZE; level <<= 1)
+			{
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref level, ref level, ref MATRIX_HEIGHT,
+					ref MATRIX_WIDTH);
+
+				// 排序行数据
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+					m_instancesSortingData);
+				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
+			}
+
+			// 然后按照每行的 block size  对行内数据进行排序
+			// 转置 排序列     再转置 排序行
+			for (uint level = (BITONIC_BLOCK_SIZE << 1); level <= NUM_ELEMENTS; level <<= 1)
+			{
+				//把 sortData 转换到 sortDataTemp
+				uint l = (level / BITONIC_BLOCK_SIZE);
+				uint lm = (level & ~NUM_ELEMENTS) / BITONIC_BLOCK_SIZE;
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref l, ref lm, ref MATRIX_WIDTH,
+					ref MATRIX_HEIGHT);
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Input_ID,
+					m_instancesSortingData);
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Data_ID,
+					m_instancesSortingDataTemp);
+				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingTransposeKernelID,
+					(int) (MATRIX_WIDTH / TRANSPOSE_BLOCK_SIZE), (int) (MATRIX_HEIGHT / TRANSPOSE_BLOCK_SIZE), 1);
+
+				// 排序 转换的 sortDataTemp 的列数据
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+					m_instancesSortingDataTemp);
+				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
+
+				// 再把 sortDataTemp 转换为 sortData
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref BITONIC_BLOCK_SIZE, ref level,
+					ref MATRIX_HEIGHT, ref MATRIX_WIDTH);
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Input_ID,
+					m_instancesSortingDataTemp);
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Data_ID,
+					m_instancesSortingData);
+				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingTransposeKernelID,
+					(int) (MATRIX_HEIGHT / TRANSPOSE_BLOCK_SIZE), (int) (MATRIX_WIDTH / TRANSPOSE_BLOCK_SIZE), 1);
+
+				// 再把行数据排序
+				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+					m_instancesSortingData);
+				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
+			}
+		}
+
+		/// <summary>
+		/// 设置排序的变量
+		/// </summary>
+		private void SetGPUSortConstants(ref CommandBuffer commandBuffer, ref ComputeShader cs, ref uint level,
+			ref uint levelMask, ref uint width, ref uint height)
+		{
+			commandBuffer.SetComputeIntParam(cs, _Level_ID, (int) level);
+			commandBuffer.SetComputeIntParam(cs, _LevelMask_ID, (int) levelMask);
+			commandBuffer.SetComputeIntParam(cs, _Width_ID, (int) width);
+			commandBuffer.SetComputeIntParam(cs, _Height_ID, (int) height);
+		}
+
+		private bool TryGetKernels()
+		{
+			return TryGetKernel("CSMain", ref createDrawDataBufferCS, ref m_createDrawDataBufferKernelID)
+			       && TryGetKernel("BitonicSort", ref sortingCS, ref m_sortingCSKernelID)
+			       && TryGetKernel("MatrixTranspose", ref sortingCS, ref m_sortingTransposeKernelID)
+			       && TryGetKernel("CSMain", ref occlusionCS, ref m_occlusionKernelID)
+			       && TryGetKernel("CSMain", ref scanInstancesCS, ref m_scanInstancesKernelID)
+			       && TryGetKernel("CSMain", ref scanGroupSumsCS, ref m_scanGroupSumsKernelID)
+			       && TryGetKernel("CSMain", ref copyInstanceDataCS, ref m_copyInstanceDataKernelID);
+		}
+
+		private Bounds CalculateBounds(GameObject _prefab)
+		{
+			GameObject obj = Instantiate(_prefab);
+			obj.transform.position = Vector3.zero;
+			obj.transform.rotation = Quaternion.Euler(Vector3.zero);
+			obj.transform.localScale = Vector3.one;
+			Renderer[] rends = obj.GetComponentsInChildren<Renderer>();
+			Bounds b = new Bounds();
+			if (rends.Length > 0)
+			{
+				b = new Bounds(rends[0].bounds.center, rends[0].bounds.size);
+				for (int r = 1; r < rends.Length; r++)
+				{
+					//update min max
+					b.Encapsulate(rends[r].bounds);
+				}
+			}
+
+			b.center = Vector3.zero; //只要extends  不要中心位置
+			DestroyImmediate(obj);
+
+			return b;
 		}
 
 		#endregion
@@ -524,7 +1156,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				m_debugGPUArgsRequest = AsyncGPUReadback.Request(m_instancesArgsBuffer);
 				m_debugGPUShadowArgsRequest = AsyncGPUReadback.Request(m_shadowArgsBuffer);
 			}
-			else if (m_debugGPUArgsRequest.done || m_debugGPUShadowArgsRequest.done)
+			else if (m_debugGPUArgsRequest.done && m_debugGPUShadowArgsRequest.done)
 			{
 				NativeArray<uint> argsBuffer = m_debugGPUArgsRequest.GetData<uint>();
 				NativeArray<uint> shadowArgsBuffer = m_debugGPUShadowArgsRequest.GetData<uint>();
@@ -595,13 +1227,13 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 					uint shadowLod01Indices = shadowArgsBuffer[i + 5] * shadowMultiplier;
 					uint shadowLod02Indices = shadowArgsBuffer[i + 10] * shadowMultiplier;
 
-					uint lod00Vertices = irm.numOfIndicesLod00 * normalMultiplier;
-					uint lod01Vertices = irm.numOfIndicesLod01 * normalMultiplier;
-					uint lod02Vertices = irm.numOfIndicesLod02 * normalMultiplier;
+					uint lod00Vertices = irm.numOfVerticesLod00 * normalMultiplier;
+					uint lod01Vertices = irm.numOfVerticesLod01 * normalMultiplier;
+					uint lod02Vertices = irm.numOfVerticesLod02 * normalMultiplier;
 
-					uint shadowLod00Vertices = irm.numOfIndicesLod00 * shadowMultiplier;
-					uint shadowLod01Vertices = irm.numOfIndicesLod01 * shadowMultiplier;
-					uint shadowLod02Vertices = irm.numOfIndicesLod02 * shadowMultiplier;
+					uint shadowLod00Vertices = irm.numOfVerticesLod00 * shadowMultiplier;
+					uint shadowLod01Vertices = irm.numOfVerticesLod01 * shadowMultiplier;
+					uint shadowLod02Vertices = irm.numOfVerticesLod02 * shadowMultiplier;
 
 					// Output...
 					string lod00VertColor = (lod00Vertices > 10000 ? DEBUG_UI_RED_COLOR : DEBUG_UI_WHITE_COLOR);
@@ -1056,18 +1688,26 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		{
 			SortingData[] sortingData = new SortingData[m_numberOfInstances];
 			m_instancesSortingData.GetData(sortingData);
-        
+
 			StringBuilder sb = new StringBuilder();
-			if (!string.IsNullOrEmpty(prefix)) { sb.AppendLine(prefix); }
-        
+			if (!string.IsNullOrEmpty(prefix))
+			{
+				sb.AppendLine(prefix);
+			}
+
 			uint lastDrawCallIndex = 0;
 			for (int i = 0; i < sortingData.Length; i++)
 			{
 				uint drawCallIndex = (sortingData[i].drawCallInstanceIndex >> 16);
 				uint instanceIndex = (sortingData[i].drawCallInstanceIndex) & 0xFFFF;
-				if (i == 0) { lastDrawCallIndex = drawCallIndex; }
-				sb.AppendLine("(" + drawCallIndex + ") --> " + sortingData[i].distanceToCam + " instanceIndex:" + instanceIndex);
-            
+				if (i == 0)
+				{
+					lastDrawCallIndex = drawCallIndex;
+				}
+
+				sb.AppendLine("(" + drawCallIndex + ") --> " + sortingData[i].distanceToCam + " instanceIndex:" +
+				              instanceIndex);
+
 				if (lastDrawCallIndex != drawCallIndex)
 				{
 					Debug.Log(sb.ToString());
@@ -1078,7 +1718,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			Debug.Log(sb.ToString());
 		}
-		
+
 		#endregion
 	}
 }
