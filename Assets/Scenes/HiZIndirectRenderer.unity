@@ -98,7 +98,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 0}
-  m_UseShadowmask: 0
+  m_UseShadowmask: 1
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -135,6 +135,8 @@ GameObject:
   - component: {fileID: 1192119118}
   - component: {fileID: 1192119117}
   - component: {fileID: 1192119119}
+  - component: {fileID: 1192119121}
+  - component: {fileID: 1192119120}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -266,11 +268,77 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   indirectRenderingEnabled: 1
   createInstancesOnAwake: 0
-  shouldInstantiatePrefabs: 0
-  areaSize: 5000
-  numberOfInstances: 0
+  shouldInstantiatePrefabs: 1
+  areaSize: 10000
+  numberOfInstances: 8192
   indirectRenderer: {fileID: 0}
   instances: []
+--- !u!114 &1192119120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eda1d59cdb404c61a8c367f1ad328ab3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  topDownView: {fileID: 0}
+  m_indirectRenderer: {fileID: 0}
+  mainCamera: {fileID: 0}
+  light: {fileID: 0}
+  generateBufferShader: {fileID: 0}
+  debugShader: {fileID: 0}
+--- !u!114 &1192119121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdfbe9a7222f32a418963b915d3fe63a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  runCompute: 1
+  drawInstances: 1
+  drawInstanceShadows: 1
+  enableFrustumCulling: 1
+  enableOcclusionCulling: 1
+  enableDetailCulling: 1
+  enableLOD: 1
+  enableOnlyLOD02Shadows: 1
+  detailCullingPercentage: 0.005
+  debugShowUI: 0
+  debugDrawLOD: 0
+  debugDrawBoundsInSceneView: 0
+  debugDrawHiZ: 0
+  debugHiZLOD: 0
+  debugUIPrefab: {fileID: 0}
+  instancesInputData: []
+  indirectMeshes: []
+  logInstanceDrawMatrices: 0
+  logArgumentsAfterReset: 0
+  logSortingData: 0
+  logArgumentsAfterOcclusion: 0
+  logInstancesIsVisibleBuffer: 0
+  logScannedPredicates: 0
+  logGroupSumArrayBuffer: 0
+  logScannedGroupSumsBuffer: 0
+  logArgsBufferAfterCopy: 0
+  logCulledInstancesDrawMatrices: 0
+  createDrawDataBufferCS: {fileID: 0}
+  sortingCS: {fileID: 0}
+  occlusionCS: {fileID: 0}
+  scanInstancesCS: {fileID: 0}
+  scanGroupSumsCS: {fileID: 0}
+  copyInstanceDataCS: {fileID: 0}
+  hiZBuffer: {fileID: 0}
+  mainCamera: {fileID: 0}
+  debugCamera: {fileID: 0}
 --- !u!1 &1744176838
 GameObject:
   m_ObjectHideFlags: 0

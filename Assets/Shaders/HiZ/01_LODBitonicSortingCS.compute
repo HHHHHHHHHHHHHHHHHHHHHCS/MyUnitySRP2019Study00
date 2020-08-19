@@ -1,0 +1,92 @@
+﻿#include "ShaderInclude_IndirectStructs.cginc"
+
+#pragma kernel BitonicSort
+#pragma kernel MatrixTranspose
+
+
+#define BITONIC_BLOCK_SIZE 256
+#define TRANSPOSE_BLOCK_SIZE 8
+
+//Constant Buffer
+cbuffer CB
+{
+	uint _Level;
+	uint _LevelMask;
+	uint _Width;
+	uint _Height;
+};
+
+StructuredBuffer<SortingData> _Input;
+RWStructuredBuffer<SortingData> _Data;
+
+/*
+in uint3 _dispatchThreadID: SV_DispatchThreadID, // DispatchThreadID  = dot(GroupID, numthreads) + GroupThreadId;
+in uint  _groupIndex: SV_GroupIndex, // uint GroupIndex = unique index of a thread inside a group
+in uint3 _groupID: SV_GroupID, // GroupID = index for each dimension inside a ThreadGroupCount
+in uint3 _groupThreadID: SV_GroupThreadID // uint3 GroupThreadId = indices for each dimension inside a group of the current thread
+*/
+
+//--------------------------------------------------------------------------------------
+// Bitonic Sort Compute Shader
+//--------------------------------------------------------------------------------------
+
+
+groupshared SortingData _SharedData[BITONIC_BLOCK_SIZE];
+
+//双调排序
+//https://www.jianshu.com/p/ea4a62fdaae9
+[numthreads(BITONIC_BLOCK_SIZE, 1, 1)]
+void BitonicSort(
+	uint3 Gid: SV_GroupID,
+	uint3 DTid: SV_DispatchThreadID,
+	uint3 GTid: SV_GroupThreadID,
+	uint  GI: SV_GroupIndex)
+{
+	uint tID = DTid.x;
+	_SharedData[GI] = _Data[tID];
+	GroupMemoryBarrierWithGroupSync();
+	
+	//双调排序
+	for (uint j = _Level >> 1; j > 0; j >>= 1)
+	{
+		SortingData result = _SharedData[GI];
+		SortingData inst1 = _SharedData[GI & ~j];
+		SortingData inst2 = _SharedData[GI | j];
+		
+		//组*5000  是为了组排序
+		float dist1 = (inst1.drawCallInstanceIndex >> 16) * 5000 + inst1.distanceToCam;
+		float dist2 = (inst2.drawCallInstanceIndex >> 16) * 5000 + inst2.distanceToCam;
+		
+		//距离小的优先		_LevelMask & tID 每一行的头不进行排序
+		if ((dist1 <= dist2) == ((bool) (_LevelMask & tID)))
+		{
+			result = _SharedData[GI^j];
+		}
+		
+		GroupMemoryBarrierWithGroupSync();
+		
+		_SharedData[GI] = result;
+		GroupMemoryBarrierWithGroupSync();
+	}
+	
+	_Data[tID] = _SharedData[GI];
+}
+
+//--------------------------------------------------------------------------------------
+// Matrix Transpose Compute Shader
+//--------------------------------------------------------------------------------------
+groupshared SortingData _SharedTransposeData[TRANSPOSE_BLOCK_SIZE * TRANSPOSE_BLOCK_SIZE];
+
+[numthreads(TRANSPOSE_BLOCK_SIZE, TRANSPOSE_BLOCK_SIZE, 1)]
+void MatrixTranspose(
+	uint3 Gid: SV_GroupID,
+	uint3 DTid: SV_DispatchThreadID,
+	uint3 GTid: SV_GroupThreadID,
+	uint  GI: SV_GroupIndex)
+{
+	_SharedTransposeData[GI] = _Input[DTid.y * _Width + DTid.x];
+	GroupMemoryBarrierWithGroupSync();
+	
+	uint2 XY = DTid.yx - GTid.yx + GTid.xy;
+	_Data[XY.y * _Height + XY.x] = _SharedTransposeData[GTid.x * TRANSPOSE_BLOCK_SIZE + GTid.y];
+}
