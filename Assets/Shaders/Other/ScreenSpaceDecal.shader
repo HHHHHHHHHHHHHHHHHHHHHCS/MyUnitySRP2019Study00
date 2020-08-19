@@ -129,9 +129,12 @@ Shader "MyRP/Other/ScreenSpaceDecal"
 				
 				//matrix view->object
 				//矩阵计算非常的昂贵   但是 但是因为是Cube  所以计算量非常少
-				float4x4 viewToObjectMatrix = mul(unity_WorldToObject, UNITY_MATRIX_I_V);
+				float4x4 invView = UNITY_MATRIX_I_V;
+
+				float4x4 viewToObjectMatrix = mul(unity_WorldToObject, invView);
 				
-				//这样可以跳过在frag 矩阵计算 节省性能
+				//这样可以跳过在frag 矩阵计算 节省性能      obj ray
+				//[-0.5,0.5] 左右
 				o.viewRayOS.xyz = mul((float3x3)viewToObjectMatrix, viewRay);
 				//object  空间的 摄像机位置
 				o.cameraPosOSAndFogFactor.xyz = mul(viewToObjectMatrix, float4(0, 0, 0, 1));
@@ -151,8 +154,35 @@ Shader "MyRP/Other/ScreenSpaceDecal"
 				//[-0.5,0.5] -> [0,1]
 				float2 decalSpaceUV = decalSpaceScenePos.xy + 0.5;
 				
-				//TODO:
-				return 0;
+				float mask = (abs(decalSpaceScenePos.x) < 0.5?1.0: 0.0);
+				mask *= (abs(decalSpaceScenePos.y) < 0.5?1.0: 0.0);
+				mask *= (abs(decalSpaceScenePos.z) < 0.5?1.0: 0.0);
+				
+				#if _ProjectionAngleDiscardEnable
+					float3 decalSpaceHardNormal = normalize(cross(ddx(decalSpaceScenePos), ddy(decalSpaceScenePos)));
+					
+					mask *= decalSpaceHardNormal.z > _ProjectionAngleDiscardThreshold ? 1.0: 0.0;
+				#endif
+				
+				//如果关闭ZWrite，clip（）在mobile上足够快，因为它不会写入DepthBuffer，因此不会出现管道暂停（由ARM工作人员确认）。
+				clip(mask - 0.5);
+				
+				float2 uv = decalSpaceUV.xy * _MainTex_ST.xy + _MainTex_ST.zw;
+				
+				#if _FracUVEnable
+					uv = frac(uv);
+				#endif
+				
+				half4 col = tex2D(_MainTex, uv);
+				col *= _Color;
+				col.a = saturate(col.a * _AlphaRemap + _AlphaRemap.y);
+				col.rgb *= lerp(1, col.a, _MulAlphaToRGB);
+				
+				#if _UnityFogEnable
+					col.rgb = MixFog(col.rgb, i.cameraPosOSAndFogFactor.a);
+				#endif
+				
+				return col;
 			}
 			
 			ENDHLSL

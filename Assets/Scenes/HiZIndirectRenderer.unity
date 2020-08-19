@@ -271,7 +271,7 @@ MonoBehaviour:
   shouldInstantiatePrefabs: 1
   areaSize: 10000
   numberOfInstances: 8192
-  indirectRenderer: {fileID: 0}
+  indirectRenderer: {fileID: 1192119121}
   instances: []
 --- !u!114 &1192119120
 MonoBehaviour:
@@ -286,9 +286,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   topDownView: {fileID: 0}
-  m_indirectRenderer: {fileID: 0}
-  mainCamera: {fileID: 0}
-  light: {fileID: 0}
+  m_indirectRenderer: {fileID: 1192119121}
+  mainCamera: {fileID: 1192119115}
+  light: {fileID: 1744176839}
   generateBufferShader: {fileID: 0}
   debugShader: {fileID: 0}
 --- !u!114 &1192119121
@@ -330,14 +330,15 @@ MonoBehaviour:
   logScannedGroupSumsBuffer: 0
   logArgsBufferAfterCopy: 0
   logCulledInstancesDrawMatrices: 0
-  createDrawDataBufferCS: {fileID: 0}
+  createDrawDataBufferCS: {fileID: 7200000, guid: 647a25c6ebb48e24184e986929fc8e64,
+    type: 3}
   sortingCS: {fileID: 0}
   occlusionCS: {fileID: 0}
   scanInstancesCS: {fileID: 0}
   scanGroupSumsCS: {fileID: 0}
   copyInstanceDataCS: {fileID: 0}
   hiZBuffer: {fileID: 0}
-  mainCamera: {fileID: 0}
+  mainCamera: {fileID: 1192119115}
   debugCamera: {fileID: 0}
 --- !u!1 &1744176838
 GameObject:
