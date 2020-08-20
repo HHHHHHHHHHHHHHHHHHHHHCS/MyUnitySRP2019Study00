@@ -1,4 +1,6 @@
-﻿#include "ShaderInclude_IndirectStructs.cginc"
+﻿//根据到摄像机的距离进行排序
+
+#include "ShaderInclude_IndirectStructs.cginc"
 
 #pragma kernel BitonicSort
 #pragma kernel MatrixTranspose

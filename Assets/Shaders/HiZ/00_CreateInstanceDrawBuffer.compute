@@ -1,4 +1,6 @@
-﻿#include "ShaderInclude_IndirectStructs.cginc"
+﻿//根据传入 的数据  计算旋转和缩放  成坐标矩阵
+
+#include "ShaderInclude_IndirectStructs.cginc"
 
 #pragma kernel CSMain
 
