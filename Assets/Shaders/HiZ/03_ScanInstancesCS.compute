@@ -1,5 +1,4 @@
-﻿//TODO:
-#pragma kernel CSMain
+﻿#pragma kernel CSMain
 
 #define THREAD_GROUP_SIZE_X 64
 #define THREAD_GROUP_SIZE_Y 1
@@ -33,7 +32,7 @@ inline void CSMain(
 	int d;
 	const int NoofElements = 2 * THREAD_GROUP_SIZE_X;//128
 	
-	//跳阶 累加
+	//跳阶 累加 一共有多少个可见的
 	for (d = NoofElements >> 1; d > 0; d >>= 1)//64 32 16 8 4 2 1     0
 	{
 		GroupMemoryBarrierWithGroupSync();
@@ -47,14 +46,14 @@ inline void CSMain(
 		offset *= 2;
 	}
 	
-	// 清除最后一个值
+	// 写入group 这组有多少个可见的    清除最后一个值
 	if (groupTID == 0)
 	{
 		_GroupSumArray[_groupID.x] = temp[NoofElements - 1];
 		temp[NoofElements - 1] = 0;
 	}
 	
-	//执行向下扫描
+	//继续执行扫描 把可见的进行排序
 	for (d = 1; d < NoofElements; d *= 2)
 	{
 		offset >>= 1;

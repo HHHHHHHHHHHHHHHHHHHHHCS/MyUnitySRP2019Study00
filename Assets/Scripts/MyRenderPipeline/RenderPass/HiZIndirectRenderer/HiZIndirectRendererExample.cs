@@ -168,6 +168,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			Profiler.BeginSample("InstantiateInstance");
 
 			normalInstancesParent = new GameObject("InstancesParent");
+			normalInstancesParent.SetActive(!indirectRenderingEnabled);
 
 			Profiler.BeginSample("for instance.Count");
 			for (int i = 0; i < instances.Length; i++)
@@ -204,13 +205,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 					Debug.LogError("Missing Prefab on instance at index: " + i + "! Aborting.");
 					return false;
 				}
-
-				if (instances[i].normalMaterial == null)
-				{
-					Debug.LogError("Missing normalMaterial on instance at index: " + i + "! Aborting.");
-					return false;
-				}
-
+				
 				if (instances[i].indirectMaterial == null)
 				{
 					Debug.LogError("Missing indirectMaterial on instance at index: " + i + "! Aborting.");

@@ -429,8 +429,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			m_bounds.center = m_camPosition;
 			m_bounds.extents = Vector3.one * 10000;
 			hiZBuffer.enabled = true;
-			//TODO:InitializeTexture
-			//hiZBuffer.InitializeTexture();
+			hiZBuffer.InitializeTexture();
 			indirectMeshes = new IndirectRenderingMesh[m_numberOfInstanceTypes];
 			m_args = new uint[m_numberOfInstanceTypes * NUMBER_OF_ARGS_PER_INSTANCE_TYPE];
 
@@ -1153,6 +1152,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			if (m_debugGPUArgsRequest.hasError || m_debugGPUShadowArgsRequest.hasError)
 			{
+				//下一帧执行完 的 结果
 				m_debugGPUArgsRequest = AsyncGPUReadback.Request(m_instancesArgsBuffer);
 				m_debugGPUShadowArgsRequest = AsyncGPUReadback.Request(m_shadowArgsBuffer);
 			}

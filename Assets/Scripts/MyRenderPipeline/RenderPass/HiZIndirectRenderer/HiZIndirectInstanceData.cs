@@ -7,7 +7,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 	{
 		public GameObject prefab;
 		public Material indirectMaterial;
-		public Material normalMaterial;
 		public Vector2 scaleRange;
 		public Vector3 positionOffset;
 		public Mesh lod00Mesh;

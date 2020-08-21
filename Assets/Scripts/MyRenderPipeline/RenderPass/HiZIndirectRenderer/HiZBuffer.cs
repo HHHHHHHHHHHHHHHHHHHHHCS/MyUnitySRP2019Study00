@@ -202,15 +202,21 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				mainCamera.rect = new Rect(0.0f, 0.5f, 0.5f, 0.5f);
 				Graphics.Blit(src, dest);
-
+            
+            
 				mainCamera.rect = new Rect(0.0f, 0.0f, 0.5f, 0.5f);
 				m_debugMaterial.SetInt("_NUM", 0);
 				m_debugMaterial.SetInt("_LOD", m_indirectRenderer.debugHiZLOD);
 				Graphics.Blit(m_HiZDepthTexture, dest, m_debugMaterial);
-
+            
+				mainCamera.rect = new Rect(0.5f, 0.0f, 0.5f, 0.5f);
+				m_debugMaterial.SetInt("_NUM", 1);
+				m_debugMaterial.SetInt("_LOD", 0);
+				Graphics.Blit(m_HiZDepthTexture, dest, m_debugMaterial);
+            
 				mainCamera.rect = new Rect(0.5f, 0.5f, 0.5f, 0.5f);
 				Graphics.Blit(topDownView, dest);
-
+            
 				mainCamera.rect = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
 			}
 			else
