@@ -989,6 +989,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			uint MATRIX_HEIGHT = (uint) NUM_ELEMENTS / BITONIC_BLOCK_SIZE;
 
 			m_sortingCommandBuffer = new CommandBuffer {name = "AsyncGPUSorting"};
+			m_sortingCommandBuffer.SetExecutionFlags(CommandBufferExecutionFlags.AsyncCompute);//2019+API
 
 			//对数据进行排序
 			//首先将<=级别的行 block size 排序
