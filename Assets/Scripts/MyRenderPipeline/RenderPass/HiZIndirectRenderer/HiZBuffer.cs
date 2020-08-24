@@ -126,6 +126,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		private void OnPreRender()
 		{
+			//用上一帧的
 			int size = (int) Mathf.Max((float) mainCamera.pixelWidth, (float) mainCamera.pixelHeight);
 			size = (int) Mathf.Min((float) Mathf.NextPowerOfTwo(size), (float) MAXIMUM_BUFFER_SIZE);
 			m_textureSize.x = size;

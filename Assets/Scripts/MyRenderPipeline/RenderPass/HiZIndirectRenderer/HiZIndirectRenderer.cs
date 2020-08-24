@@ -930,7 +930,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				// 3*lod * 5 * sizeof(uint) => 3 * 5 * 4(32Bit)
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
-
+				
 				if (enableLOD)
 				{
 					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
@@ -950,7 +950,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
-
+	
 				if (!enableOnlyLOD02Shadows)
 				{
 					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,

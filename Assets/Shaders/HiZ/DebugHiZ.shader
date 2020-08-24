@@ -48,7 +48,7 @@ Shader "MyRP/HiZ/DebugHiZ"
 	float4 fragment(in Varyings input): SV_Target
 	{
 		float4 output = _MainTex.SampleLevel(sampler_MainTex, input.uv, _LOD);
-		return lerp(output.r * 100, output.g, _NUM);
+		return lerp(output.r , output.g, _NUM);
 	}
 	ENDCG
 	

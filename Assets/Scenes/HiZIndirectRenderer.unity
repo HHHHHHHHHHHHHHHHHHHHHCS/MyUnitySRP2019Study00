@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &115760576
 Transform:
   m_ObjectHideFlags: 0
@@ -455,7 +455,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &752704983
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -826,6 +826,8 @@ GameObject:
   - component: {fileID: 1192119119}
   - component: {fileID: 1192119121}
   - component: {fileID: 1192119120}
+  - component: {fileID: 1192119122}
+  - component: {fileID: 1192119123}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -873,7 +875,7 @@ Camera:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RenderingPath: -1
+  m_RenderingPath: 3
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
@@ -25620,6 +25622,39 @@ MonoBehaviour:
   hiZBuffer: {fileID: 1192119120}
   mainCamera: {fileID: 1192119115}
   debugCamera: {fileID: 1300742488}
+--- !u!114 &1192119122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f94bd0633cd9cc74daf6339d59389499, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lockXRotation: 0
+  minSpeed: 10
+  mainSpeed: 50
+  shiftMultiplier: 2
+  maxShift: 100000
+  camSens: 0.35
+  clickToMove: 1
+  isFrozen: 0
+--- !u!114 &1192119123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e21e9f502c69e9429268d760497b204, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  updateInterval: 0.5
 --- !u!1 &1300742485
 GameObject:
   m_ObjectHideFlags: 0
@@ -25693,11 +25728,11 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 21
   field of view: 60
   orthographic: 1
-  orthographic size: 5000
-  m_Depth: 0
+  orthographic size: 50
+  m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -25720,7 +25755,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1300742485}
   m_LocalRotation: {x: -0.65328145, y: 0.2705982, z: -0.2705982, w: -0.65328145}
-  m_LocalPosition: {x: 0, y: 100, z: 0}
+  m_LocalPosition: {x: 0, y: 20, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
