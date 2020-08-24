@@ -1,11 +1,10 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
+namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.Builtin
 {
-	public class HiZIndirectRendererExample : MonoBehaviour
+	public class HiZBuiltinRendererExample : MonoBehaviour
 	{
 		[System.Serializable]
 		public enum NumberOfInstances
@@ -46,12 +45,12 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		/// </summary>
 		public NumberOfInstances numberOfInstances;
 
-		public HiZIndirectRenderer indirectRenderer;
-		
+		public HiZBuiltinRenderer indirectRenderer;
+
 		/// <summary>
 		/// 实例化的数据
 		/// </summary>
-		public HiZIndirectInstanceData[] instances;
+		public HiZBuiltinInstanceData[] instances;
 
 
 		private bool lastIndirectRenderingEnabled = false;
@@ -82,7 +81,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				InstantiateInstance();
 			}
-			
+
 			indirectRenderer.Initialize(ref instances);
 			indirectRenderer.StartDrawing();
 		}
@@ -108,11 +107,11 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 					indirectRenderer.StopDrawing(true);
 				}
 			}
-			
+
 			if (lastIndirectDrawShadows != indirectRenderer.drawInstanceShadows)
 			{
 				lastIndirectDrawShadows = indirectRenderer.drawInstanceShadows;
-            
+
 				if (normalInstancesParent != null)
 				{
 					SetShadowCastingMode(lastIndirectDrawShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
@@ -125,7 +124,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		#region Private Function
 
-		
 		[ContextMenu("CreateInstancesData()")]
 		private void CreateInstancesData()
 		{
@@ -173,7 +171,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			Profiler.BeginSample("for instance.Count");
 			for (int i = 0; i < instances.Length; i++)
 			{
-				HiZIndirectInstanceData instanceData = instances[i];
+				HiZBuiltinInstanceData instanceData = instances[i];
 
 				GameObject parentObj = new GameObject(instanceData.prefab.name);
 				parentObj.transform.parent = normalInstancesParent.transform;
@@ -195,7 +193,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			Profiler.EndSample();
 		}
-		
+
 		private bool AssertInstanceData()
 		{
 			for (int i = 0; i < instances.Length; i++)
@@ -205,7 +203,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 					Debug.LogError("Missing Prefab on instance at index: " + i + "! Aborting.");
 					return false;
 				}
-				
+
 				if (instances[i].indirectMaterial == null)
 				{
 					Debug.LogError("Missing indirectMaterial on instance at index: " + i + "! Aborting.");

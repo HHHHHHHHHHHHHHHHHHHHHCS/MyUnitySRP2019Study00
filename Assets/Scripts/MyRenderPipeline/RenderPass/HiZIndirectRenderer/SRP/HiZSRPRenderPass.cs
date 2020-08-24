@@ -5,59 +5,61 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using ShadowQuality = UnityEngine.ShadowQuality;
 
-namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
+namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 {
-	//StructLayout(LayoutKind.Sequential)  按成员顺序 在内存依次排序
-	// Preferrably want to have all buffer structs in power of 2...
-	// 6 * 4 bytes = 24 bytes
-	[System.Serializable]
-	[StructLayout(LayoutKind.Sequential)]
-	public struct IndirectInstanceCSInput
+	public class HiZSRPRenderPass : ScriptableRenderPass
 	{
-		public Vector3 boundsCenter; // 3
-		public Vector3 boundsExtents; // 6
-	}
+		//StructLayout(LayoutKind.Sequential)  按成员顺序 在内存依次排序
+		// Preferrably want to have all buffer structs in power of 2...
+		// 6 * 4 bytes = 24 bytes
+		[System.Serializable]
+		[StructLayout(LayoutKind.Sequential)]
+		public struct IndirectInstanceCSInput
+		{
+			public Vector3 boundsCenter; // 3
+			public Vector3 boundsExtents; // 6
+		}
 
-	// 8 * 4 bytes = 32 bytes
-	[StructLayout(LayoutKind.Sequential)]
-	public struct Indirect2x2Matrix
-	{
-		public Vector4 row0; // 4
-		public Vector4 row1; // 8
-	};
+		// 8 * 4 bytes = 32 bytes
+		[StructLayout(LayoutKind.Sequential)]
+		public struct Indirect2x2Matrix
+		{
+			public Vector4 row0; // 4
+			public Vector4 row1; // 8
+		};
 
-	// 2 * 4 bytes = 8 bytes
-	[StructLayout(LayoutKind.Sequential)]
-	public struct SortingData
-	{
-		public uint drawCallInstanceIndex; // 1
-		public float distanceToCam; // 2
-	};
+		// 2 * 4 bytes = 8 bytes
+		[StructLayout(LayoutKind.Sequential)]
+		public struct SortingData
+		{
+			public uint drawCallInstanceIndex; // 1
+			public float distanceToCam; // 2
+		};
 
-	[System.Serializable]
-	public class IndirectRenderingMesh
-	{
-		public Mesh mesh;
-		public Material material;
-		public MaterialPropertyBlock lod00MatPropBlock;
-		public MaterialPropertyBlock lod01MatPropBlock;
-		public MaterialPropertyBlock lod02MatPropBlock;
-		public MaterialPropertyBlock shadowLod00MatPropBlock;
-		public MaterialPropertyBlock shadowLod01MatPropBlock;
-		public MaterialPropertyBlock shadowLod02MatPropBlock;
-		public uint numOfVerticesLod00;
-		public uint numOfVerticesLod01;
-		public uint numOfVerticesLod02;
-		public uint numOfIndicesLod00;
-		public uint numOfIndicesLod01;
-		public uint numOfIndicesLod02;
-	}
+		[System.Serializable]
+		public class IndirectRenderingMesh
+		{
+			public Mesh mesh;
+			public Material material;
+			public MaterialPropertyBlock lod00MatPropBlock;
+			public MaterialPropertyBlock lod01MatPropBlock;
+			public MaterialPropertyBlock lod02MatPropBlock;
+			public MaterialPropertyBlock shadowLod00MatPropBlock;
+			public MaterialPropertyBlock shadowLod01MatPropBlock;
+			public MaterialPropertyBlock shadowLod02MatPropBlock;
+			public uint numOfVerticesLod00;
+			public uint numOfVerticesLod01;
+			public uint numOfVerticesLod02;
+			public uint numOfIndicesLod00;
+			public uint numOfIndicesLod01;
+			public uint numOfIndicesLod02;
+		}
 
-	public class HiZIndirectRenderer : MonoBehaviour
-	{
 		#region Variables
 
 		[Header("Settings")] public bool runCompute = true;
@@ -105,12 +107,11 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		public ComputeShader occlusionCS;
 		public ComputeShader scanInstancesCS;
 		public ComputeShader scanGroupSumsCS;
-
 		public ComputeShader copyInstanceDataCS;
 
-		public HiZBuffer hiZBuffer;
-		public Camera mainCamera;
-		public Camera debugCamera;
+		private HiZSRPBuffer _hiZsrpBuffer;
+		private Camera mainCamera;
+		private Camera debugCamera;
 
 		// Compute Buffers
 		private ComputeBuffer m_instancesIsVisibleBuffer;
@@ -166,7 +167,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		private Bounds m_bounds;
 		private Vector3 m_camPosition = Vector3.zero;
-		private Vector3 m_lastCamPosition = Vector3.zero;
 		private Matrix4x4 m_MVP;
 
 		// Debug
@@ -252,23 +252,54 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		#endregion
 
-
 		#region MonoBehaviour
 
-		private void Update()
+		public void Init()
+		{
+			if (mainCamera == null)
+			{
+				mainCamera = Camera.main;
+			}
+
+			if (debugCamera == null)
+			{
+				debugCamera = GameObject.Find("DebugTopDownView").GetComponent<Camera>();
+			}
+
+			if (_hiZsrpBuffer == null)
+			{
+				_hiZsrpBuffer = mainCamera.GetComponent<HiZSRPBuffer>();
+			}
+		}
+
+		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
 		{
 			if (m_isEnabled)
 			{
 				UpdateDebug();
 			}
+
+			if (!Application.isPlaying)
+			{
+				return;
+			}
+
+			if (debugDrawBoundsInSceneView)
+			{
+				Gizmos.color = new Color(1f, 0f, 0f, 0.333f);
+				for (int i = 0; i < instancesInputData.Count; i++)
+				{
+					Gizmos.DrawWireCube(instancesInputData[i].boundsCenter, instancesInputData[i].boundsExtents * 2f);
+				}
+			}
 		}
 
-		private void OnPreCull()
+		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
 			if (!m_isEnabled
 			    || indirectMeshes == null
 			    || indirectMeshes.Length == 0
-			    || hiZBuffer.Texture == null)
+			    || _hiZsrpBuffer.Texture == null)
 			{
 				return;
 			}
@@ -298,14 +329,19 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			if (debugDrawHiZ)
 			{
-				Vector3 pos = transform.position;
+				Vector3 pos = mainCamera.transform.position;
 				pos.y = debugCamera.transform.position.y;
 				debugCamera.transform.position = pos;
 				debugCamera.Render();
 			}
 		}
 
-		private void OnDestroy()
+		public override void FrameCleanup(CommandBuffer cmd)
+		{
+		}
+
+
+		public void OnDestroy()
 		{
 			ReleaseBuffers();
 
@@ -318,29 +354,11 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			}
 		}
 
-		private void OnDrawGizmos()
-		{
-			if (!Application.isPlaying)
-			{
-				return;
-			}
-
-			if (debugDrawBoundsInSceneView)
-			{
-				Gizmos.color = new Color(1f, 0f, 0f, 0.333f);
-				for (int i = 0; i < instancesInputData.Count; i++)
-				{
-					Gizmos.DrawWireCube(instancesInputData[i].boundsCenter, instancesInputData[i].boundsExtents * 2f);
-				}
-			}
-		}
-
 		#endregion
-
 
 		#region Public Functions
 
-		public void Initialize(ref HiZIndirectInstanceData[] instances)
+		public void Initialize(ref HiZSRPInstanceData[] instances)
 		{
 			if (!m_isInitialized)
 			{
@@ -367,7 +385,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				ReleaseBuffers();
 				m_isInitialized = false;
-				hiZBuffer.enabled = false;
+				_hiZsrpBuffer.enabled = false;
 			}
 		}
 
@@ -414,7 +432,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		/// </summary>
 		/// <param name="_instances"></param>
 		/// <returns></returns>
-		private bool InitializeRenderer(ref HiZIndirectInstanceData[] _instances)
+		private bool InitializeRenderer(ref HiZSRPInstanceData[] _instances)
 		{
 			if (!TryGetKernels())
 			{
@@ -428,8 +446,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			m_camPosition = mainCamera.transform.position;
 			m_bounds.center = m_camPosition;
 			m_bounds.extents = Vector3.one * 10000;
-			hiZBuffer.enabled = true;
-			hiZBuffer.InitializeTexture();
+			_hiZsrpBuffer.enabled = true;
+			_hiZsrpBuffer.InitializeTexture();
 			indirectMeshes = new IndirectRenderingMesh[m_numberOfInstanceTypes];
 			m_args = new uint[m_numberOfInstanceTypes * NUMBER_OF_ARGS_PER_INSTANCE_TYPE];
 
@@ -441,7 +459,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			for (int i = 0; i < m_numberOfInstanceTypes; i++)
 			{
 				IndirectRenderingMesh irm = new IndirectRenderingMesh();
-				HiZIndirectInstanceData iid = _instances[i];
+				HiZSRPInstanceData iid = _instances[i];
 
 				irm.numOfVerticesLod00 = (uint) iid.lod00Mesh.vertexCount;
 				irm.numOfVerticesLod01 = (uint) iid.lod01Mesh.vertexCount;
@@ -687,8 +705,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, enableOnlyLOD02Shadows ? 1 : 0);
 			occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
 			occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, detailCullingPercentage);
-			occlusionCS.SetVector(_HiZTextureSize_ID, hiZBuffer.TextureSize);
-			occlusionCS.SetTexture(m_occlusionKernelID, _HiZMap_ID, hiZBuffer.Texture);
+			occlusionCS.SetVector(_HiZTextureSize_ID, _hiZsrpBuffer.TextureSize);
+			occlusionCS.SetTexture(m_occlusionKernelID, _HiZMap_ID, _hiZsrpBuffer.Texture);
 			occlusionCS.SetBuffer(m_occlusionKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
 			occlusionCS.SetBuffer(m_occlusionKernelID, _ArgsBuffer_ID, m_instancesArgsBuffer);
 			occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowArgsBuffer_ID, m_shadowArgsBuffer);
@@ -910,7 +928,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			Profiler.BeginSample("LOD Sorting");
 			{
-				m_lastCamPosition = m_camPosition;
 				//在异步队列上执行CommandBuffer
 				Graphics.ExecuteCommandBufferAsync(m_sortingCommandBuffer, ComputeQueueType.Background);
 			}
@@ -930,7 +947,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 				// 3*lod * 5 * sizeof(uint) => 3 * 5 * 4(32Bit)
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
-				
+
 				if (enableLOD)
 				{
 					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
@@ -950,7 +967,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
-	
+
 				if (!enableOnlyLOD02Shadows)
 				{
 					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,
@@ -989,7 +1006,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			uint MATRIX_HEIGHT = (uint) NUM_ELEMENTS / BITONIC_BLOCK_SIZE;
 
 			m_sortingCommandBuffer = new CommandBuffer {name = "AsyncGPUSorting"};
-			m_sortingCommandBuffer.SetExecutionFlags(CommandBufferExecutionFlags.AsyncCompute);//2019+API
+			m_sortingCommandBuffer.SetExecutionFlags(CommandBufferExecutionFlags.AsyncCompute); //2019+API
 
 			//对数据进行排序
 			//首先将<=级别的行 block size 排序
@@ -1070,7 +1087,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 		private Bounds CalculateBounds(GameObject _prefab)
 		{
-			GameObject obj = Instantiate(_prefab);
+			GameObject obj = Object.Instantiate(_prefab);
 			obj.transform.position = Vector3.zero;
 			obj.transform.rotation = Quaternion.Euler(Vector3.zero);
 			obj.transform.localScale = Vector3.one;
@@ -1087,7 +1104,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			}
 
 			b.center = Vector3.zero; //只要extends  不要中心位置
-			DestroyImmediate(obj);
+			Object.DestroyImmediate(obj);
 
 			return b;
 		}
@@ -1139,7 +1156,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				if (m_uiObj != null)
 				{
-					Destroy(m_uiObj);
+					Object.Destroy(m_uiObj);
 				}
 
 				return;
@@ -1147,7 +1164,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 			if (m_uiObj == null)
 			{
-				m_uiObj = Instantiate(debugUIPrefab, transform, true);
+				m_uiObj = Object.Instantiate(debugUIPrefab, mainCamera.transform, true);
 				m_uiText = m_uiObj.transform.GetComponentInChildren<Text>();
 			}
 

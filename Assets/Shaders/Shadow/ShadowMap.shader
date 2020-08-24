@@ -14,8 +14,8 @@
 		// #0 Simple shadow map
 		Pass
 		{
-			Tags { "LightMode" = "ShadowCaster" }
 			Name "Standard Shadow Map"
+			Tags { "LightMode" = "ShadowCaster" }
 			ZTest Less
 			ZWrite On
 			Cull Back
@@ -38,8 +38,8 @@
 		// #1 PSM shadow map
 		Pass
 		{
-			Tags { "LightMode" = "ShadowCaster" }
 			Name "PSM Shadow Map"
+			Tags { "LightMode" = "ShadowCaster" }
 			ZTest Less
 			ZWrite On
 			Cull Off
@@ -83,8 +83,8 @@
 		// #2 TSM shadow map
 		Pass
 		{
-			Tags { "LightMode" = "ShadowCaster" }
 			Name "TSM Shadow Map"
+			Tags { "LightMode" = "ShadowCaster" }
 			ZTest Less
 			ZWrite On
 			Cull Off

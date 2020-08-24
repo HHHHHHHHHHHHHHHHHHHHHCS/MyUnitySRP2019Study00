@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 
-namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
+namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.Builtin
 {
 	[System.Serializable]
-	public class HiZIndirectInstanceData
+	public class HiZBuiltinInstanceData
 	{
 		public GameObject prefab;
 		public Material indirectMaterial;

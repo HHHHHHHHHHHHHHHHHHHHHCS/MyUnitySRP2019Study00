@@ -1,4 +1,4 @@
-﻿Shader "IndirectRendering/Instance"
+﻿Shader "MyRP/HiZ/Instance"
 {
 	Properties
 	{
@@ -9,6 +9,129 @@
 	
 	SubShader
 	{
+		Tags { "RenderType" = "Opaque" "Queue" = "Geometry" }
+		
+		Pass
+		{
+			Name "ForwardLit"
+			Tags { "LightMode" = "UniversalForward" }
+			
+			Cull Back
+			ZWrite On
+			ZTest Less
+			
+			
+			
+			HLSLPROGRAM
+			
+			#pragma vertex vert
+			#pragma fragment frag
+			
+			#pragma multi_compile_instancing
+			#pragma multi_compile _ INDIRECT_DEBUG_LOD
+			
+			//#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+			#include "ShaderInclude_HiZ_Instance.hlsl"
+			
+			sampler2D _MainTex;
+			sampler2D _BumpMap;
+			float4 _Color;
+			
+			float4 _LightColor;
+			
+			struct a2v
+			{
+				float4 vertex: POSITION;
+				float2 uv: TEXCOORD0;
+				float4 normal: NORMAL;
+				float4 tangent: TANGENT;
+			};
+			
+			struct v2f
+			{
+				float4 pos: SV_POSITION;
+				float2 uv: TEXCOORD0;
+				float4 screenPos: TEXCOORD1;
+				float3 worldPos: TEXCOORD2;
+				float3 t2w0: TEXCOORD3;
+				float3 t2w1: TEXCOORD4;
+				float3 t2w2: TEXCOORD5;
+			};
+			
+			v2f vert(a2v input)
+			{
+				SetupMatrix();
+				v2f o;
+				o.pos = mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, input.vertex));
+				o.uv = input.uv;
+				o.worldPos = mul(UNITY_MATRIX_M, input.vertex);
+				
+				float3 worldNormal = normalize(mul(input.normal, (float3x3)UNITY_MATRIX_M));
+				float3 worldTangent = normalize(mul(input.tangent, (float3x3)UNITY_MATRIX_M));
+				float3 worldBinormal = cross(worldNormal, worldTangent) * input.tangent.w;
+				o.t2w0 = float3(worldTangent.x, worldBinormal.x, worldNormal.x);
+				o.t2w1 = float3(worldTangent.y, worldBinormal.y, worldNormal.y);
+				o.t2w2 = float3(worldTangent.z, worldBinormal.z, worldNormal.z);
+				o.screenPos = ComputeScreenPos(o.pos);
+				return o;
+			}
+			
+			half4 frag(v2f i): SV_TARGET
+			{
+				return 1;
+			}
+			
+			ENDHLSL
+			
+		}
+		
+		Pass
+		{
+			Name "DepthOnly"
+			Tags { "LightMode" = "DepthOnly" }
+			ZTest Less
+			ZWrite On
+			Cull Back
+			
+			HLSLPROGRAM
+			
+			#pragma vertex vert_depth
+			#pragma fragment frag_depth
+			
+			#pragma multi_compile_instancing
+			
+			#include "ShaderInclude_HiZ_Instance.hlsl"
+			
+			
+			ENDHLSL
+			
+		}
+		
+		Pass
+		{
+			Name "ShadowCaster"
+			Tags { "LightMode" = "ShadowCaster" }
+			ZTest Less
+			ZWrite On
+			Cull Back
+			
+			HLSLPROGRAM
+			
+			#pragma vertex vert_depth
+			#pragma fragment frag_depth
+			
+			#pragma multi_compile_instancing
+			
+			#include "ShaderInclude_HiZ_Instance.hlsl"
+			
+			ENDHLSL
+			
+		}
+	}
+	
+	/*
+	SubShader
+	{
 		Tags { "RenderType" = "Opaque" }
 		LOD 200
 		Cull back
@@ -16,18 +139,12 @@
 		CGPROGRAM
 		
 		#pragma surface surf Lambert addshadow halfasview noambient noshadow
-		#pragma multi_compile_instancing
-		#pragma multi_compile ___ INDIRECT_DEBUG_LOD
+		
 		
 		#if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
 			#pragma instancing_options procedural:setup
 			
-			#include "ShaderInclude_IndirectStructs.cginc"
-			uniform uint _ArgsOffset;
-			StructuredBuffer<uint> _ArgsBuffer;
-			StructuredBuffer<Indirect2x2Matrix> _InstancesDrawMatrixRows01;
-			StructuredBuffer<Indirect2x2Matrix> _InstancesDrawMatrixRows23;
-			StructuredBuffer<Indirect2x2Matrix> _InstancesDrawMatrixRows45;
+			
 			
 			void setup()
 			{
@@ -51,9 +168,7 @@
 			float2 uv_MainTex;
 		};
 		
-		uniform sampler2D _MainTex;
-		uniform sampler2D _BumpMap;
-		uniform fixed4 _Color;
+		
 		
 		// void surf(Input IN, inout SurfaceOutputStandard o)
 		void surf(Input IN, inout SurfaceOutput o)
@@ -72,5 +187,5 @@
 		ENDCG
 		
 	}
-	FallBack "Diffuse"
+	*/
 }

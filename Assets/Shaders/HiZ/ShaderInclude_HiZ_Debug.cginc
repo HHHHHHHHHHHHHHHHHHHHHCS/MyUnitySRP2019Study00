@@ -1,5 +1,5 @@
-#ifndef __HIZ_INCLUDE__
-	#define __HIZ_INCLUDE__
+#ifndef __HIZ_DEBUG_INCLUDE__
+	#define __HIZ_DEBUG_INCLUDE__
 
 	#include "UnityCG.cginc"
 

@@ -16,7 +16,7 @@
 			#pragma target 4.6
 			#pragma vertex vertex
 			#pragma fragment blit
-			#include "ShaderInclude_HiZ.cginc"
+			#include "ShaderInclude_HiZ_Debug.cginc"
 			ENDCG
 			
 		}
@@ -28,10 +28,9 @@
 			#pragma target 4.6
 			#pragma vertex vertex
 			#pragma fragment reduce
-			#include "ShaderInclude_HiZ.cginc"
+			#include "ShaderInclude_HiZ_Debug.cginc"
 			ENDCG
 			
 		}
 	}
-	
 }

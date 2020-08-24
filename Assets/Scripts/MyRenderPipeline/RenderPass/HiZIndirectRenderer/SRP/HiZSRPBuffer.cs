@@ -1,12 +1,13 @@
-﻿using System;
-using MyRenderPipeline.Utils;
+﻿using System.Collections;
+using System.Collections.Generic;
+using MyRenderPipeline.RenderPass.HiZIndirectRenderer.Builtin;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
+namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 {
 	[RequireComponent(typeof(Camera))]
-	public class HiZBuffer : MonoBehaviour
+	public class HiZSRPBuffer : MonoBehaviour
 	{
 		// Enums
 		private enum Pass
@@ -21,7 +22,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 		private const int MAXIMUM_BUFFER_SIZE = 1024;
 
 		[Header("References")] public RenderTexture topDownView = null;
-		public HiZIndirectRenderer m_indirectRenderer;
+		public HiZBuiltinRenderer m_indirectRenderer;
 		public Camera mainCamera = null;
 		public Light light = null;
 		public Shader generateBufferShader = null;
@@ -163,7 +164,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 				RenderTargetIdentifier id = new RenderTargetIdentifier(m_HiZDepthTexture);
 				m_CommandBuffer.SetGlobalTexture("_LightTexture", m_ShadowmapCopy);
-				m_CommandBuffer.Blit(null, id, m_generateBufferMaterial, (int) Pass.Blit);
+				m_CommandBuffer.Blit(null, id, m_generateBufferMaterial,
+					(int) Pass.Blit);
 
 				for (int i = 0; i < m_LODCount; ++i)
 				{
@@ -176,7 +178,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 
 					if (i == 0)
 					{
-						m_CommandBuffer.Blit(id, m_Temporaries[0], m_generateBufferMaterial, (int) Pass.Reduce);
+						m_CommandBuffer.Blit(id, m_Temporaries[0], m_generateBufferMaterial,
+							(int) Pass.Reduce);
 					}
 					else
 					{
@@ -203,21 +206,21 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer
 			{
 				mainCamera.rect = new Rect(0.0f, 0.5f, 0.5f, 0.5f);
 				Graphics.Blit(src, dest);
-            
-            
+
+
 				mainCamera.rect = new Rect(0.0f, 0.0f, 0.5f, 0.5f);
 				m_debugMaterial.SetInt("_NUM", 0);
 				m_debugMaterial.SetInt("_LOD", m_indirectRenderer.debugHiZLOD);
 				Graphics.Blit(m_HiZDepthTexture, dest, m_debugMaterial);
-            
+
 				mainCamera.rect = new Rect(0.5f, 0.0f, 0.5f, 0.5f);
 				m_debugMaterial.SetInt("_NUM", 1);
 				m_debugMaterial.SetInt("_LOD", 0);
 				Graphics.Blit(m_HiZDepthTexture, dest, m_debugMaterial);
-            
+
 				mainCamera.rect = new Rect(0.5f, 0.5f, 0.5f, 0.5f);
 				Graphics.Blit(topDownView, dest);
-            
+
 				mainCamera.rect = new Rect(0.0f, 0.0f, 1.0f, 1.0f);
 			}
 			else
