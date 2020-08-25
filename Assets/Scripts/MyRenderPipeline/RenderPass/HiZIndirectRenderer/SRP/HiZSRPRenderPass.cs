@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections;
@@ -6,8 +7,8 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 using ShadowQuality = UnityEngine.ShadowQuality;
 
 namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
@@ -62,52 +63,21 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		#region Variables
 
-		[Header("Settings")] public bool runCompute = true;
-		public bool drawInstances = true;
-		public bool drawInstanceShadows = true;
-		public bool enableFrustumCulling = true;
-		public bool enableOcclusionCulling = true;
-		public bool enableDetailCulling = true;
-		public bool enableLOD = true;
-		public bool enableOnlyLOD02Shadows = true;
-		[Range(00.00f, 00.02f)] public float detailCullingPercentage = 0.005f;
+		//在Update中调用的渲染命令
+		public static Action graphicsRenderQueue;
 
-		// Debugging Variables
-		[Header("Debug")] public bool debugShowUI;
-		public bool debugDrawLOD;
-		public bool debugDrawBoundsInSceneView;
-		public bool debugDrawHiZ;
-		[Range(0, 10)] public int debugHiZLOD;
-		public GameObject debugUIPrefab;
+		public HiZSRPRenderScriptableObject data;
 
 		/// <summary>
 		/// 实例化go的center和extends
 		/// </summary>
-		[Header("Data")] [ReadOnly]
-		public List<IndirectInstanceCSInput> instancesInputData = new List<IndirectInstanceCSInput>();
+		[Header("Data")] public List<IndirectInstanceCSInput> instancesInputData = new List<IndirectInstanceCSInput>();
 
 		/// <summary>
 		/// 要画的数据种类
 		/// </summary>
-		[ReadOnly] public IndirectRenderingMesh[] indirectMeshes;
+		public IndirectRenderingMesh[] indirectMeshes;
 
-		[Header("Logging")] public bool logInstanceDrawMatrices = false;
-		public bool logArgumentsAfterReset = false;
-		public bool logSortingData = false;
-		public bool logArgumentsAfterOcclusion = false;
-		public bool logInstancesIsVisibleBuffer = false;
-		public bool logScannedPredicates = false;
-		public bool logGroupSumArrayBuffer = false;
-		public bool logScannedGroupSumsBuffer = false;
-		public bool logArgsBufferAfterCopy = false;
-		public bool logCulledInstancesDrawMatrices = false;
-
-		[Header("References")] public ComputeShader createDrawDataBufferCS;
-		public ComputeShader sortingCS;
-		public ComputeShader occlusionCS;
-		public ComputeShader scanInstancesCS;
-		public ComputeShader scanGroupSumsCS;
-		public ComputeShader copyInstanceDataCS;
 
 		private HiZSRPBuffer _hiZsrpBuffer;
 		private Camera mainCamera;
@@ -254,7 +224,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		#region MonoBehaviour
 
-		public void Init()
+		public void Init(HiZSRPRenderScriptableObject _data)
 		{
 			if (mainCamera == null)
 			{
@@ -269,7 +239,10 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			if (_hiZsrpBuffer == null)
 			{
 				_hiZsrpBuffer = mainCamera.GetComponent<HiZSRPBuffer>();
+				_hiZsrpBuffer.m_indirectRenderer = this.data;
 			}
+
+			data = _data;
 		}
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
@@ -284,7 +257,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			if (debugDrawBoundsInSceneView)
+			if (data.debugDrawBoundsInSceneView)
 			{
 				Gizmos.color = new Color(1f, 0f, 0f, 0.333f);
 				for (int i = 0; i < instancesInputData.Count; i++)
@@ -306,33 +279,37 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 			UpdateDebug();
 
-			if (runCompute)
+			if (data.runCompute)
 			{
 				Profiler.BeginSample("CalculateVisibleInstances()");
 				CalculateVisibleInstances();
 				Profiler.EndSample();
 			}
 
-			if (drawInstances)
+			if (data.drawInstances)
 			{
 				Profiler.BeginSample("DrawInstances()");
 				DrawInstances();
 				Profiler.EndSample();
 			}
 
-			if (drawInstanceShadows)
+			if (data.drawInstanceShadows)
 			{
 				Profiler.BeginSample("DrawInstanceShadows()");
 				DrawInstanceShadows();
 				Profiler.EndSample();
 			}
 
-			if (debugDrawHiZ)
+			if (data.debugDrawHiZ)
 			{
 				Vector3 pos = mainCamera.transform.position;
 				pos.y = debugCamera.transform.position.y;
 				debugCamera.transform.position = pos;
-				debugCamera.Render();
+				debugCamera.enabled = true;
+			}
+			else
+			{
+				debugCamera.enabled = false;
 			}
 		}
 
@@ -345,7 +322,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		{
 			ReleaseBuffers();
 
-			if (debugDrawLOD)
+			if (data.debugDrawLOD)
 			{
 				for (int i = 0; i < indirectMeshes.Length; i++)
 				{
@@ -672,17 +649,17 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			scaleBuffer.SetData(scales);
 			rotationBuffer.SetData(rotations);
 
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Positions_ID, positionsBuffer);
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Scales_ID, scaleBuffer);
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Rotations_ID, rotationBuffer);
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows01_ID,
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Positions_ID, positionsBuffer);
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Scales_ID, scaleBuffer);
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _Rotations_ID, rotationBuffer);
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows01_ID,
 				m_instancesMatrixRows01);
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows23_ID,
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows23_ID,
 				m_instancesMatrixRows23);
-			createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows45_ID,
+			data.createDrawDataBufferCS.SetBuffer(m_createDrawDataBufferKernelID, _InstancesDrawMatrixRows45_ID,
 				m_instancesMatrixRows45);
 			int groupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
-			createDrawDataBufferCS.Dispatch(m_createDrawDataBufferKernelID, groupX, 1, 1);
+			data.createDrawDataBufferCS.Dispatch(m_createDrawDataBufferKernelID, groupX, 1, 1);
 
 			ReleaseComputeBuffer(ref positionsBuffer);
 			ReleaseComputeBuffer(ref scaleBuffer);
@@ -698,33 +675,33 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			m_scanThreadGroupsGroupX = 1;
 			m_copyInstanceDataGroupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
 
-			occlusionCS.SetInt(_ShouldFrustumCull_ID, enableFrustumCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldOcclusionCull_ID, enableOcclusionCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldDetailCull_ID, enableDetailCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldLOD_ID, enableLOD ? 1 : 0);
-			occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, enableOnlyLOD02Shadows ? 1 : 0);
-			occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
-			occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, detailCullingPercentage);
-			occlusionCS.SetVector(_HiZTextureSize_ID, _hiZsrpBuffer.TextureSize);
-			occlusionCS.SetTexture(m_occlusionKernelID, _HiZMap_ID, _hiZsrpBuffer.Texture);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _ArgsBuffer_ID, m_instancesArgsBuffer);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowArgsBuffer_ID, m_shadowArgsBuffer);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _IsVisibleBuffer_ID, m_instancesIsVisibleBuffer);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowIsVisibleBuffer_ID, m_shadowsIsVisibleBuffer);
-			occlusionCS.SetBuffer(m_occlusionKernelID, _SortingData_ID, m_instancesSortingData);
+			data.occlusionCS.SetInt(_ShouldFrustumCull_ID, data.enableFrustumCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldOcclusionCull_ID, data.enableOcclusionCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldDetailCull_ID, data.enableDetailCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldLOD_ID, data.enableLOD ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, data.enableOnlyLOD02Shadows ? 1 : 0);
+			data.occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
+			data.occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, data.detailCullingPercentage);
+			data.occlusionCS.SetVector(_HiZTextureSize_ID, _hiZsrpBuffer.TextureSize);
+			data.occlusionCS.SetTexture(m_occlusionKernelID, _HiZMap_ID, _hiZsrpBuffer.Texture);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _ArgsBuffer_ID, m_instancesArgsBuffer);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowArgsBuffer_ID, m_shadowArgsBuffer);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _IsVisibleBuffer_ID, m_instancesIsVisibleBuffer);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _ShadowIsVisibleBuffer_ID, m_shadowsIsVisibleBuffer);
+			data.occlusionCS.SetBuffer(m_occlusionKernelID, _SortingData_ID, m_instancesSortingData);
 
-			scanGroupSumsCS.SetInt(_NumOfGroups_ID, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+			data.scanGroupSumsCS.SetInt(_NumOfGroups_ID, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
 
-			copyInstanceDataCS.SetInt(_NumOfDrawcalls_ID, m_numberOfInstanceTypes * NUMBER_OF_DRAW_CALLS);
-			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
-			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows01_ID,
+			data.copyInstanceDataCS.SetInt(_NumOfDrawcalls_ID, m_numberOfInstanceTypes * NUMBER_OF_DRAW_CALLS);
+			data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
+			data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows01_ID,
 				m_instancesMatrixRows01);
-			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows23_ID,
+			data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows23_ID,
 				m_instancesMatrixRows23);
-			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows45_ID,
+			data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesDrawMatrixRows45_ID,
 				m_instancesMatrixRows45);
-			copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _SortingData_ID, m_instancesSortingData);
+			data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _SortingData_ID, m_instancesSortingData);
 
 			CreateCommandBuffers();
 
@@ -772,9 +749,9 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Matrix4x4 p = mainCamera.projectionMatrix;
 			m_MVP = p * v; //*m;
 
-			if (logInstanceDrawMatrices)
+			if (data.logInstanceDrawMatrices)
 			{
-				logInstanceDrawMatrices = false;
+				data.logInstanceDrawMatrices = false;
 				LogInstanceDrawMatrices("LogInstanceDrawMatrices()");
 			}
 
@@ -783,9 +760,9 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				m_instancesArgsBuffer.SetData(m_args);
 				m_shadowArgsBuffer.SetData(m_args);
 
-				if (logArgumentsAfterReset)
+				if (data.logArgumentsAfterReset)
 				{
-					logArgumentsAfterReset = false;
+					data.logArgumentsAfterReset = false;
 					LogArgsBuffers("LogArgsBuffers() - Instances After Reset",
 						"LogArgsBuffers() - Shadows After Reset");
 				}
@@ -794,22 +771,22 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 			Profiler.BeginSample("02 Occlusion");
 			{
-				occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
-				occlusionCS.SetMatrix(_UNITY_MATRIX_MVP_ID, m_MVP);
-				occlusionCS.SetVector(_CamPosition_ID, m_camPosition);
+				data.occlusionCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
+				data.occlusionCS.SetMatrix(_UNITY_MATRIX_MVP_ID, m_MVP);
+				data.occlusionCS.SetVector(_CamPosition_ID, m_camPosition);
 
-				occlusionCS.Dispatch(m_occlusionKernelID, m_occlusionGroupX, 1, 1);
+				data.occlusionCS.Dispatch(m_occlusionKernelID, m_occlusionGroupX, 1, 1);
 
-				if (logArgumentsAfterOcclusion)
+				if (data.logArgumentsAfterOcclusion)
 				{
-					logArgumentsAfterOcclusion = false;
+					data.logArgumentsAfterOcclusion = false;
 					LogArgsBuffers("LogArgsBuffers() - Instances After Occlusion",
 						"LogArgsBuffers() - Shadows After Occlusion");
 				}
 
-				if (logInstancesIsVisibleBuffer)
+				if (data.logInstancesIsVisibleBuffer)
 				{
-					logInstancesIsVisibleBuffer = false;
+					data.logInstancesIsVisibleBuffer = false;
 					LogInstancesIsVisibleBuffers("LogInstancesIsVisibleBuffers() - Instances",
 						"LogInstancesIsVisibleBuffers() - Shadows");
 				}
@@ -819,33 +796,33 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.BeginSample("03 Scan Instances");
 			{
 				//Normal
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _InstancePredicatesIn_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _InstancePredicatesIn_ID,
 					m_instancesIsVisibleBuffer);
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _GroupSumArray_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _GroupSumArray_ID,
 					m_instancesGroupSumArrayBuffer);
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _ScannedInstancePredicates_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _ScannedInstancePredicates_ID,
 					m_instancesScannedPredicates);
-				scanInstancesCS.Dispatch(m_scanInstancesKernelID, m_scanInstancesGroupX, 1, 1);
+				data.scanInstancesCS.Dispatch(m_scanInstancesKernelID, m_scanInstancesGroupX, 1, 1);
 
 				//Shadows
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _InstancePredicatesIn_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _InstancePredicatesIn_ID,
 					m_shadowsIsVisibleBuffer);
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _GroupSumArray_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _GroupSumArray_ID,
 					m_shadowGroupSumArrayBuffer);
-				scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _ScannedInstancePredicates_ID,
+				data.scanInstancesCS.SetBuffer(m_scanInstancesKernelID, _ScannedInstancePredicates_ID,
 					m_shadowScannedInstancePredicates);
-				scanInstancesCS.Dispatch(m_scanInstancesKernelID, m_scanInstancesGroupX, 1, 1);
+				data.scanInstancesCS.Dispatch(m_scanInstancesKernelID, m_scanInstancesGroupX, 1, 1);
 
-				if (logGroupSumArrayBuffer)
+				if (data.logGroupSumArrayBuffer)
 				{
-					logGroupSumArrayBuffer = false;
+					data.logGroupSumArrayBuffer = false;
 					LogGroupSumArrayBuffer("LogGroupSumArrayBuffer() - Instances",
 						"LogGroupSumArrayBuffer() - Shadows");
 				}
 
-				if (logScannedPredicates)
+				if (data.logScannedPredicates)
 				{
-					logScannedPredicates = false;
+					data.logScannedPredicates = false;
 					LogScannedPredicates("LogScannedPredicates() - Instances", "LogScannedPredicates() - Shadows");
 				}
 			}
@@ -855,20 +832,22 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.BeginSample("Scan Thread Groups");
 			{
 				// Normal
-				scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayIn_ID, m_instancesGroupSumArrayBuffer);
-				scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayOut_ID,
+				data.scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayIn_ID,
+					m_instancesGroupSumArrayBuffer);
+				data.scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayOut_ID,
 					m_instancesScannedGroupSumBuffer);
-				scanGroupSumsCS.Dispatch(m_scanGroupSumsKernelID, m_scanThreadGroupsGroupX, 1, 1);
+				data.scanGroupSumsCS.Dispatch(m_scanGroupSumsKernelID, m_scanThreadGroupsGroupX, 1, 1);
 
 				// Shadows
-				scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayIn_ID, m_shadowGroupSumArrayBuffer);
-				scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayOut_ID,
+				data.scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayIn_ID,
+					m_shadowGroupSumArrayBuffer);
+				data.scanGroupSumsCS.SetBuffer(m_scanGroupSumsKernelID, _GroupSumArrayOut_ID,
 					m_shadowsScannedGroupSumBuffer);
-				scanGroupSumsCS.Dispatch(m_scanGroupSumsKernelID, m_scanThreadGroupsGroupX, 1, 1);
+				data.scanGroupSumsCS.Dispatch(m_scanGroupSumsKernelID, m_scanThreadGroupsGroupX, 1, 1);
 
-				if (logScannedGroupSumsBuffer)
+				if (data.logScannedGroupSumsBuffer)
 				{
-					logScannedGroupSumsBuffer = false;
+					data.logScannedGroupSumsBuffer = false;
 					LogScannedGroupSumBuffer("LogScannedGroupSumBuffer() - Instances",
 						"LogScannedGroupSumBuffer() - Shadows");
 				}
@@ -879,47 +858,48 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.BeginSample("Copy Instance Data");
 			{
 				// Normal
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancePredicatesIn_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancePredicatesIn_ID,
 					m_instancesIsVisibleBuffer);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _GroupSumArray_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _GroupSumArray_ID,
 					m_instancesScannedGroupSumBuffer);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _ScannedInstancePredicates_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _ScannedInstancePredicates_ID,
 					m_instancesScannedPredicates);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows01_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows01_ID,
 					m_instancesCulledMatrixRows01);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows23_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows23_ID,
 					m_instancesCulledMatrixRows23);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows45_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows45_ID,
 					m_instancesCulledMatrixRows45);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _DrawcallDataOut_ID, m_instancesArgsBuffer);
-				copyInstanceDataCS.Dispatch(m_copyInstanceDataKernelID, m_copyInstanceDataGroupX, 1, 1);
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _DrawcallDataOut_ID,
+					m_instancesArgsBuffer);
+				data.copyInstanceDataCS.Dispatch(m_copyInstanceDataKernelID, m_copyInstanceDataGroupX, 1, 1);
 
 				// Shadows
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancePredicatesIn_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancePredicatesIn_ID,
 					m_shadowsIsVisibleBuffer);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _GroupSumArray_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _GroupSumArray_ID,
 					m_shadowsScannedGroupSumBuffer);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _ScannedInstancePredicates_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _ScannedInstancePredicates_ID,
 					m_shadowScannedInstancePredicates);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows01_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows01_ID,
 					m_shadowCulledMatrixRows01);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows23_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows23_ID,
 					m_shadowCulledMatrixRows23);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows45_ID,
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _InstancesCulledMatrixRows45_ID,
 					m_shadowCulledMatrixRows45);
-				copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _DrawcallDataOut_ID, m_shadowArgsBuffer);
-				copyInstanceDataCS.Dispatch(m_copyInstanceDataKernelID, m_copyInstanceDataGroupX, 1, 1);
+				data.copyInstanceDataCS.SetBuffer(m_copyInstanceDataKernelID, _DrawcallDataOut_ID, m_shadowArgsBuffer);
+				data.copyInstanceDataCS.Dispatch(m_copyInstanceDataKernelID, m_copyInstanceDataGroupX, 1, 1);
 
-				if (logCulledInstancesDrawMatrices)
+				if (data.logCulledInstancesDrawMatrices)
 				{
-					logCulledInstancesDrawMatrices = false;
+					data.logCulledInstancesDrawMatrices = false;
 					LogCulledInstancesDrawMatrices("LogCulledInstancesDrawMatrices() - Instances",
 						"LogCulledInstancesDrawMatrices() - Shadows");
 				}
 
-				if (logArgsBufferAfterCopy)
+				if (data.logArgsBufferAfterCopy)
 				{
-					logArgsBufferAfterCopy = false;
+					data.logArgsBufferAfterCopy = false;
 					LogArgsBuffers("LogArgsBuffers() - Instances After Copy", "LogArgsBuffers() - Shadows After Copy");
 				}
 			}
@@ -933,31 +913,38 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			}
 			Profiler.EndSample();
 
-			if (logSortingData)
+			if (data.logSortingData)
 			{
-				logSortingData = false;
+				data.logSortingData = false;
 				LogSortingData("LogSortingData())");
 			}
 		}
 
 		private void DrawInstances()
 		{
+			graphicsRenderQueue = null;
+
 			for (int i = 0; i < indirectMeshes.Length; i++)
 			{
 				// 3*lod * 5 * sizeof(uint) => 3 * 5 * 4(32Bit)
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
 
-				if (enableLOD)
+				if (data.enableLOD)
 				{
-					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
-						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 0, irm.lod00MatPropBlock, ShadowCastingMode.Off);
-					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
-						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 1, irm.lod01MatPropBlock, ShadowCastingMode.Off);
+					graphicsRenderQueue += () => Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds,
+						m_instancesArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 0, irm.lod00MatPropBlock,
+						data.drawInstanceShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
+					graphicsRenderQueue += () => Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds,
+						m_instancesArgsBuffer,
+						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 1, irm.lod01MatPropBlock,
+						data.drawInstanceShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
 				}
 
-				Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_instancesArgsBuffer,
-					argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 2, irm.lod02MatPropBlock, ShadowCastingMode.Off);
+				graphicsRenderQueue += () => Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds,
+					m_instancesArgsBuffer, argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 2, irm.lod02MatPropBlock,
+					data.drawInstanceShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
 			}
 		}
 
@@ -968,7 +955,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				int argsIndex = i * ARGS_BYTE_SIZE_PER_INSTANCE_TYPE;
 				IndirectRenderingMesh irm = indirectMeshes[i];
 
-				if (!enableOnlyLOD02Shadows)
+				if (!data.enableOnlyLOD02Shadows)
 				{
 					Graphics.DrawMeshInstancedIndirect(irm.mesh, 0, irm.material, m_bounds, m_shadowArgsBuffer,
 						argsIndex + ARGS_BYTE_SIZE_PER_DRAW_CALL * 0, irm.shadowLod00MatPropBlock,
@@ -1012,13 +999,14 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			//首先将<=级别的行 block size 排序
 			for (uint level = 2; level <= BITONIC_BLOCK_SIZE; level <<= 1)
 			{
-				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref level, ref level, ref MATRIX_HEIGHT,
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref data.sortingCS, ref level, ref level,
+					ref MATRIX_HEIGHT,
 					ref MATRIX_WIDTH);
 
 				// 排序行数据
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingCSKernelID, _Data_ID,
 					m_instancesSortingData);
-				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+				m_sortingCommandBuffer.DispatchCompute(data.sortingCS, m_sortingCSKernelID,
 					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
 			}
 
@@ -1029,35 +1017,35 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				//把 sortData 转换到 sortDataTemp
 				uint l = (level / BITONIC_BLOCK_SIZE);
 				uint lm = (level & ~NUM_ELEMENTS) / BITONIC_BLOCK_SIZE;
-				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref l, ref lm, ref MATRIX_WIDTH,
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref data.sortingCS, ref l, ref lm, ref MATRIX_WIDTH,
 					ref MATRIX_HEIGHT);
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Input_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingTransposeKernelID, _Input_ID,
 					m_instancesSortingData);
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Data_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingTransposeKernelID, _Data_ID,
 					m_instancesSortingDataTemp);
-				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingTransposeKernelID,
+				m_sortingCommandBuffer.DispatchCompute(data.sortingCS, m_sortingTransposeKernelID,
 					(int) (MATRIX_WIDTH / TRANSPOSE_BLOCK_SIZE), (int) (MATRIX_HEIGHT / TRANSPOSE_BLOCK_SIZE), 1);
 
 				// 排序 转换的 sortDataTemp 的列数据
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingCSKernelID, _Data_ID,
 					m_instancesSortingDataTemp);
-				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+				m_sortingCommandBuffer.DispatchCompute(data.sortingCS, m_sortingCSKernelID,
 					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
 
 				// 再把 sortDataTemp 转换为 sortData
-				SetGPUSortConstants(ref m_sortingCommandBuffer, ref sortingCS, ref BITONIC_BLOCK_SIZE, ref level,
+				SetGPUSortConstants(ref m_sortingCommandBuffer, ref data.sortingCS, ref BITONIC_BLOCK_SIZE, ref level,
 					ref MATRIX_HEIGHT, ref MATRIX_WIDTH);
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Input_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingTransposeKernelID, _Input_ID,
 					m_instancesSortingDataTemp);
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingTransposeKernelID, _Data_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingTransposeKernelID, _Data_ID,
 					m_instancesSortingData);
-				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingTransposeKernelID,
+				m_sortingCommandBuffer.DispatchCompute(data.sortingCS, m_sortingTransposeKernelID,
 					(int) (MATRIX_HEIGHT / TRANSPOSE_BLOCK_SIZE), (int) (MATRIX_WIDTH / TRANSPOSE_BLOCK_SIZE), 1);
 
 				// 再把行数据排序
-				m_sortingCommandBuffer.SetComputeBufferParam(sortingCS, m_sortingCSKernelID, _Data_ID,
+				m_sortingCommandBuffer.SetComputeBufferParam(data.sortingCS, m_sortingCSKernelID, _Data_ID,
 					m_instancesSortingData);
-				m_sortingCommandBuffer.DispatchCompute(sortingCS, m_sortingCSKernelID,
+				m_sortingCommandBuffer.DispatchCompute(data.sortingCS, m_sortingCSKernelID,
 					(int) (NUM_ELEMENTS / BITONIC_BLOCK_SIZE), 1, 1);
 			}
 		}
@@ -1076,13 +1064,13 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		private bool TryGetKernels()
 		{
-			return TryGetKernel("CSMain", ref createDrawDataBufferCS, ref m_createDrawDataBufferKernelID)
-			       && TryGetKernel("BitonicSort", ref sortingCS, ref m_sortingCSKernelID)
-			       && TryGetKernel("MatrixTranspose", ref sortingCS, ref m_sortingTransposeKernelID)
-			       && TryGetKernel("CSMain", ref occlusionCS, ref m_occlusionKernelID)
-			       && TryGetKernel("CSMain", ref scanInstancesCS, ref m_scanInstancesKernelID)
-			       && TryGetKernel("CSMain", ref scanGroupSumsCS, ref m_scanGroupSumsKernelID)
-			       && TryGetKernel("CSMain", ref copyInstanceDataCS, ref m_copyInstanceDataKernelID);
+			return TryGetKernel("CSMain", ref data.createDrawDataBufferCS, ref m_createDrawDataBufferKernelID)
+			       && TryGetKernel("BitonicSort", ref data.sortingCS, ref m_sortingCSKernelID)
+			       && TryGetKernel("MatrixTranspose", ref data.sortingCS, ref m_sortingTransposeKernelID)
+			       && TryGetKernel("CSMain", ref data.occlusionCS, ref m_occlusionKernelID)
+			       && TryGetKernel("CSMain", ref data.scanInstancesCS, ref m_scanInstancesKernelID)
+			       && TryGetKernel("CSMain", ref data.scanGroupSumsCS, ref m_scanGroupSumsKernelID)
+			       && TryGetKernel("CSMain", ref data.copyInstanceDataCS, ref m_copyInstanceDataKernelID);
 		}
 
 		private Bounds CalculateBounds(GameObject _prefab)
@@ -1120,18 +1108,18 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			occlusionCS.SetInt(_ShouldFrustumCull_ID, enableFrustumCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldOcclusionCull_ID, enableOcclusionCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldDetailCull_ID, enableDetailCulling ? 1 : 0);
-			occlusionCS.SetInt(_ShouldLOD_ID, enableLOD ? 1 : 0);
-			occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, enableOnlyLOD02Shadows ? 1 : 0);
-			occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, detailCullingPercentage);
+			data.occlusionCS.SetInt(_ShouldFrustumCull_ID, data.enableFrustumCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldOcclusionCull_ID, data.enableOcclusionCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldDetailCull_ID, data.enableDetailCulling ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldLOD_ID, data.enableLOD ? 1 : 0);
+			data.occlusionCS.SetInt(_ShouldOnlyUseLOD02Shadows_ID, data.enableOnlyLOD02Shadows ? 1 : 0);
+			data.occlusionCS.SetFloat(_DetailCullingScreenPercentage_ID, data.detailCullingPercentage);
 
-			if (debugDrawLOD != m_debugLastDrawLOD)
+			if (data.debugDrawLOD != m_debugLastDrawLOD)
 			{
-				m_debugLastDrawLOD = debugDrawLOD;
+				m_debugLastDrawLOD = data.debugDrawLOD;
 
-				if (debugDrawLOD)
+				if (data.debugDrawLOD)
 				{
 					for (int i = 0; i < indirectMeshes.Length; i++)
 					{
@@ -1152,7 +1140,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		private void UpdateDebugUI()
 		{
-			if (!debugShowUI)
+			if (!data.debugShowUI)
 			{
 				if (m_uiObj != null)
 				{
@@ -1164,7 +1152,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 			if (m_uiObj == null)
 			{
-				m_uiObj = Object.Instantiate(debugUIPrefab, mainCamera.transform, true);
+				m_uiObj = Object.Instantiate(data.debugUIPrefab, mainCamera.transform, true);
 				m_uiText = m_uiObj.transform.GetComponentInChildren<Text>();
 			}
 
@@ -1212,9 +1200,9 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				uint totalShadowLod02Vertices = 0;
 
 				int instanceIndex = 0;
-				uint normalMultiplier = (uint) (drawInstances ? 1 : 0);
+				uint normalMultiplier = (uint) (data.drawInstances ? 1 : 0);
 				uint shadowMultiplier =
-					(uint) (drawInstanceShadows && QualitySettings.shadows != ShadowQuality.Disable ? 1 : 0);
+					(uint) (data.drawInstanceShadows && QualitySettings.shadows != ShadowQuality.Disable ? 1 : 0);
 				int cascades = QualitySettings.shadowCascades;
 
 				m_debugUIText.AppendLine(

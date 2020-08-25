@@ -45,6 +45,7 @@
 				float2 uv: TEXCOORD0;
 				float4 normal: NORMAL;
 				float4 tangent: TANGENT;
+				//UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 			
 			struct v2f
@@ -56,29 +57,33 @@
 				float3 t2w0: TEXCOORD3;
 				float3 t2w1: TEXCOORD4;
 				float3 t2w2: TEXCOORD5;
+				float4 color: TEXCOORD6;
 			};
 			
-			v2f vert(a2v input)
+			v2f vert(a2v input, uint instanceID: SV_INSTANCEID)
 			{
-				SetupMatrix();
+				//UNITY_SETUP_INSTANCE_ID(input);
+				uint index = SetupMatrix(instanceID);
 				v2f o;
-				o.pos = mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, input.vertex));
+				float4 wPos = mul(UNITY_MATRIX_M, input.vertex);
+				o.worldPos = wPos.xyz;
+				o.pos = mul(UNITY_MATRIX_VP, wPos);
 				o.uv = input.uv;
-				o.worldPos = mul(UNITY_MATRIX_M, input.vertex);
 				
-				float3 worldNormal = normalize(mul(input.normal, (float3x3)UNITY_MATRIX_M));
-				float3 worldTangent = normalize(mul(input.tangent, (float3x3)UNITY_MATRIX_M));
+				float3 worldNormal = normalize(mul(input.normal.xyz, (float3x3)UNITY_MATRIX_M));
+				float3 worldTangent = normalize(mul(input.tangent.xyz, (float3x3)UNITY_MATRIX_M));
 				float3 worldBinormal = cross(worldNormal, worldTangent) * input.tangent.w;
 				o.t2w0 = float3(worldTangent.x, worldBinormal.x, worldNormal.x);
 				o.t2w1 = float3(worldTangent.y, worldBinormal.y, worldNormal.y);
 				o.t2w2 = float3(worldTangent.z, worldBinormal.z, worldNormal.z);
 				o.screenPos = ComputeScreenPos(o.pos);
+				o.color = index / 1024.0;
 				return o;
 			}
 			
 			half4 frag(v2f i): SV_TARGET
 			{
-				return 1;
+				return i.color;
 			}
 			
 			ENDHLSL
@@ -89,7 +94,7 @@
 		{
 			Name "DepthOnly"
 			Tags { "LightMode" = "DepthOnly" }
-			ZTest Less
+			ZTest LEqual
 			ZWrite On
 			Cull Back
 			
@@ -111,7 +116,7 @@
 		{
 			Name "ShadowCaster"
 			Tags { "LightMode" = "ShadowCaster" }
-			ZTest Less
+			ZTest LEqual
 			ZWrite On
 			Cull Back
 			

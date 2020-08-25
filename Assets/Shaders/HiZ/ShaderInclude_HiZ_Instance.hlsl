@@ -8,6 +8,7 @@
 	struct a2v_depth
 	{
 		float4 vertex: POSITION;
+		//UNITY_VERTEX_INPUT_INSTANCE_ID
 	};
 	
 	struct v2f_depth
@@ -25,15 +26,13 @@
 
 
 	
-	void SetupMatrix()
+	uint SetupMatrix(uint instanceID)
 	{
 		uint index = 0;
-		#ifdef UNITY_INSTANCING_ENABLED
-			#if defined(SHADER_API_METAL)
-				index = unity_InstanceID;
-			#else
-				index = unity_InstanceID + _ArgsBuffer[_ArgsOffset];
-			#endif
+		#if defined(SHADER_API_METAL)
+			index = instanceID;
+		#else
+			index = instanceID + _ArgsBuffer[_ArgsOffset];
 		#endif
 
 		
@@ -43,20 +42,22 @@
 		
 		unity_ObjectToWorld = float4x4(rows01.row0, rows01.row1, rows23.row0, float4(0, 0, 0, 1));
 		unity_WorldToObject = float4x4(rows23.row1, rows45.row0, rows45.row1, float4(0, 0, 0, 1));
+		return index;
 	}
 	
 	
-	v2f_depth vert_depth(a2v_depth input)
+	v2f_depth vert_depth(a2v_depth input, uint instanceID: SV_INSTANCEID)
 	{
-		SetupMatrix();
+		//UNITY_SETUP_INSTANCE_ID(input);
+		SetupMatrix(instanceID);
 		v2f_depth o;
-		o.pos = mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, input.vertex));
+		o.pos = mul(UNITY_MATRIX_VP, mul(UNITY_MATRIX_M, input.vertex));
 		return o;
 	}
 	
 	float frag_depth(v2f_depth i): SV_TARGET
 	{
-		return 0;//i.pos.z;
+		return i.pos.z;
 	}
 
 #endif

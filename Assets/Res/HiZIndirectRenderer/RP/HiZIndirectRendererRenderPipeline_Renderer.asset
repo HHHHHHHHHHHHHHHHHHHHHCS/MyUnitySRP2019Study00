@@ -13,6 +13,11 @@ MonoBehaviour:
   m_Name: HiZSRPFeature
   m_EditorClassIdentifier: 
   m_Active: 1
+  enabled: 1
+  hiZSRPInstanceDataScriptableObject: {fileID: 11400000, guid: 640cad9deea41054fad92c3249d85d50,
+    type: 2}
+  hiZSRPRenderScriptableObject: {fileID: 11400000, guid: 41f4feda9dd741443aa05782085d2343,
+    type: 2}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -22,7 +22,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		private const int MAXIMUM_BUFFER_SIZE = 1024;
 
 		[Header("References")] public RenderTexture topDownView = null;
-		public HiZBuiltinRenderer m_indirectRenderer;
+		[HideInInspector] public HiZSRPRenderScriptableObject m_indirectRenderer;
 		public Camera mainCamera = null;
 		public Light light = null;
 		public Shader generateBufferShader = null;

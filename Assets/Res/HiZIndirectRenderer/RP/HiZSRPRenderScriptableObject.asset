@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11b5d584df92f714ebced5ff676b99dd, type: 3}
+  m_Name: HiZSRPRenderScriptableObject
+  m_EditorClassIdentifier: 
+  runCompute: 1
+  drawInstances: 1
+  drawInstanceShadows: 1
+  enableFrustumCulling: 1
+  enableOcclusionCulling: 1
+  enableDetailCulling: 1
+  enableLOD: 1
+  enableOnlyLOD02Shadows: 0
+  detailCullingPercentage: 0.005
+  debugShowUI: 1
+  debugDrawLOD: 0
+  debugDrawBoundsInSceneView: 0
+  debugDrawHiZ: 0
+  debugHiZLOD: 0
+  debugUIPrefab: {fileID: 7562846402137225288, guid: 1c50bd0235dc2244cb7757e180ed63f4,
+    type: 3}
+  logInstanceDrawMatrices: 0
+  logArgumentsAfterReset: 0
+  logSortingData: 0
+  logArgumentsAfterOcclusion: 0
+  logInstancesIsVisibleBuffer: 0
+  logScannedPredicates: 0
+  logGroupSumArrayBuffer: 0
+  logScannedGroupSumsBuffer: 0
+  logArgsBufferAfterCopy: 0
+  logCulledInstancesDrawMatrices: 0
+  createDrawDataBufferCS: {fileID: 7200000, guid: 647a25c6ebb48e24184e986929fc8e64,
+    type: 3}
+  sortingCS: {fileID: 7200000, guid: 5f2355b0642174149b3b2333aa3fe718, type: 3}
+  occlusionCS: {fileID: 7200000, guid: 3c1db04420b64ca41847d500a5cef384, type: 3}
+  scanInstancesCS: {fileID: 7200000, guid: 2038d4c91d4e49848a23745e35fbd05e, type: 3}
+  scanGroupSumsCS: {fileID: 7200000, guid: 18770a069652fca4b8d10e21dd33e1a5, type: 3}
+  copyInstanceDataCS: {fileID: 7200000, guid: a422e543510b28d478f201c2c60acea5, type: 3}

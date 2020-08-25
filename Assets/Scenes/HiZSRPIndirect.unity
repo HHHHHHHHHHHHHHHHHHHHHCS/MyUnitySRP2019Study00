@@ -1169,6 +1169,8 @@ GameObject:
   - component: {fileID: 1192119114}
   - component: {fileID: 1192119118}
   - component: {fileID: 1192119117}
+  - component: {fileID: 1192119119}
+  - component: {fileID: 1192119120}
   - component: {fileID: 1192119122}
   - component: {fileID: 1192119123}
   m_Layer: 0
@@ -1210,7 +1212,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 1
-  far clip plane: 10000
+  far clip plane: 1000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -1288,6 +1290,37 @@ MonoBehaviour:
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
   m_Version: 2
+--- !u!114 &1192119119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11b001a64d8f0034dac17bdce037a777, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  topDownView: {fileID: 8400000, guid: 7744739677934d44c923a591a98f095a, type: 2}
+  m_indirectRenderer: {fileID: 0}
+  mainCamera: {fileID: 1300742488}
+  light: {fileID: 1744176839}
+  generateBufferShader: {fileID: 4800000, guid: 85dcceecb5623e841912de9ab5957118,
+    type: 3}
+  debugShader: {fileID: 4800000, guid: 6fe58c65319f1e04dbf2719b62f8e553, type: 3}
+--- !u!114 &1192119120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1192119113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4484e7ce1c96a8647a5839c8a9c53f9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1192119122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1394,10 +1427,10 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 21
+  far clip plane: 101
   field of view: 60
   orthographic: 1
-  orthographic size: 50
+  orthographic size: 100
   m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
@@ -1421,7 +1454,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1300742485}
   m_LocalRotation: {x: -0.65328145, y: 0.2705982, z: -0.2705982, w: -0.65328145}
-  m_LocalPosition: {x: 0, y: 20, z: 0}
+  m_LocalPosition: {x: 0, y: 100, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
