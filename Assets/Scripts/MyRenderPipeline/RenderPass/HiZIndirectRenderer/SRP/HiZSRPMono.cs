@@ -13,5 +13,13 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
                 HiZSRPRenderPass.graphicsRenderQueue = null;
             }
         }
+
+        private void OnDrawGizmos()
+        {
+            if (HiZSRPRenderPass.gizmosQueue != null)
+            {
+                HiZSRPRenderPass.gizmosQueue();
+            }
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			hiZIndirectRenderPass = new HiZSRPRenderPass();
 			hiZIndirectRenderPass.Init(hiZSRPRenderScriptableObject);
 			hiZIndirectRenderPass.renderPassEvent =
-				RenderPassEvent.BeforeRenderingPrepasses;
+				RenderPassEvent.BeforeRenderingShadows;
 
 			HiZDataAwake();
 		}
@@ -51,10 +51,11 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			if (!renderingData.cameraData.camera.CompareTag("MainCamera"))
-			{
-				return;
-			}
+			//TODO:
+			// if (!renderingData.cameraData.camera.CompareTag("MainCamera"))
+			// {
+			// 	return;
+			// }
 
 			renderer.EnqueuePass(hiZIndirectRenderPass);
 
