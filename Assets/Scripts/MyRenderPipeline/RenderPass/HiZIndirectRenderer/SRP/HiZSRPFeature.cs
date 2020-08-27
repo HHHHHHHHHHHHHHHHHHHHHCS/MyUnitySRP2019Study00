@@ -1,4 +1,5 @@
-﻿using MyRenderPipeline.RenderPass.HiZIndirectRenderer.Builtin;
+﻿using System;
+using MyRenderPipeline.RenderPass.HiZIndirectRenderer.Builtin;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
@@ -10,7 +11,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 	{
 		public bool enabled = true;
 
-		private HiZSRPRenderPass hiZIndirectRenderPass;
+		private HiZSRPRenderPass hizIndirectRenderPass;
+		private HiZSRPDepthPass hizDepthPass;
 
 		public HiZSRPInstanceDataScriptableObject hiZSRPInstanceDataScriptableObject;
 		public HiZSRPRenderScriptableObject hiZSRPRenderScriptableObject;
@@ -31,10 +33,13 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			hiZIndirectRenderPass = new HiZSRPRenderPass();
-			hiZIndirectRenderPass.Init(hiZSRPRenderScriptableObject);
-			hiZIndirectRenderPass.renderPassEvent =
+			hizIndirectRenderPass = new HiZSRPRenderPass();
+			hizIndirectRenderPass.Init(hiZSRPRenderScriptableObject);
+			hizIndirectRenderPass.renderPassEvent =
 				RenderPassEvent.BeforeRenderingShadows;
+
+			hizDepthPass = new HiZSRPDepthPass();
+			hizDepthPass.renderPassEvent = RenderPassEvent.AfterRendering;
 
 			HiZDataAwake();
 		}
@@ -57,14 +62,10 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			// 	return;
 			// }
 
-			renderer.EnqueuePass(hiZIndirectRenderPass);
+			renderer.EnqueuePass(hizIndirectRenderPass);
+			renderer.EnqueuePass(hizDepthPass);
 
 			HiZDataUpdate();
-		}
-
-		private void OnDestroy()
-		{
-			hiZIndirectRenderPass.OnDestroy();
 		}
 
 		#endregion
@@ -85,15 +86,15 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			}
 
 			lastIndirectRenderingEnabled = hiZSRPInstanceDataScriptableObject.indirectRenderingEnabled;
-			lastIndirectDrawShadows = hiZIndirectRenderPass.data.drawInstanceShadows;
+			lastIndirectDrawShadows = hizIndirectRenderPass.data.drawInstanceShadows;
 
 			if (hiZSRPInstanceDataScriptableObject.shouldInstantiatePrefabs)
 			{
 				InstantiateInstance();
 			}
 
-			hiZIndirectRenderPass.Initialize(ref hiZSRPInstanceDataScriptableObject.instances);
-			hiZIndirectRenderPass.StartDrawing();
+			hizIndirectRenderPass.Initialize(ref hiZSRPInstanceDataScriptableObject.instances);
+			hizIndirectRenderPass.StartDrawing();
 		}
 
 		private void HiZDataUpdate()
@@ -109,18 +110,18 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 				if (hiZSRPInstanceDataScriptableObject.indirectRenderingEnabled)
 				{
-					hiZIndirectRenderPass.Initialize(ref hiZSRPInstanceDataScriptableObject.instances);
-					hiZIndirectRenderPass.StartDrawing();
+					hizIndirectRenderPass.Initialize(ref hiZSRPInstanceDataScriptableObject.instances);
+					hizIndirectRenderPass.StartDrawing();
 				}
 				else
 				{
-					hiZIndirectRenderPass.StopDrawing(true);
+					hizIndirectRenderPass.StopDrawing(true);
 				}
 			}
 
-			if (lastIndirectDrawShadows != hiZIndirectRenderPass.data.drawInstanceShadows)
+			if (lastIndirectDrawShadows != hizIndirectRenderPass.data.drawInstanceShadows)
 			{
-				lastIndirectDrawShadows = hiZIndirectRenderPass.data.drawInstanceShadows;
+				lastIndirectDrawShadows = hizIndirectRenderPass.data.drawInstanceShadows;
 
 				if (normalInstancesParent != null)
 				{

@@ -168,7 +168,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		private const string DEBUG_SHADER_LOD_KEYWORD = "INDIRECT_DEBUG_LOD";
 
 		// Shader Property ID's
-		private static readonly RenderTargetIdentifier depth_rti = new RenderTargetIdentifier("_CameraDepthTexture");
+		private static readonly RenderTargetIdentifier depth_rti =
+			new RenderTargetIdentifier("_CameraDepthTexture");
 
 
 		private static readonly int _Data_ID = Shader.PropertyToID("_Data");
@@ -798,7 +799,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 			Profiler.BeginSample("02 Occlusion");
 			{
-				cmd.SetComputeTextureParam(data.occlusionCS, m_occlusionKernelID, _HiZMap_ID, depth_rti);
+				cmd.SetComputeTextureParam(data.occlusionCS, m_occlusionKernelID, _HiZMap_ID,
+					HiZSRPDepthPass.DepthTexture); //depth_rti);
 				cmd.SetComputeFloatParam(data.occlusionCS, _ShadowDistance_ID, QualitySettings.shadowDistance);
 				cmd.SetComputeMatrixParam(data.occlusionCS, _UNITY_MATRIX_MVP_ID, m_MVP);
 				cmd.SetComputeVectorParam(data.occlusionCS, _CamPosition_ID, m_camPosition);
