@@ -22,7 +22,7 @@ MonoBehaviour:
   enableOnlyLOD02Shadows: 0
   detailCullingPercentage: 0.005
   debugShowUI: 1
-  debugDrawLOD: 0
+  debugDrawLOD: 1
   debugDrawBoundsInSceneView: 0
   debugDrawHiZ: 0
   debugHiZLOD: 0

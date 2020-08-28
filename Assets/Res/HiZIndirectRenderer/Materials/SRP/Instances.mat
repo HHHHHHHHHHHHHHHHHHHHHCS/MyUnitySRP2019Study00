@@ -22,7 +22,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Instances
   m_Shader: {fileID: 4800000, guid: 568b5c724039f0b40aef9bc7de6a3bcf, type: 3}
-  m_ShaderKeywords: _NORMALMAP
+  m_ShaderKeywords: INDIRECT_DEBUG_LOD _NORMALMAP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0

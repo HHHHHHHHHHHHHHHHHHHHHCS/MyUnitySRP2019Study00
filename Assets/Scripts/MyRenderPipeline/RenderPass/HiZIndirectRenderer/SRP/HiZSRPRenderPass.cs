@@ -799,6 +799,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 			Profiler.BeginSample("02 Occlusion");
 			{
+				//TODO:深度图需要反算矩阵   因为隔了一帧
 				cmd.SetComputeTextureParam(data.occlusionCS, m_occlusionKernelID, _HiZMap_ID,
 					HiZSRPDepthPass.DepthTexture); //depth_rti);
 				cmd.SetComputeFloatParam(data.occlusionCS, _ShadowDistance_ID, QualitySettings.shadowDistance);

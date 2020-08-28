@@ -16,6 +16,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		private RenderTexture depthRT;
 		private float width, height;
 
+		//因为只要Game 的 正确就够了  drawInstanceIndirection 也是依赖于Game视图的
 		public static RenderTexture DepthTexture { get; private set; }
 
 		public HiZSRPDepthPass()

@@ -77,13 +77,18 @@
 				o.t2w1 = float3(worldTangent.y, worldBinormal.y, worldNormal.y);
 				o.t2w2 = float3(worldTangent.z, worldBinormal.z, worldNormal.z);
 				o.screenPos = ComputeScreenPos(o.pos);
-				o.color = index / 1024.0;
+				o.color = index / 2048.0;
 				return o;
 			}
 			
-			half4 frag(v2f i): SV_TARGET
+			float4 frag(v2f i): SV_TARGET
 			{
-				return i.color;
+				float3 col = i.color.rgb;
+				#if defined(INDIRECT_DEBUG_LOD)
+					uint offset = _ArgsOffset % 15;
+					col = (offset == 14)?float3(0.4, 0.7, 1.0): ((offset == 9)?float3(0.0, 1.0, 0.0): float3(1.0, 0.0, 0.0));
+				#endif
+				return float4(col, 1.0);
 			}
 			
 			ENDHLSL
