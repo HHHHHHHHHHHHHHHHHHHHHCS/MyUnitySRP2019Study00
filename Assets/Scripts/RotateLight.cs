@@ -16,6 +16,7 @@ public class RotateLight : MonoBehaviour
 	{
 		if (mainLight == null)
 		{
+			return;
 		}
 
 		mainLight.transform.Rotate(Vector3.up, YRotateSpeed * Time.deltaTime, Space.World);
