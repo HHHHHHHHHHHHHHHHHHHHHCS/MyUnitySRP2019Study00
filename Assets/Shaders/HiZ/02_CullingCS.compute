@@ -80,14 +80,14 @@ inline uint IsVisibleAfterOcclusionCulling(InstanceData instance, float clipMinX
 	float mip = ceil(log2(max(size.x, size.y)));
 	mip = clamp(mip, 0, 10);
 	
-	// 用更高的mimap  
+	// 用更高的mimap
 	float level_lower = max(mip - 1, 0);
-	float2 scale = exp2(-level_lower);//2^(-8) = 1/(256)  
-	float2 a = floor(minXY * scale);//floor(0.002) ~= 0
-	float2 b = ceil(maxXY * scale);//ceil(0.04) ~= 1
+	float2 scale = exp2(-level_lower) * _HiZTextureSize.xy;//2^(-8) = 1/(256) * 1024
+	float2 a = floor(minXY * scale);//floor(0.002 * 4) ~= 0.0
+	float2 b = ceil(maxXY * scale);//ceil(0.04*4) ~= 1
 	float2 dims = b - a;//1,1
 	
-	// 如果之前的距离过小  则用更好的mipmap  
+	// 如果之前的距离过小  则用更好的mipmap
 	//通常都会进入  为了下面的STEP 采样用
 	if (dims.x <= 2 && dims.y <= 2)
 	{
