@@ -796,6 +796,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				}
 			}
 			Profiler.EndSample();
+			
+			//TODO:可以插入球 快捷剔除
 
 			Profiler.BeginSample("02 Occlusion");
 			{
