@@ -35,16 +35,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-			if (!Application.isPlaying)
-			{
-				return;
-			}
-
-			if (renderingData.cameraData.camera.cameraType != CameraType.Game)
-			{
-				return;
-			}
-
 
 			CommandBuffer cmd = CommandBufferPool.Get("HiZDepth");
 			using (new ProfilingSample(cmd, "HiZDepth"))

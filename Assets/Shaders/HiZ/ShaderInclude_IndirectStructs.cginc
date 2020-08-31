@@ -19,4 +19,7 @@ struct SortingData
 	float distanceToCam;	//2
 };
 
+#define LOD00_RANGE 50
+#define LOD01_RANGE 100
+
 #endif //__INDIRECT_INCLUDE__

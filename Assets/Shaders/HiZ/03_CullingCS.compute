@@ -5,7 +5,6 @@
 //5.根据距离使用  决定使用LOD0 1 2  写入 LOD0 1 3 * 5args
 //6.aabb离摄像机最近的点的距离  覆盖到 sortingData
 
-
 #include "ShaderInclude_IndirectStructs.cginc"
 #include "UnityCG.cginc"
 #include "UnityDeferredLibrary.cginc"
@@ -17,8 +16,6 @@
 #define THREAD_GROUP_SIZE_Y 1
 #define THREAD_GROUP_SIZE_Z 1
 
-#define LOD00_RANGE 50
-#define LOD01_RANGE 100
 
 
 //--------------------------------------------------------------------------------------
@@ -27,6 +24,8 @@
 
 cbuffer CB
 {
+	uint _UsePreCulling;
+	
 	uint _ShouldFrustumCull;
 	uint _ShouldOcclusionCull;
 	uint _ShouldDetailCull;
@@ -127,6 +126,7 @@ inline uint IsVisibleAfterOcclusionCulling(InstanceData instance, float clipMinX
 
 inline uint IsVisibleAfterFrustumCulling(float4 clipPos)
 {
+	//w是最大的齐次    /w 之后就是 [-1,1]
 	return(clipPos.z > clipPos.w
 	|| clipPos.x < - clipPos.w
 		|| clipPos.x > clipPos.w
@@ -154,8 +154,22 @@ inline void CSMain(
 	uint drawCall = (sortingData.drawCallInstanceIndex >> 16);
 	uint index = (sortingData.drawCallInstanceIndex) & 0xFFFF;
 	
-	_IsVisibleBuffer[tID] = 0;
-	_ShadowIsVisibleBuffer[tID] = 0;
+	if (_UsePreCulling > 0.5)
+	{
+		//_IsVisibleBuffer[tID] = 0; //SRP已经在preCulling 重置了
+		//_ShadowIsVisibleBuffer[tID] = 0;
+
+		//pre culling
+		if(_IsVisibleBuffer[tID] < 0.5)
+		{
+			return;
+		}
+	}
+	else
+	{
+		_IsVisibleBuffer[tID] = 0;
+		_ShadowIsVisibleBuffer[tID] = 0;
+	}
 	
 	InstanceData instance = _InstanceDataBuffer[index];
 	
@@ -185,6 +199,9 @@ inline void CSMain(
 	
 	float minDistanceToCamera = distance(instance.boundsCenter.xyz, _CamPosition.xyz);
 	
+	//其实preculling的效果完全够了
+	//但是这里要深度剔除 和 摄像机最近距离LOD
+	//所以还是在细剔除一边
 	[unroll]
 	for (int i = 1; i < 8; i ++)
 	{
@@ -237,7 +254,7 @@ inline void CSMain(
 	_IsVisibleBuffer[tID] = isVisible;
 	InterlockedAdd(_ArgsBuffer[argsIndex], isVisible);
 	
-	_ShadowIsVisibleBuffer[tID] = isCastingShadow;
+	_ShadowIsVisibleBuffer[tID] = isCastingShadow;//阴影根据距离全画
 	InterlockedAdd(_ShadowArgsBuffer[shadowArgsIndex], isCastingShadow);
 	
 	sortingData.distanceToCam = minDistanceToCamera;

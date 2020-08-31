@@ -14,13 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   runCompute: 1
   drawInstances: 1
-  drawInstanceShadows: 1
+  drawInstanceShadows: 0
   enableFrustumCulling: 1
   enableOcclusionCulling: 1
   enableDetailCulling: 1
   enableLOD: 1
   enableOnlyLOD02Shadows: 0
   detailCullingPercentage: 0.005
+  usePreCulling: 1
   debugShowUI: 1
   debugDrawLOD: 1
   debugDrawBoundsInSceneView: 0
@@ -31,6 +32,8 @@ MonoBehaviour:
   logInstanceDrawMatrices: 0
   logArgumentsAfterReset: 0
   logSortingData: 0
+  logPreCullingArgumentsAfterOcclusion: 0
+  logPreCullingInstancesIsVisibleBuffer: 0
   logArgumentsAfterOcclusion: 0
   logInstancesIsVisibleBuffer: 0
   logScannedPredicates: 0
@@ -41,6 +44,7 @@ MonoBehaviour:
   createDrawDataBufferCS: {fileID: 7200000, guid: 647a25c6ebb48e24184e986929fc8e64,
     type: 3}
   sortingCS: {fileID: 7200000, guid: 5f2355b0642174149b3b2333aa3fe718, type: 3}
+  preCullingCS: {fileID: 7200000, guid: 76a56a9b2a7df6845969a3cfbf1914e9, type: 3}
   occlusionCS: {fileID: 7200000, guid: 3c1db04420b64ca41847d500a5cef384, type: 3}
   scanInstancesCS: {fileID: 7200000, guid: 2038d4c91d4e49848a23745e35fbd05e, type: 3}
   scanGroupSumsCS: {fileID: 7200000, guid: 18770a069652fca4b8d10e21dd33e1a5, type: 3}

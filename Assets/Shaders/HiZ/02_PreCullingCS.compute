@@ -1,0 +1,101 @@
+﻿// 提前做一次剔除
+// 发现是像框的外面的
+// 用中心点+尺寸=极端值的点 做剔除
+// 如果还在外面则剔除
+#include "ShaderInclude_IndirectStructs.cginc"
+
+#pragma kernel CSMain
+
+#define THREAD_GROUP_SIZE_X 64
+#define THREAD_GROUP_SIZE_Y 1
+#define THREAD_GROUP_SIZE_Z 1
+
+cbuffer CB
+{
+	uint _ShouldLOD;
+	
+	float3 _CamPosition;
+	float _ShadowDistance;
+	
+	float3 _FrustumMinPoint;
+	float3 _FrustumMaxPoint;
+	float4 _Planes[6];
+}
+
+StructuredBuffer<InstanceData> _InstanceDataBuffer;
+//RWStructuredBuffer<uint> _ArgsBuffer;
+RWStructuredBuffer<uint> _IsVisibleBuffer;
+//RWStructuredBuffer<uint> _ShadowArgsBuffer;
+RWStructuredBuffer<uint> _ShadowIsVisibleBuffer;
+RWStructuredBuffer<SortingData> _SortingData;
+
+
+uint PlaneTest(InstanceData info)
+{
+	float3 position = info.boundsCenter;
+	float3 extent = info.boundsExtents;
+	float3 minPos = position - extent;
+	float3 maxPos = position + extent;
+	float outOfRange = dot(_FrustumMinPoint > maxPos, 1) + dot(_FrustumMaxPoint < minPos, 1);
+	if (outOfRange > 0.5) return 0;
+	// if (_FrustumMaxPoint.x < maxPos.x || _FrustumMaxPoint.y < maxPos.y || _FrustumMaxPoint.z < maxPos.z
+	// 	|| _FrustumMinPoint.x > minPos.x || _FrustumMinPoint.y > minPos.y || _FrustumMinPoint.z > minPos.z)
+	// {
+	// 	return 0;
+	// }
+	[unroll]
+	for (uint i = 0; i < 6; ++ i)
+	{
+		float4 plane = _Planes[i];
+		float3 absNormal = abs(plane.xyz);
+		if((dot(position, plane.xyz) - dot(absNormal, extent)) > - plane.w)
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
+[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, THREAD_GROUP_SIZE_Z)]
+inline void CSMain(
+	in uint3 _dispatchThreadID: SV_DispatchThreadID, // DispatchThreadID  = dot(GroupID, numthreads) + GroupThreadId;
+	in uint  _groupIndex: SV_GroupIndex, // uint GroupIndex = unique index of a thread inside a group
+	in uint3 _groupID: SV_GroupID, // GroupID = index for each dimension inside a ThreadGroupCount
+	in uint3 _groupThreadID: SV_GroupThreadID // uint3 GroupThreadId = indices for each dimension inside a group of the current thread
+)
+{
+	uint tID = _dispatchThreadID.x;
+	SortingData sortingData = _SortingData[tID];
+	uint drawCall = (sortingData.drawCallInstanceIndex >> 16);
+	uint index = (sortingData.drawCallInstanceIndex) & 0xFFFF;
+	
+	_IsVisibleBuffer[tID] = 0;
+	_ShadowIsVisibleBuffer[tID] = 0;
+	
+	InstanceData instance = _InstanceDataBuffer[index];
+	
+	uint isVisible = PlaneTest(instance);
+	float distanceToCamera = distance(instance.boundsCenter.xyz, _CamPosition);
+	
+	float lod00Range = LOD00_RANGE;
+	float lod01Range = LOD01_RANGE;
+	
+	//3*LOD*5 = 15  组成数组  这个是正确的index
+	uint argsIndex = drawCall + 1;
+	argsIndex += 5 * (distanceToCamera > lod00Range);
+	argsIndex += 5 * (distanceToCamera > lod01Range);
+	argsIndex = _ShouldLOD * argsIndex + ((_ShouldLOD == 0) * (drawCall + 11));
+	
+	uint shadowArgsIndex = argsIndex;//_ShouldOnlyUseLOD02Shadows ? drawCall + 11 : argsIndex;
+	
+	uint isCastingShadow = distanceToCamera < _ShadowDistance ? 1: 0;
+	
+	_IsVisibleBuffer[tID] = isVisible;
+	//InterlockedAdd(_ArgsBuffer[argsIndex], isVisible); //这里不显示的不用加  显示的在下面加
+	
+	//_ShadowIsVisibleBuffer[tID] = isCastingShadow;//看不见的不画阴影 看得见的在CullingCS画
+	//InterlockedAdd(_ShadowArgsBuffer[shadowArgsIndex], isCastingShadow);
+	
+	sortingData.distanceToCam = distanceToCamera;
+	_SortingData[tID] = sortingData;
+}

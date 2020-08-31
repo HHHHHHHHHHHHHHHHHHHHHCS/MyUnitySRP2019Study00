@@ -112,6 +112,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		// Kernel ID's
 		private int m_createDrawDataBufferKernelID;
 		private int m_sortingCSKernelID;
+		private int m_preCullingCSKernelID;
 		private int m_sortingTransposeKernelID;
 		private int m_occlusionKernelID;
 		private int m_scanInstancesKernelID;
@@ -122,6 +123,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		// Other
 		private int m_numberOfInstanceTypes;
 		private int m_numberOfInstances;
+		private int m_preCullingGroupX;
 		private int m_occlusionGroupX;
 		private int m_scanInstancesGroupX;
 		private int m_scanThreadGroupsGroupX;
@@ -174,6 +176,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		private static readonly int _Data_ID = Shader.PropertyToID("_Data");
 		private static readonly int _Input_ID = Shader.PropertyToID("_Input");
+		private static readonly int _UsePreCulling_ID = Shader.PropertyToID("_UsePreCulling");
 		private static readonly int _ShouldFrustumCull_ID = Shader.PropertyToID("_ShouldFrustumCull");
 		private static readonly int _ShouldOcclusionCull_ID = Shader.PropertyToID("_ShouldOcclusionCull");
 		private static readonly int _ShouldLOD_ID = Shader.PropertyToID("_ShouldLOD");
@@ -181,6 +184,9 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		private static readonly int _ShouldOnlyUseLOD02Shadows_ID = Shader.PropertyToID("_ShouldOnlyUseLOD02Shadows");
 		private static readonly int _UNITY_MATRIX_MVP_ID = Shader.PropertyToID("_UNITY_MATRIX_MVP");
 		private static readonly int _CamPosition_ID = Shader.PropertyToID("_CamPosition");
+		private static readonly int _FrustumMinPoint_ID = Shader.PropertyToID("_FrustumMinPoint");
+		private static readonly int _FrustumMaxPoint_ID = Shader.PropertyToID("_FrustumMaxPoint");
+		private static readonly int _Planes_ID = Shader.PropertyToID("_Planes");
 		private static readonly int _HiZTextureSize_ID = Shader.PropertyToID("_HiZTextureSize");
 		private static readonly int _Level_ID = Shader.PropertyToID("_Level");
 		private static readonly int _LevelMask_ID = Shader.PropertyToID("_LevelMask");
@@ -250,16 +256,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
 		{
-			if (!Application.isPlaying)
-			{
-				return;
-			}
-
-			if (m_isEnabled)
-			{
-				UpdateDebug(cmd);
-			}
-
 			if (data.debugDrawBoundsInSceneView)
 			{
 				if (gizmosQueue == null)
@@ -286,11 +282,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-			if (!Application.isPlaying)
-			{
-				return;
-			}
-
 			if (!m_isEnabled
 			    || indirectMeshes == null
 			    || indirectMeshes.Length == 0
@@ -310,7 +301,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				if (data.runCompute)
 				{
 					Profiler.BeginSample("CalculateVisibleInstances()");
-					CalculateVisibleInstances(cmd);
+					CalculateVisibleInstances(cmd, renderingData.cameraData.camera);
 					Profiler.EndSample();
 				}
 
@@ -703,11 +694,20 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			//-----------------------------------
 			// InitConstantComputeVariables
 			//-----------------------------------
-
+			m_preCullingGroupX = Mathf.Max(1, m_numberOfInstances / 64);
 			m_occlusionGroupX = Mathf.Max(1, m_numberOfInstances / 64);
 			m_scanInstancesGroupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
 			m_scanThreadGroupsGroupX = 1;
 			m_copyInstanceDataGroupX = Mathf.Max(1, m_numberOfInstances / (2 * SCAN_THREAD_GROUP_SIZE));
+
+			data.preCullingCS.SetInt(_ShouldLOD_ID, data.enableLOD ? 1 : 0);
+			data.preCullingCS.SetFloat(_ShadowDistance_ID, QualitySettings.shadowDistance);
+			data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _InstanceDataBuffer_ID, m_instanceDataBuffer);
+			//data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _ArgsBuffer_ID, m_instancesArgsBuffer);
+			//data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _ShadowArgsBuffer_ID, m_shadowArgsBuffer);
+			data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _IsVisibleBuffer_ID, m_instancesIsVisibleBuffer);
+			data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _ShadowIsVisibleBuffer_ID, m_shadowsIsVisibleBuffer);
+			data.preCullingCS.SetBuffer(m_preCullingCSKernelID, _SortingData_ID, m_instancesSortingData);
 
 			data.occlusionCS.SetInt(_ShouldFrustumCull_ID, data.enableFrustumCulling ? 1 : 0);
 			data.occlusionCS.SetInt(_ShouldOcclusionCull_ID, data.enableOcclusionCulling ? 1 : 0);
@@ -766,7 +766,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			ReleaseComputeBuffer(ref m_shadowCulledMatrixRows45);
 		}
 
-		private void CalculateVisibleInstances(CommandBuffer cmd)
+		private void CalculateVisibleInstances(CommandBuffer cmd, Camera camera)
 		{
 			//global data
 			m_camPosition = mainCamera.transform.position;
@@ -796,12 +796,41 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				}
 			}
 			Profiler.EndSample();
-			
-			//TODO:可以插入球 快捷剔除
 
-			Profiler.BeginSample("02 Occlusion");
+			if (data.usePreCulling)
+			{
+				Profiler.BeginSample("02 PreCulling");
+				{
+					GetFrustumInfo(camera, out var planes, out var minPoint, out var maxPoint);
+
+					cmd.SetComputeVectorParam(data.preCullingCS, _CamPosition_ID, m_camPosition);
+					cmd.SetComputeVectorArrayParam(data.preCullingCS, _Planes_ID, planes);
+					cmd.SetComputeVectorParam(data.preCullingCS, _FrustumMinPoint_ID, minPoint);
+					cmd.SetComputeVectorParam(data.preCullingCS, _FrustumMaxPoint_ID, maxPoint);
+
+					cmd.DispatchCompute(data.preCullingCS, m_preCullingCSKernelID, m_occlusionGroupX, 1, 1);
+					
+					if (data.logPreCullingArgumentsAfterOcclusion)
+					{
+						data.logPreCullingArgumentsAfterOcclusion = false;
+						LogArgsBuffers("LogPreCullingArgsBuffers() - Instances After Occlusion",
+							"LogPreCullingArgsBuffers() - Shadows After Occlusion");
+					}
+
+					if (data.logPreCullingInstancesIsVisibleBuffer)
+					{
+						data.logPreCullingInstancesIsVisibleBuffer = false;
+						LogPreInstancesIsVisibleBuffers("LogPreCullingInstancesIsVisibleBuffers() - Instances",
+							"LogPreCullingInstancesIsVisibleBuffers() - Shadows");
+					}
+				}
+				Profiler.EndSample();
+			}
+
+			Profiler.BeginSample("03 Occlusion");
 			{
 				//TODO:深度图需要反算矩阵   因为隔了一帧
+				cmd.SetComputeIntParam(data.occlusionCS, _UsePreCulling_ID, data.usePreCulling ? 1: 0);
 				cmd.SetComputeTextureParam(data.occlusionCS, m_occlusionKernelID, _HiZMap_ID,
 					HiZSRPDepthPass.DepthTexture); //depth_rti);
 				cmd.SetComputeFloatParam(data.occlusionCS, _ShadowDistance_ID, QualitySettings.shadowDistance);
@@ -826,7 +855,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			}
 			Profiler.EndSample();
 
-			Profiler.BeginSample("03 Scan Instances");
+			Profiler.BeginSample("04 Scan Instances");
 			{
 				//Normal
 				cmd.SetComputeBufferParam(data.scanInstancesCS, m_scanInstancesKernelID, _InstancePredicatesIn_ID,
@@ -862,7 +891,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.EndSample();
 
 
-			Profiler.BeginSample("Scan Thread Groups");
+			Profiler.BeginSample("05 Scan Thread Groups");
 			{
 				// Normal
 				cmd.SetComputeBufferParam(data.scanGroupSumsCS, m_scanGroupSumsKernelID, _GroupSumArrayIn_ID,
@@ -888,7 +917,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.EndSample();
 
 			//拷贝数据 并且计算偏移打包
-			Profiler.BeginSample("Copy Instance Data");
+			Profiler.BeginSample("06 Copy Instance Data");
 			{
 				// Normal
 				cmd.SetComputeBufferParam(data.copyInstanceDataCS, m_copyInstanceDataKernelID, _InstancePredicatesIn_ID,
@@ -953,7 +982,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.EndSample();
 
 
-			Profiler.BeginSample("LOD Sorting");
+			Profiler.BeginSample("01 LOD Sorting");
 			{
 				ExecuteSortingCommandBuffer(cmd);
 			}
@@ -1101,6 +1130,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			return TryGetKernel("CSMain", ref data.createDrawDataBufferCS, ref m_createDrawDataBufferKernelID)
 			       && TryGetKernel("BitonicSort", ref data.sortingCS, ref m_sortingCSKernelID)
 			       && TryGetKernel("MatrixTranspose", ref data.sortingCS, ref m_sortingTransposeKernelID)
+			       && TryGetKernel("CSMain", ref data.preCullingCS, ref m_preCullingCSKernelID)
 			       && TryGetKernel("CSMain", ref data.occlusionCS, ref m_occlusionKernelID)
 			       && TryGetKernel("CSMain", ref data.scanInstancesCS, ref m_scanInstancesKernelID)
 			       && TryGetKernel("CSMain", ref data.scanGroupSumsCS, ref m_scanGroupSumsKernelID)
@@ -1131,12 +1161,87 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			return b;
 		}
 
+		private void GetFrustumInfo(Camera camera, out Vector4[] planes, out Vector3 minPoint, out Vector3 maxPoint)
+		{
+			var transform = camera.transform;
+			Vector3 forward = transform.forward;
+			Vector3 up = transform.up;
+			Vector3 right = transform.right;
+			Vector3 position = transform.position;
+			float nearClipPlane = camera.nearClipPlane;
+			float farClipPlane = camera.farClipPlane;
+			float aspect = camera.aspect;
+			float fieldOfView = camera.fieldOfView;
+
+
+			//eight corners
+			//-------------------------------------
+			Vector3[] corners = new Vector3[8];
+
+			float fov = Mathf.Tan(Mathf.Deg2Rad * fieldOfView * 0.5f);
+
+			float upLength = nearClipPlane * fov;
+			float rightLength = upLength * aspect;
+			Vector3 farPoint = position + nearClipPlane * forward;
+			Vector3 upVec = upLength * up;
+			Vector3 rightVec = rightLength * right;
+			corners[0] = farPoint - upVec - rightVec;
+			corners[1] = farPoint - upVec + rightVec;
+			corners[2] = farPoint + upVec - rightVec;
+			corners[3] = farPoint + upVec + rightVec;
+
+			upLength = farClipPlane * fov;
+			rightLength = upLength * aspect;
+			farPoint = position + farClipPlane * forward;
+			upVec = upLength * up;
+			rightVec = rightLength * right;
+			corners[4] = farPoint - upVec - rightVec;
+			corners[5] = farPoint - upVec + rightVec;
+			corners[6] = farPoint + upVec - rightVec;
+			corners[7] = farPoint + upVec + rightVec;
+
+			//min max point
+			//----------------------------------
+			minPoint = corners[0];
+			maxPoint = corners[0];
+			for (int i = 1; i < 8; ++i)
+			{
+				//unity 这里还有转换什么的 其实不建议用
+				minPoint = Vector3.Min(minPoint, corners[i]);
+				maxPoint = Vector3.Max(maxPoint, corners[i]);
+			}
+
+			//planes
+			//------------------------------
+			planes = new Vector4[6];
+			planes[0] = GetPlane(corners[5], corners[4], position);
+			planes[1] = GetPlane(corners[6], corners[7], position);
+			planes[2] = GetPlane(corners[4], corners[6], position);
+			planes[3] = GetPlane(corners[7], corners[5], position);
+			planes[4] = GetPlane(forward, position + forward * farClipPlane);
+			planes[5] = GetPlane(-forward, position + forward * nearClipPlane);
+		}
+
+		private static Vector4 GetPlane(Vector3 a, Vector3 b, Vector3 c)
+		{
+			Vector3 normal = Vector3.Cross(b - a, c - a).normalized;
+			return new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, a));
+		}
+
+		private static Vector4 GetPlane(Vector3 normal, Vector3 inPoint)
+		{
+			return new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, inPoint));
+		}
+
 		#endregion
 
 		#region Debug & Logging
 
 		private void UpdateDebug(CommandBuffer cmd)
 		{
+			cmd.SetComputeIntParam(data.preCullingCS, _ShouldLOD_ID, data.enableLOD ? 1 : 0);
+			cmd.SetComputeFloatParam(data.preCullingCS, _ShadowDistance_ID, QualitySettings.shadowDistance);
+
 			cmd.SetComputeIntParam(data.occlusionCS, _ShouldFrustumCull_ID, data.enableFrustumCulling ? 1 : 0);
 			cmd.SetComputeIntParam(data.occlusionCS, _ShouldOcclusionCull_ID, data.enableOcclusionCulling ? 1 : 0);
 			cmd.SetComputeIntParam(data.occlusionCS, _ShouldDetailCull_ID, data.enableDetailCulling ? 1 : 0);
@@ -1540,6 +1645,44 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Debug.Log(sb.ToString());
 		}
 
+		private void LogPreInstancesIsVisibleBuffers(string instancePrefix = "", string shadowPrefix = "")
+		{
+			uint[] instancesIsVisible = new uint[m_numberOfInstances];
+			uint[] shadowsIsVisible = new uint[m_numberOfInstances];
+			m_instancesIsVisibleBuffer.GetData(instancesIsVisible);
+			m_shadowsIsVisibleBuffer.GetData(shadowsIsVisible);
+
+			StringBuilder instancesSB = new StringBuilder();
+			StringBuilder shadowsSB = new StringBuilder();
+
+			if (!string.IsNullOrEmpty(instancePrefix))
+			{
+				instancesSB.AppendLine(instancePrefix);
+			}
+
+			if (!string.IsNullOrEmpty(shadowPrefix))
+			{
+				shadowsSB.AppendLine(shadowPrefix);
+			}
+
+			uint iCount =0, sCount = 0;
+			
+			for (int i = 0; i < instancesIsVisible.Length; i++)
+			{
+				iCount += instancesIsVisible[i];
+				sCount += shadowsIsVisible[i];
+
+				instancesSB.AppendLine(i + ": " + instancesIsVisible[i]);
+				shadowsSB.AppendLine(i + ": " + shadowsIsVisible[i]);
+			}
+
+			instancesSB.Insert(0, $"Show:{iCount} , Hide:{instancesIsVisible.Length - iCount} \n");
+			shadowsSB.Insert(0, $"Show:{sCount} , Hide:{instancesIsVisible.Length - sCount} \n");
+
+			Debug.Log(instancesSB.ToString());
+			Debug.Log(shadowsSB.ToString());
+		}
+		
 		private void LogInstancesIsVisibleBuffers(string instancePrefix = "", string shadowPrefix = "")
 		{
 			uint[] instancesIsVisible = new uint[m_numberOfInstances];

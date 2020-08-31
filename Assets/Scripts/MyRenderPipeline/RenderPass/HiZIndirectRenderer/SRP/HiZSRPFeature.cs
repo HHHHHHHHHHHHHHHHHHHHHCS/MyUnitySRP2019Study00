@@ -56,11 +56,10 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			//TODO:
-			// if (!renderingData.cameraData.camera.CompareTag("MainCamera"))
-			// {
-			// 	return;
-			// }
+			if (renderingData.cameraData.camera.cameraType != CameraType.Game)
+			{
+				return;
+			}
 
 			renderer.EnqueuePass(hizIndirectRenderPass);
 			renderer.EnqueuePass(hizDepthPass);
