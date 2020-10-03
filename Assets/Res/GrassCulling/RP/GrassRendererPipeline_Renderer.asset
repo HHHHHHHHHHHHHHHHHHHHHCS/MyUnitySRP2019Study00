@@ -1,5 +1,18 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-2827387754209083150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2918710dca5058d448f7475376ad396b, type: 3}
+  m_Name: NewGrassCullingRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13,8 +26,8 @@ MonoBehaviour:
   m_Name: GrassRendererPipeline_Renderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
-  - {fileID: 5043497782047829119}
-  m_RendererFeatureMap: 7f6c6edc821afe45
+  - {fileID: -2827387754209083150}
+  m_RendererFeatureMap: f2001454d119c3d8
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -37,16 +50,3 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
---- !u!114 &5043497782047829119
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 850e500db8e122c4daa0fc500fcc2194, type: 3}
-  m_Name: GrassRendererFeature
-  m_EditorClassIdentifier: 
-  m_Active: 1

@@ -140,7 +140,7 @@ namespace MyRenderPipeline.RenderPass.Boid
 				//要绘制多少个实例的参数来自bufferWithArgs
 				//Buffer with arguments, bufferWithArgs, has to have five integer numbers at given argsOffset offset: index count per instance, instance count, start index location, base vertex location, start instance location.
 				//2是 ebo   3 是 vbo
-				//带参数的bufferWithArgs，在给定的argsOffset偏移量处必须有五个整数：每个实例的索引计数、实例计数、起始索引位置、基顶点位置、开始实例位置。
+				//带参数的bufferWithArgs，在给定的argsOffset偏移量处必须有五个整数：每个实例的索引计数、实例计数、起始索引位置、基顶点位置、开始实例的偏移。
 				args[0] = mesh.GetIndexCount(0);
 				args[1] = (uint) count;
 				args[2] = mesh.GetIndexStart(0);
