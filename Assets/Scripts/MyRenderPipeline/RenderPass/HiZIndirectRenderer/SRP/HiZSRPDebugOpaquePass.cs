@@ -41,7 +41,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		/// <inheritdoc/>
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-			//TODO:DEBUG  setcamera  set viewport
+			//TODO:DEBUG  set camera  set viewport
 			CommandBuffer cmd = CommandBufferPool.Get(m_ProfilerTag);
 			using (new ProfilingScope(cmd, m_ProfilingSampler))
 			{
@@ -62,7 +62,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 #if UNITY_EDITOR
 				// When rendering the preview camera, we want the layer mask to be forced to Everything
-				if (renderingData.cameraData.isPreviewCamera)
+				if (renderingData.cameraData.camera.cameraType == CameraType.Preview)
 				{
 					filterSettings.layerMask = -1;
 				}
