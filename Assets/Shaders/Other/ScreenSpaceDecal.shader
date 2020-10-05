@@ -137,7 +137,7 @@ Shader "MyRP/Other/ScreenSpaceDecal"
 				//[-0.5,0.5] 左右
 				o.viewRayOS.xyz = mul((float3x3)viewToObjectMatrix, viewRay);
 				//object  空间的 摄像机位置
-				o.cameraPosOSAndFogFactor.xyz = mul(viewToObjectMatrix, float4(0, 0, 0, 1));
+				o.cameraPosOSAndFogFactor.xyz = mul(viewToObjectMatrix, float4(0, 0, 0, 1)).xyz;
 				
 				return o;
 			}
@@ -175,7 +175,7 @@ Shader "MyRP/Other/ScreenSpaceDecal"
 				
 				half4 col = tex2D(_MainTex, uv);
 				col *= _Color;
-				col.a = saturate(col.a * _AlphaRemap + _AlphaRemap.y);
+				col.a = saturate(col.a * _AlphaRemap.x + _AlphaRemap.y);
 				col.rgb *= lerp(1, col.a, _MulAlphaToRGB);
 				
 				#if _UnityFogEnable

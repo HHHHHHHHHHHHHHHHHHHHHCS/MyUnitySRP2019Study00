@@ -1,4 +1,4 @@
-﻿Shader "MyRP/Grass/GrassBendingTrail"
+﻿Shader "MyRP/GrassCulling/GrassCullingTrail"
 {
 	Properties { }
 	SubShader

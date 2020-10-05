@@ -59,7 +59,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawDistance: 125
-  instanceMaterial: {fileID: 2100000, guid: 15362891146135b42b275d0f5ec03981, type: 2}
+  instanceMaterial: {fileID: 2100000, guid: ce8f5271924ef744da05afba227cf7d7, type: 2}
   cullingComputeShader: {fileID: 7200000, guid: 8b17fd74feca1c24fb4d69d962c400c7,
     type: 3}
 --- !u!1 &6093602355107185391
@@ -1449,7 +1449,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 72320eb8b04a61e4aa4a316dee5dfc1d, type: 2}
+  - {fileID: 2100000, guid: ad2ddd56562e206458477423e743be40, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

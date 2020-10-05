@@ -47,6 +47,7 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			Debug.Log("UpdatePos (Slow)");
 
 			//same seed to keep grass visual the same
+			var originState = Random.state;
 			Random.InitState(123);
 
 			//保持密度不怎么变化
@@ -71,6 +72,8 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			//send all posWS to renderer
 			GrassCullingRenderer.instance.allGrassPos = positions;
 			cacheCount = positions.Count;
+
+			Random.state = originState;
 		}
 	}
 }

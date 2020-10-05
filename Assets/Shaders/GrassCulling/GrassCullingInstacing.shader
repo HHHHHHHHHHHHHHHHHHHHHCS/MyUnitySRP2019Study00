@@ -1,6 +1,5 @@
 ﻿Shader "MyRP/GrassCulling/GrassCullingInstancing"
 {
-	//TODO:Dark Texture
 	Properties
 	{
 		_GrassColorRT ("Grass Color RT", 2D) = "white" { }
@@ -37,7 +36,7 @@
 	}
 	SubShader
 	{
-		Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalRenderPipeline" }
+		Tags { "RenderType" = "Opaque" /* "RenderPipeline" = "UniversalRenderPipeline" */ }
 		
 		Pass
 		{
@@ -76,6 +75,7 @@
 			CBUFFER_START(UnityPerMaterial)
 			
 			sampler2D _GrassColorRT;
+			float4 _GrassColorRT_ST;
 			
 			float _GrassWidth;
 			float _GrassHeight;
@@ -198,6 +198,8 @@
 				half3 V = viewWS / viewWSLength;
 				
 				half3 albedo = lerp(_GroundColor, _BaseColor, IN.positionOS.y);//高度决定不一样的颜色 , 可以替换
+				albedo *= tex2Dlod(_GrassColorRT, float4(positionWS.xz * _GrassColorRT_ST.xy + _GrassColorRT_ST.zw, 0, 0));
+				
 				half3 lightingResult = SampleSH(0) * albedo;//indirect
 				lightingResult += ApplySingleDirectLight(mainLight, N, V, albedo, positionOS.y);//main direct light
 				

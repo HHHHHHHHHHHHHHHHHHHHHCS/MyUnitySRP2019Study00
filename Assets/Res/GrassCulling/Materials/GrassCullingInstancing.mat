@@ -20,8 +20,8 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _GrassColorRT:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
+        m_Texture: {fileID: 2800000, guid: 5e98de278b2ccc14f89b76b85596a3f3, type: 3}
+        m_Scale: {x: 0.01, y: 0.01}
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _GrassHeight: 1
@@ -35,9 +35,9 @@ Material:
     - _WindCIntensity: 0.125
     m_Colors:
     - _BaseColor: {r: 0.41960785, g: 0.7176471, b: 0.29411766, a: 1}
-    - _BoundSize: {r: 1, g: 1, b: 0, a: 1}
+    - _BoundSize: {r: 250, g: 250, b: 0, a: 0}
     - _GroundColor: {r: 0.21960784, g: 0.4627451, b: 0.25882354, a: 1}
-    - _PivotPosWS: {r: 0, g: 0, b: 0, a: 0}
+    - _PivotPosWS: {r: 6.2, g: 0, b: 27.1, a: 0}
     - _WindATiling: {r: 0.1, g: 0.1, b: 0, a: 1}
     - _WindAWrap: {r: 0.5, g: 0.5, b: 0, a: 1}
     - _WindBTiling: {r: 0.37, g: 3, b: 0, a: 1}
