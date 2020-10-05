@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using MyRenderPipeline.Utility;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 
 namespace MyRenderPipeline.RenderPass.GrassCulling
