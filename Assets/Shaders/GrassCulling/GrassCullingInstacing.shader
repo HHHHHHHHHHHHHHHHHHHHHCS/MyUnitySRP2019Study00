@@ -134,7 +134,7 @@
 			
 			v2f vert(a2v IN, uint instanceID: SV_InstanceID)
 			{
-				v2f o ;
+				v2f o;
 				
 				float3 perGrassPivotPosWS = _AllInstancesTransformBuffer[_VisibleInstanceOnlyTransformIDBuffer[instanceID]];
 				

@@ -306,8 +306,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1389929071}
-  m_LocalRotation: {x: -0.4093917, y: 0.51449746, z: -0.3058826, w: -0.68856853}
-  m_LocalPosition: {x: 70.12447, y: 78.04051, z: 11.058087}
+  m_LocalRotation: {x: 0.06162845, y: -0.70441604, z: 0.06162845, w: 0.70441604}
+  m_LocalPosition: {x: 64.2, y: 8, z: 7.244586}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -476,6 +476,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6093602356625794944, guid: 583dfe2fe792868458f8bc3214872eb0,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: ad2ddd56562e206458477423e743be40, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 583dfe2fe792868458f8bc3214872eb0, type: 3}
 --- !u!108 &1742617965 stripped

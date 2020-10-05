@@ -10,7 +10,7 @@ AppendStructuredBuffer<uint> _VisibleInstancesOnlyPosWSIDBuffer;
 void CSMain(uint3 id: SV_DispatchThreadID)
 {
 	float4 absPosCS = abs(mul(_VPMatrix, float4(_AllInstancesPosWSBuffer[id.x + _StartOffset], 1.0)));
-	
+
 	//在clip空间进行剔除测试，结果与在NDC空间进行测试结果一致。
 	//这里更喜欢剪辑空间，因为在剪辑空间中进行剔除测试比在NDC中进行筛选测试要快，因为我们可以跳过1个除法。
 	//测试使用OpenGL标准的投影矩阵，因为unity C# 的所有矩阵都是OpenGL标准的
