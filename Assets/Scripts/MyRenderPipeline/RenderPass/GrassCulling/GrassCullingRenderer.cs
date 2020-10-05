@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using MyRenderPipeline.Utility;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
@@ -58,8 +59,7 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			}
 
 			visibleCellIDList.Clear();
-			Camera cam = Camera.main;
-			
+
 			//https://docs.unity3d.com/ScriptReference/GeometryUtility.CalculateFrustumPlanes.html
 			float cameraOriginalFarPlane = cam.farClipPlane;
 			cam.farClipPlane = drawDistance;
@@ -131,13 +131,11 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 
 				cullingComputeShader.Dispatch(0, Mathf.CeilToInt(jobLength / 64f), 1, 1);
 				dispatchCount++;
-
-
 			}
 
-			//复制计数器value  
+			//复制计数器value  args[1] = dstOffsetBytes = sizeof(uint) / sizeof(byte) = 4
 			ComputeBuffer.CopyCount(visibleInstancesOnlyPosWSIDBuffer, argsBuffer, 4);
-			
+
 			Bounds renderBound = new Bounds();
 			renderBound.SetMinMax(new Vector3(minX, 0, minZ), new Vector3(maxX, 0, maxZ));
 			Graphics.DrawMeshInstancedIndirect(GetGrassMeshCache(), 0, instanceMaterial, renderBound, argsBuffer);
@@ -191,11 +189,11 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 
 		private bool UpdateAllInstanceTransformBufferIfNeeded()
 		{
-			if (instanceMaterial == null)
+			if (instanceMaterial == null || allGrassPos.Count == 0)
 			{
 				return false;
 			}
-			
+
 			instanceMaterial.SetVector("_PivotPosWS", transform.position);
 			instanceMaterial.SetVector("_BoundSize", new Vector2(transform.localScale.x, transform.localScale.z));
 
@@ -204,8 +202,9 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			    allInstancesPosWSBuffer != null &&
 			    visibleInstancesOnlyPosWSIDBuffer != null)
 			{
-				return false;
+				return true;
 			}
+
 
 			Debug.Log("UpdateAllInstanceTransformBuffer (Slow)");
 
@@ -265,10 +264,10 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 					offset++;
 				}
 			}
-
 			allInstancesPosWSBuffer.SetData(allGrassPosWSSortedByCell);
+			
 			instanceMaterial.SetBuffer("_AllInstancesTransformBuffer", allInstancesPosWSBuffer);
-			instanceMaterial.SetBuffer("_VisibleInstanceOnlyTrasnformIDBuffer", visibleInstancesOnlyPosWSIDBuffer);
+			instanceMaterial.SetBuffer("_VisibleInstanceOnlyTransformIDBuffer", visibleInstancesOnlyPosWSIDBuffer);
 
 			argsBuffer?.Release();
 			uint[] args = new uint[5] {0, 0, 0, 0, 0};
@@ -279,7 +278,7 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			args[1] = (uint) allGrassPos.Count;
 			args[2] = (uint) mesh.GetIndexStart(0);
 			args[3] = (uint) mesh.GetBaseVertex(0);
-			args[4] = 0;//开始实例的偏移
+			args[4] = 0; //开始实例的偏移
 
 			argsBuffer.SetData(args);
 

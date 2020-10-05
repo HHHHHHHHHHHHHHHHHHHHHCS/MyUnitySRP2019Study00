@@ -103,8 +103,8 @@
 			float3 _PivotPosWS;
 			float2 _BoundSize;
 			
-			StructuredBuffer<float3> _AllInstancesTrasnformBuffer;
-			StructuredBuffer<uint> _VisibleInstanceOnlyTrasnformIDBuffer;
+			StructuredBuffer<float3> _AllInstancesTransformBuffer;
+			StructuredBuffer<uint> _VisibleInstanceOnlyTransformIDBuffer;
 			
 			CBUFFER_END
 			
@@ -119,9 +119,11 @@
 				
 				//高处加点反光
 				float directSpecular = saturate(dot(N, H));
+				//pow(directSpecular,8)
 				directSpecular *= directSpecular;
 				directSpecular *= directSpecular;
 				directSpecular *= directSpecular;
+				//directSpecular *= directSpecular; //enable this line = change to pow(directSpecular,16)
 				directSpecular *= 0.1 * positionOSY;
 				
 				half3 lighting = light.color * (light.shadowAttenuation * light.distanceAttenuation);
@@ -130,11 +132,11 @@
 				return result;
 			}
 			
-			v2f vert(a2v IN, uint instanceID: SV_INSTANCEID)
+			v2f vert(a2v IN, uint instanceID: SV_InstanceID)
 			{
 				v2f o ;
 				
-				float3 perGrassPivotPosWS = _AllInstancesTrasnformBuffer[_VisibleInstanceOnlyTrasnformIDBuffer[instanceID]];
+				float3 perGrassPivotPosWS = _AllInstancesTransformBuffer[_VisibleInstanceOnlyTransformIDBuffer[instanceID]];
 				
 				float perGrassHeight = lerp(2, 5, (sin(perGrassPivotPosWS.x * 23.4643 + perGrassPivotPosWS.z) * 0.45 + 0.55)) * _GrassHeight;
 				

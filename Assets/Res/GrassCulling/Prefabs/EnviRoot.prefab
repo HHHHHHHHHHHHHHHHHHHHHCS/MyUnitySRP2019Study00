@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 360573524}
   - component: {fileID: 360573523}
   m_Layer: 0
-  m_Name: Grass
+  m_Name: InstancedIndirectGrass
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -30,7 +30,7 @@ Transform:
   m_LocalScale: {x: 250, y: 1, z: 250}
   m_Children: []
   m_Father: {fileID: 6093602356437807919}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &360573524
 MonoBehaviour:
@@ -312,52 +312,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!1 &6093602355380879010
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6093602355380879008}
-  - component: {fileID: 1227134164}
-  m_Layer: 0
-  m_Name: InstancedIndirectGrass
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &6093602355380879008
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6093602355380879010}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 6.2, y: 0, z: 27.1}
-  m_LocalScale: {x: 129.90381, y: 1, z: 129.90381}
-  m_Children: []
-  m_Father: {fileID: 6093602356437807919}
-  m_RootOrder: 2
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1227134164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6093602355380879010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48014b0522febe14c84031821d11377c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  instanceCount: 270000
-  drawDistance: 125
-  instanceMaterial: {fileID: 2100000, guid: d994f5159e734e2408cac29ae6fadd13, type: 2}
 --- !u!1 &6093602355409858051
 GameObject:
   m_ObjectHideFlags: 0
@@ -611,7 +565,7 @@ Transform:
   - {fileID: 6093602355692256597}
   - {fileID: 6093602356469453851}
   m_Father: {fileID: 6093602356437807919}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6093602355831187721
 GameObject:
@@ -1116,7 +1070,6 @@ Transform:
   m_Children:
   - {fileID: 6093602355199960530}
   - {fileID: 6093602355654037571}
-  - {fileID: 6093602355380879008}
   - {fileID: 6093602355783069305}
   - {fileID: 360573522}
   m_Father: {fileID: 0}
