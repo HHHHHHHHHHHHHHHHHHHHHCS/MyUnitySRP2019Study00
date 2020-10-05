@@ -60,9 +60,6 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			visibleCellIDList.Clear();
 			Camera cam = Camera.main;
 			
-			
-			CullingGroup cg = new CullingGroup();
-
 			//https://docs.unity3d.com/ScriptReference/GeometryUtility.CalculateFrustumPlanes.html
 			float cameraOriginalFarPlane = cam.farClipPlane;
 			cam.farClipPlane = drawDistance;

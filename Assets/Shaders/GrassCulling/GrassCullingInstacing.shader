@@ -59,8 +59,8 @@
 			// Unity defined keywords
 			#pragma multi_compile_fog
 			
-			#include "Packages/com.unity.render-pipelines/universal/ShaderLibrary/Core.hlsl"
-			#include "Packages/com.unity.render-pipelines/universal/ShaderLibrary/Lighting.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 			
 			struct a2v
 			{
@@ -111,7 +111,24 @@
 			
 			sampler2D _GrassBendingRT;
 			
-			//half3 ApplySingleDirectLight(Light)
+			half3 ApplySingleDirectLight(Light light, half3 N, half3 V, half3 albedo, half positionOSY)
+			{
+				half3 H = normalize(light.direction + V);
+				
+				half directDiffuse = dot(N, light.direction) * 0.5 + 0.5;
+				
+				//高处加点反光
+				float directSpecular = saturate(dot(N, H));
+				directSpecular *= directSpecular;
+				directSpecular *= directSpecular;
+				directSpecular *= directSpecular;
+				directSpecular *= 0.1 * positionOSY;
+				
+				half3 lighting = light.color * (light.shadowAttenuation * light.distanceAttenuation);
+				half3 result = (albedo * directDiffuse + directSpecular) * lighting;
+				
+				return result;
+			}
 			
 			v2f vert(a2v IN, uint instanceID: SV_INSTANCEID)
 			{
@@ -143,12 +160,71 @@
 				positionOS = lerp(positionOS.xyz + bendDir * positionOS.y / - bendDir.y, positionOS.xyz, stepped * 0.95 + 0.05);
 				
 				positionOS.y *= perGrassHeight;
-
-				//TODO:
+				
+				//相机距离比例（如果草离相机很远，则使草地宽度更大，以隐藏小于像素大小的三角形闪烁）
+				float3 viewWS = _WorldSpaceCameraPos - perGrassPivotPosWS;
+				float viewWSLength = length(viewWS);
+				positionOS += cameraTransformRightWS * IN.positionOS.x * max(0, viewWSLength * 0.0225);
+				
+				//移动草 posOS->posWS
+				float3 positionWS = positionOS + perGrassPivotPosWS;
+				
+				float wind = 0;
+				wind += (sin(_Time.y * _WindAFrequency + perGrassPivotPosWS.x * _WindATiling.x + perGrassPivotPosWS.z * _WindATiling.y) * _WindAWrap.x + _WindAWrap.y) * _WindAIntensity;
+				wind += (sin(_Time.y * _WindBFrequency + perGrassPivotPosWS.x * _WindBTiling.x + perGrassPivotPosWS.z * _WindBTiling.y) * _WindBWrap.x + _WindBWrap.y) * _WindBIntensity;
+				wind += (sin(_Time.y * _WindCFrequency + perGrassPivotPosWS.x * _WindCTiling.x + perGrassPivotPosWS.z * _WindCTiling.y) * _WindCWrap.x + _WindCWrap.y) * _WindCIntensity;
+				wind *= IN.positionOS.y;//越高影响越强
+				float3 windOffset = cameraTransformRightWS * wind;
+				positionWS.xyz += windOffset;
+				
+				//posWS->posCS
+				o.positionCS = TransformWorldToHClip(positionWS);
+				
+				Light mainLight;
+				#if _MAIN_LIGHT_SHADOWS
+					mainLight = GetMainLight(TransformWorldToShadowCoord(positionWS));
+				#else
+					mainLight = GetMainLight();
+				#endif
+				
+				//附加随机的Normal
+				//默认草的法线是100%向上指向世界空间，这是一个重要但简单的草法线技巧
+				//随机应用于普通照明，否则照明太均匀
+				//将CameraTransformForwards应用于正常，因为草地是广告牌
+				half3 randomAddToN = (_RandomNormal * sin(perGrassPivotPosWS.x * 82.32523 + perGrassPivotPosWS.z) + wind * - 0.25) * cameraTransformRightWS;
+				half3 N = normalize(half3(0, 1, 0) + randomAddToN - cameraTransformForwardWS * 0.5);
+				half3 V = viewWS / viewWSLength;
+				
+				half3 albedo = lerp(_GroundColor, _BaseColor, IN.positionOS.y);//高度决定不一样的颜色 , 可以替换
+				half3 lightingResult = SampleSH(0) * albedo;//indirect
+				lightingResult += ApplySingleDirectLight(mainLight, N, V, albedo, positionOS.y);//main direct light
+				
+				#if _ADDITIONAL_LIGHTS
+					int additionalLightsCount = GetAdditionalLightsCount();
+					for (int i = 0; i < additionalLightsCount; ++ i)
+					{
+						Light light = GetAdditionalLight(i, positionWS);
+						lightingResult += ApplySingleDirectLight(light, N, V, albedo, positionOS.y);
+					}
+					
+				#endif
+				
+				float fogFactor = ComputeFogFactor(o.positionCS.z);
+				o.color = MixFog(lightingResult, fogFactor);
+				
+				return o;
+			}
+			
+			half4 frag(v2f i): SV_Target
+			{
+				return half4(i.color, 1);
 			}
 			
 			ENDHLSL
 			
 		}
+		
+		//复制 ShadowCaster Pass, 可以让草产生阴影
+		//赋值 DepthOnly Pass , 可以让草产生 _CameraDepthTexture 深度图
 	}
 }

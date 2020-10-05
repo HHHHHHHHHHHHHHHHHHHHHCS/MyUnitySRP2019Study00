@@ -59,8 +59,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawDistance: 125
-  instanceMaterial: {fileID: 0}
-  cullingComputeShader: {fileID: 0}
+  instanceMaterial: {fileID: 2100000, guid: 15362891146135b42b275d0f5ec03981, type: 2}
+  cullingComputeShader: {fileID: 7200000, guid: 8b17fd74feca1c24fb4d69d962c400c7,
+    type: 3}
 --- !u!1 &6093602355107185391
 GameObject:
   m_ObjectHideFlags: 0

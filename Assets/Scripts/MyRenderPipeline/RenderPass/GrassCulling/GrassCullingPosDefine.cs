@@ -40,7 +40,9 @@ namespace MyRenderPipeline.RenderPass.GrassCulling
 			}
 
 			if (instanceCount == cacheCount)
+			{
 				return;
+			}
 
 			Debug.Log("UpdatePos (Slow)");
 
