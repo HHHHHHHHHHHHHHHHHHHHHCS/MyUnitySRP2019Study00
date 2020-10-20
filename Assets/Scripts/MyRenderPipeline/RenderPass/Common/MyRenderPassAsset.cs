@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.Common
 {
 	public abstract class MyRenderPassAsset : ScriptableObject
 	{

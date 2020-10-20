@@ -2,7 +2,7 @@
 using UnityEngine.Rendering;
 using Utility;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.Common
 {
 	[CreateAssetMenu(fileName = "ForwardLitPass", menuName = "MyRP/RenderPass/ForwardLitPass")]
 	public class ForwardLitPass : MyRenderPassAsset

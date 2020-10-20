@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
-using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.Common
 {
 	[CreateAssetMenu(fileName = "TransparentPass", menuName = "MyRP/RenderPass/Transparent")]
 	public class TransparentPass : MyRenderPassAsset

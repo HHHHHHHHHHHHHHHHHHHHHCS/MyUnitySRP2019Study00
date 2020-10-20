@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.Common
 {
 	public abstract class MyUserPass : MonoBehaviour
 	{

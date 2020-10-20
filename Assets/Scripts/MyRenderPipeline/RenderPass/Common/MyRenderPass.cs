@@ -1,10 +1,7 @@
 ﻿using System;
-using MyRenderPipeline.RenderPass;
-using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
-namespace MyRenderPipeline
+namespace MyRenderPipeline.RenderPass.Common
 {
 	public abstract class MyRenderPassRenderer<T> : MyRenderPass
 		where T : MyRenderPassAsset

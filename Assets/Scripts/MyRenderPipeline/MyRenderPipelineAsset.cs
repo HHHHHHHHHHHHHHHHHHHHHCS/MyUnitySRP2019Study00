@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using MyRenderPipeline.RenderPass;
+using MyRenderPipeline.RenderPass.Common;
 using UnityEngine;
 using UnityEngine.Rendering;
 

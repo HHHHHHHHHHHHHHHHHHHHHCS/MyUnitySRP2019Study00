@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using MyRenderPipeline.RenderPass.Common;
 using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.TAA
 {
 	public enum SamplingPatterns
 	{

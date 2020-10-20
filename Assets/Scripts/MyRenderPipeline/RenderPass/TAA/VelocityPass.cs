@@ -1,8 +1,9 @@
-﻿using MyRenderPipeline.Utils;
+﻿using MyRenderPipeline.RenderPass.Common;
+using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass
+namespace MyRenderPipeline.RenderPass.TAA
 {
 	[CreateAssetMenu(fileName = "VelocityPass", menuName = "MyRP/RenderPass/VelocityPass")]
 	public class VelocityPass : MyRenderPassAsset
