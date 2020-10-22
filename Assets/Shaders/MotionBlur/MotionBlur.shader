@@ -13,24 +13,38 @@
 	#include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 	
-	TEXTURE2D_X(_SourceTex);//Sampler2D
+	TEXTURE2D_X(_MainTex);//Sampler2D
 	
 	float4x4 _ViewProjM;
 	float4x4 _PrevViewProjM;
 	float _Intensity;
 	float _Clamp;
-	float4 _SourceTex_TexelSize;
+	float4 _MainTex_TexelSize;
 	
-	sturct VaryingsCMB
+	//URP 理论上应该有内置
+	struct FullscreenAttributes
+	{
+		#if _USE_DRAW_PROCEDURAL
+			uint vertexID: SV_VertexID;
+		#else
+			float4 positionOS: POSITION;
+			float2 uv: TEXCOORD0;
+		#endif
+		UNITY_VERTEX_INPUT_INSTANCE_ID
+	};
+	
+	struct VaryingsCMB
 	{
 		float4 positionCS: SV_POSITION;
 		float4 uv: TEXCOORD0;
 		UNITY_VERTEX_OUTPUT_STEREO
 	};
 	
-	VaryingCMB VertCMB(FullscreenAttributes input)
+	
+	
+	VaryingsCMB VertCMB(FullscreenAttributes input)
 	{
-		VaringsCMB output;
+		VaryingsCMB output;
 		
 		//INSTANCE 给 VR 用的
 		UNITY_SETUP_INSTANCE_ID(input);
@@ -39,20 +53,28 @@
 		#if _USE_DRAW_PROCEDURAL
 			//通过instanceID 来确认用quad哪个顶点
 			GetProceduralQuad(input.vertexID, output.positionCS, output.uv.xy);
+			
+			//[-1,1] -> [0,1]
+			float4 projPos = output.positionCS * 0.5;
+			projPos.xy = projPos.xy + projPos.w;
+			output.uv.zw = projPos.xy;
 		#else
-			output.positionCS = TrasnformObjectToHClip(input.positionOS.xyz);
+			//output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+			output.positionCS = float4(input.positionOS.xyz, 1.0);
 			output.uv.xy = input.uv;
+			#if UNITY_UV_STARTS_AT_TOP
+				output.uv.y = 1 - output.uv.y;
+			#endif
+
+			output.uv.zw = output.uv.xy;
 		#endif
 		
-		//[-1,1] -> [0,1]
-		float4 projPos = output.PositionCS * 0.5;
-		projPos.xy = projPos.xy + projPos.w;
-		output.uv.zw = projPos.xy;
+		
 		
 		return output;
 	}
 	
-	float2 ClampVelocity(float2 velocity, , float maxVelocity)
+	float2 ClampVelocity(float2 velocity, float maxVelocity)
 	{
 		float len = length(velocity);
 		//rcp(x) = 1/x
@@ -62,7 +84,7 @@
 	//通过反算worldPos 在算 vp 空间  做出 运动方向
 	float2 GetCameraVelocity(float4 uv)
 	{
-		float depth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler2D_PointClamp, uv.xy).r;
+		float depth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_PointClamp, uv.xy).r;
 		
 		#if UNITY_REVERSED_Z
 			depth = 1.0 - depth;
@@ -87,6 +109,110 @@
 		return ClampVelocity(prevPosCS - curPosCS, _Clamp);
 	}
 	
+	float3 GatherSample(float sampleNumber, float2 velocity, float invSampleCount, float2 centerUV, float randomVal, float velocitySign)
+	{
+		float offsetLength = (sampleNumber + 0.5) + (velocitySign * (randomVal - 0.5));
+		float2 sampleUV = centerUV + (offsetLength * invSampleCount) * velocity * velocitySign;
+		return SAMPLE_TEXTURE2D_X(_MainTex, sampler_PointClamp, sampleUV).xyz;
+	}
+	
+	//From  Next Generation Post Processing in Call of Duty: Advanced Warfare [Jimenez 2014]
+	// http://advances.realtimerendering.com/s2014/index.html
+	/*
+	float InterleavedGradientNoise(float2 pixCoord, int frameCount)
+	{
+		const float3 magic = float3(0.06711056f, 0.00583715f, 52.9829189f);
+		float2 frameMagicScale = float2(2.083f, 4.867f);
+		pixCoord += frameCount * frameMagicScale;
+		return frac(magic.z * frac(dot(pixCoord, magic.xy)));
+	}
+	*/
+	
+	half4 DoMotionBlur(VaryingsCMB input, int iterations)
+	{
+		UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+		
+		//非VR uv = input.uv
+		float2 uv = UnityStereoTransformScreenSpaceTex(input.uv.xy);
+		float2 velocity = GetCameraVelocity(float4(uv, input.uv.zw)) * _Intensity;
+		//注释在上面了  float2 生成 noise
+		float randomVal = InterleavedGradientNoise(uv * _MainTex_TexelSize.zw, 0) * 0;
+		float invSampleCount = rcp(iterations * 2.0);
+		
+		half3 color = 0.0;
+		
+		UNITY_UNROLL
+		for (int i = 0; i < iterations; i ++)
+		{
+			color += GatherSample(i, velocity, invSampleCount, uv, randomVal, -1.0);
+			color += GatherSample(i, velocity, invSampleCount, uv, randomVal, 1.0);
+		}
+		
+		return half4(color * invSampleCount, 1.0);
+	}
+	
 	ENDHLSL
 	
+	SubShader
+	{
+		Tags { "RenderType" = "Opaque" /*"RenderPipeline" = "UniversalPipeline"*/ }
+		LOD 100
+		ZTest Always
+		ZWrite Off
+		Cull Off
+		
+		Pass
+		{
+			Name "Camera Motion Blur - Low Quality"
+			
+			HLSLPROGRAM
+			
+			#pragma vertex VertCMB
+			#pragma fragment Frag
+			
+			half4 Frag(VaryingsCMB input): SV_Target
+			{
+				return DoMotionBlur(input, 2);
+			}
+			
+			ENDHLSL
+			
+		}
+		
+		Pass
+		{
+			Name "Camera Motion Blur - Medium Quality"
+			
+			HLSLPROGRAM
+			
+			#pragma vertex VertCMB
+			#pragma fragment Frag
+			
+			half4 Frag(VaryingsCMB input): SV_Target
+			{
+				return DoMotionBlur(input, 3);
+			}
+			
+			ENDHLSL
+			
+		}
+		
+		Pass
+		{
+			Name "Camera Motion Blur - High Quality"
+			
+			HLSLPROGRAM
+			
+			#pragma vertex VertCMB
+			#pragma fragment Frag
+			
+			half4 Frag(VaryingsCMB input): SV_Target
+			{
+				return DoMotionBlur(input, 4);
+			}
+			
+			ENDHLSL
+			
+		}
+	}
 }

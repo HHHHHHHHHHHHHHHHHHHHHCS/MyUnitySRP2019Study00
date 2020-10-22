@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace MyRenderPipeline.RenderPass.MotionBlur
@@ -26,8 +27,12 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 
 		private MotionBlurRendererPass motionBlurRendererPass;
 
+		private RenderTargetIdentifier src_RTI;
+
 		public override void Create()
 		{
+			src_RTI = new RenderTargetIdentifier("_CameraOpaqueTexture");
+			
 			motionBlurRendererPass = new MotionBlurRendererPass(settings);
 
 			motionBlurRendererPass.renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
@@ -35,8 +40,8 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
-			var src = renderer.cameraColorTarget;
-			var dest = RenderTargetHandle.CameraTarget;
+			var src = src_RTI;
+			var dest = renderer.cameraColorTarget;
 
 			motionBlurRendererPass.Setup(src, dest);
 

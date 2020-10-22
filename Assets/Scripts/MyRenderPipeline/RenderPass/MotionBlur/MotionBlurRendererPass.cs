@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using MyRenderPipeline.Utils;
+using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -12,7 +13,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 		private ProfilingSampler profilingSampler;
 
 		private RenderTargetIdentifier source { get; set; }
-		private RenderTargetHandle destination { get; set; }
+		private RenderTargetIdentifier destination { get; set; }
 
 		private Matrix4x4 prevViewProjM = Matrix4x4.identity;
 		private bool isFirstVP;
@@ -25,7 +26,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			isFirstVP = true;
 		}
 
-		public void Setup(RenderTargetIdentifier src, RenderTargetHandle dest)
+		public void Setup(RenderTargetIdentifier src, RenderTargetIdentifier dest)
 		{
 			source = src;
 			destination = dest;
@@ -47,7 +48,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 		{
 			Camera camera = renderingData.cameraData.camera;
 
-			if (camera.cameraType == CameraType.SceneView)
+			if (camera.cameraType != CameraType.Game)
 			{
 				return;
 			}
@@ -63,6 +64,8 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			{
 				return;
 			}
+			
+			Debug.Log(camera.name);
 
 			//这是必需的，因为Blit会将viewproj矩阵重置为identity
 			//依赖于setupCameraProperty而不是处理它自己的矩阵。
@@ -72,14 +75,24 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 
 			mat.SetMatrix("_ViewProjM", viewProj);
 
-			mat.SetMatrix("_PreviewProjM", isFirstVP ? viewProj : prevViewProjM);
+			mat.SetMatrix("_PrevViewProjM", isFirstVP ? viewProj : prevViewProjM);
 
 			mat.SetFloat("_Intensity", settings.intensity);
 			mat.SetFloat("_Clamp", settings.clamp);
 
-			Blit(cmd, source, destination.Identifier(), mat, (int) settings.quality);
+			// cmd.SetGlobalTexture("_MainTex", source);
+			// cmd.SetRenderTarget(destination);
+			// cmd.ClearRenderTarget(true, true, Color.black);
+			// cmd.DrawMesh(RenderUtils.FullScreenMesh, Matrix4x4.identity, mat, 0, (int) settings.quality);
+			cmd.BlitFullScreen(source, destination, mat, (int) settings.quality);
+
 
 			prevViewProjM = viewProj;
+			isFirstVP = false;
+
+			context.ExecuteCommandBuffer(cmd);
+			context.Submit();
+			CommandBufferPool.Release(cmd);
 		}
 	}
 }
