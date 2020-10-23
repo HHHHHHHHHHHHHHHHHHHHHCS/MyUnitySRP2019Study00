@@ -48,7 +48,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 		{
 			Camera camera = renderingData.cameraData.camera;
 
-			if (camera.cameraType != CameraType.Game)
+			if (!renderingData.cameraData.isSceneViewCamera)
 			{
 				return;
 			}
@@ -91,7 +91,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			isFirstVP = false;
 
 			context.ExecuteCommandBuffer(cmd);
-			context.Submit();
+			//context.Submit();
 			CommandBufferPool.Release(cmd);
 		}
 	}
