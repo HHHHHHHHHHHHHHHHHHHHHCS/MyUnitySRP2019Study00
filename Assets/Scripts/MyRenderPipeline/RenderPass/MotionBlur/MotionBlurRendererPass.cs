@@ -47,12 +47,12 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			ref RenderingData renderingData)
 		{
 			Camera camera = renderingData.cameraData.camera;
-
-			if (!renderingData.cameraData.isSceneViewCamera)
+			
+			if (renderingData.cameraData.camera.cameraType != CameraType.Game)
 			{
 				return;
 			}
-
+			
 			if (settings.intensity == 0)
 			{
 				return;
@@ -64,8 +64,6 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			{
 				return;
 			}
-			
-			Debug.Log(camera.name);
 
 			//这是必需的，因为Blit会将viewproj矩阵重置为identity
 			//依赖于setupCameraProperty而不是处理它自己的矩阵。

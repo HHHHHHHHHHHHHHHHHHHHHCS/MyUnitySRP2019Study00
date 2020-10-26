@@ -96,6 +96,7 @@
 		float3 viewPos = ComputeViewSpacePosition(uv.zw, depth, unity_CameraInvProjection);
 		//camera(view) -> world
 		float4 worldPos = float4(mul(unity_CameraToWorld, float4(viewPos, 1.0)).xyz, 1.0);
+		worldPos/=worldPos.w;
 		float4 prevPos = worldPos;
 		
 		// world -> vp
@@ -136,7 +137,7 @@
 		float2 uv = UnityStereoTransformScreenSpaceTex(input.uv.xy);
 		float2 velocity = GetCameraVelocity(float4(uv, input.uv.zw)) * _Intensity;
 		//注释在上面了  float2 生成 noise
-		float randomVal = InterleavedGradientNoise(uv * _MainTex_TexelSize.zw, 0) * 0;
+		float randomVal = InterleavedGradientNoise(uv * _MainTex_TexelSize.zw, 0);
 		float invSampleCount = rcp(iterations * 2.0);
 		
 		half3 color = 0.0;
