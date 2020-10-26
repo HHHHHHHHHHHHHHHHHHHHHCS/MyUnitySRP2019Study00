@@ -143,7 +143,7 @@
 		half3 color = 0.0;
 		
 		UNITY_UNROLL
-		for (int i = 0; i < iterations; i ++)
+		for (int i = 0; i < iterations; ++i)
 		{
 			color += GatherSample(i, velocity, invSampleCount, uv, randomVal, -1.0);
 			color += GatherSample(i, velocity, invSampleCount, uv, randomVal, 1.0);
