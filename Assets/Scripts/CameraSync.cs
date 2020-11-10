@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 
@@ -17,12 +16,15 @@ public class CameraSync : MonoBehaviour
 
 	private void OnEnable()
 	{
+		gameTs = Camera.main.transform;
 		SceneView.duringSceneGui += OnCameraMove;
 	}
 
-	private void OnDestroy()
+	private void OnDisable()
 	{
 		SceneView.duringSceneGui -= OnCameraMove;
+		sceneTs = null;
+		gameTs = null;
 	}
 
 	private void OnCameraMove(SceneView sceneView)
@@ -41,10 +43,16 @@ public class CameraSync : MonoBehaviour
 			sceneTs = camTs;
 		}
 
+		//2020.2 Camera.main 优化了
+#if UNITY_2020_2_OR_NEWER
+			gameTs = Camera.main.transform;
+#else
 		if (gameTs == null)
 		{
 			gameTs = Camera.main.transform;
 		}
+#endif
+
 
 		if (sceneTs != null && gameTs != null)
 		{

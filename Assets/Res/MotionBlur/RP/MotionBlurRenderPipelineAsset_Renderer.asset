@@ -16,7 +16,7 @@ MonoBehaviour:
   settings:
     quality: 2
     intensity: 1
-    clamp: 0.05
+    clamp: 0.2
     motionBlurMaterial: {fileID: 2100000, guid: 915e476b4d4c7e34186439dd323fd53e,
       type: 2}
 --- !u!114 &11400000
