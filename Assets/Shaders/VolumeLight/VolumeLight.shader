@@ -288,7 +288,7 @@
 		//3.Blit to Screen Buffer
 		Pass
 		{
-			Name "Volume Light  Mixed"
+			Name "Volume Light Mixed"
 			ZTest Off
 			ZWrite On
 			Cull Back
