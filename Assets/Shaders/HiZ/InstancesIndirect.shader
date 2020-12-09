@@ -72,7 +72,7 @@
 				
 				float3 worldNormal = normalize(mul(input.normal.xyz, (float3x3)UNITY_MATRIX_M));
 				float3 worldTangent = normalize(mul(input.tangent.xyz, (float3x3)UNITY_MATRIX_M));
-				float3 worldBinormal = cross(worldNormal, worldTangent) * input.tangent.w;
+				float3 worldBinormal = cross(worldNormal, worldTangent) * input.tangent.w * unity_WorldTransformParams.w;
 				o.t2w0 = float3(worldTangent.x, worldBinormal.x, worldNormal.x);
 				o.t2w1 = float3(worldTangent.y, worldBinormal.y, worldNormal.y);
 				o.t2w2 = float3(worldTangent.z, worldBinormal.z, worldNormal.z);

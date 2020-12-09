@@ -66,7 +66,7 @@
 		o.worldPos = mul(unity_ObjectToWorld, i.vertex);
 		float3 worldNormal = UnityObjectToWorldNormal(i.normal);
 		float3 worldTangent = UnityObjectToWorldDir(i.tangent.xyz);
-		float3 worldBinormal = cross(worldNormal, worldTangent) * i.tangent.w;
+		float3 worldBinormal = cross(worldNormal, worldTangent) * i.tangent.w * unity_WorldTransformParams.w;
 		o.t2w0 = float3(worldTangent.x, worldBinormal.x, worldNormal.x);
 		o.t2w1 = float3(worldTangent.y, worldBinormal.y, worldNormal.y);
 		o.t2w2 = float3(worldTangent.z, worldBinormal.z, worldNormal.z);
@@ -82,7 +82,7 @@
 		o.uv = i.texcoord;
 		o.normal = UnityObjectToWorldNormal(i.normal);
 		o.tangent = float4(UnityObjectToWorldDir(i.tangent.xyz), i.tangent.w);
-		//o.binormal = cross(o.normal, o.tangent) * i.tangent.w;
+		//o.binormal = cross(o.normal, o.tangent) * i.tangent.w * unity_WorldTransformParams.w;
 		o.worldPos = mul(unity_ObjectToWorld, i.vertex);
 		o.screenPos = ComputeScreenPos(o.pos);
 		return o;
@@ -95,7 +95,7 @@
 		o.uv = i.texcoord;
 		o.normal = UnityObjectToWorldNormal(i.normal);
 		o.tangent = float4(UnityObjectToWorldDir(i.tangent.xyz), i.tangent.w);
-		//o.binormal = cross(o.normal, o.tangent) * i.tangent.w;
+		//o.binormal = cross(o.normal, o.tangent) * i.tangent.w * unity_WorldTransformParams.w;
 		float4 p = float4(i.vertex.x, i.vertex.y, 1, 1);
 		p = p * _ProjectionParams.z;
 		o.worldPos = mul(_ViewProjectionInverseMatrix, float4(p.xyzw));
@@ -144,7 +144,7 @@
 	float3 TangentSpaceToWorld(float3 normal, float4 tangent4, float3 v)
 	{
 		float3 tangent = normalize(tangent4.xyz);
-		float3 binormal = cross(normal, tangent.xyz) * tangent4.w;
+		float3 binormal = cross(normal, tangent.xyz) * tangent4.w * * unity_WorldTransformParams.w;
 		float3x3 mat = {
 			tangent.xyz,
 			binormal.xyz,
