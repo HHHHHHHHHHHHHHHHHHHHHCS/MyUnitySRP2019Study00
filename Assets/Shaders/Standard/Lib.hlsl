@@ -144,7 +144,7 @@
 	float3 TangentSpaceToWorld(float3 normal, float4 tangent4, float3 v)
 	{
 		float3 tangent = normalize(tangent4.xyz);
-		float3 binormal = cross(normal, tangent.xyz) * tangent4.w * * unity_WorldTransformParams.w;
+		float3 binormal = cross(normal, tangent.xyz) * tangent4.w * unity_WorldTransformParams.w;
 		float3x3 mat = {
 			tangent.xyz,
 			binormal.xyz,

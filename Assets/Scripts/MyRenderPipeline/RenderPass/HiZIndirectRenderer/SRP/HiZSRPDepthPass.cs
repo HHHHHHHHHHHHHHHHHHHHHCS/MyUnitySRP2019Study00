@@ -50,7 +50,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 					width = textureDescriptor.width;
 					height = textureDescriptor.height;
-					depthRT = new RenderTexture(textureDescriptor.width, textureDescriptor.height, 32,
+					depthRT = new RenderTexture(textureDescriptor.width, textureDescriptor.height, 0,
 						RenderTextureFormat.RFloat,
 						-1)
 					{
