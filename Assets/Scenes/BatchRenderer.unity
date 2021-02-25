@@ -200,13 +200,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 306349854}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
+  m_LocalPosition: {x: 45, y: 20, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
 --- !u!114 &306349858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -230,9 +230,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 306349854}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43d1991b38846be49b0d0c9fc1dfa555, type: 3}
+  m_Script: {fileID: 11500000, guid: c9c8b884a0ec0ff43835536c00734791, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  lowMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  lodDis: 30
+  material: {fileID: 2100000, guid: 42e482bdd52ae7f4ab6f1acd83acc149, type: 2}
 --- !u!114 &306349860
 MonoBehaviour:
   m_ObjectHideFlags: 0

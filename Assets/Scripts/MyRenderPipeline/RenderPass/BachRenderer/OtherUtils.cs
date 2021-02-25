@@ -66,15 +66,52 @@ namespace MyRenderPipeline.RenderPass.BachRenderer
 			return planes;
 		}
 
+		public static float4 dot4(float4 xs, float4 ys, float4 zs, float4 mx, float4 my, float4 mz)
+		{
+			return xs * mx + ys * my + zs * mz;
+		}
+
+		public enum IntersectResult
+		{
+			Out,
+			In,
+			Partial
+		};
+		
+		public static IntersectResult Intersect2NoPartial(NativeArray<PlanePacket4> cullingPlanePackets, Bounds a)
+		{
+			float4 mx = a.center.x;
+			float4 my = a.center.y;
+			float4 mz = a.center.z;
+
+			float4 ex = a.extents.x;
+			float4 ey = a.extents.y;
+			float4 ez = a.extents.z;
+
+			int4 masks = 0;
+
+			for (int i = 0; i < cullingPlanePackets.Length; i++)
+			{
+				var p = cullingPlanePackets[i];
+				float4 distances = dot4(p.Xs, p.Ys, p.Zs, mx, my, mz) + p.Distances;
+				float4 radii = dot4(ex, ey, ez, math.abs(p.Xs), math.abs(p.Ys), math.abs(p.Zs));
+
+				masks += (int4) (distances + radii <= 0);
+			}
+
+			int outCount = math.csum(masks);
+			return outCount > 0 ? IntersectResult.Out : IntersectResult.In;
+		}
+
 
 		//LOD--------------------
 		public struct LODParams : IEqualityComparer<LODParams>, IEquatable<LODParams>
 		{
-			public float  distanceScale;
+			public float distanceScale;
 			public float3 cameraPos;
 
-			public bool   isOrtho;
-			public float  orthosize;
+			public bool isOrtho;
+			public float orthosize;
 
 			public bool Equals(LODParams x, LODParams y)
 			{
