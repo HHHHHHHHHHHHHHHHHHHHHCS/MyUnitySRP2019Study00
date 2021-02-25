@@ -11,7 +11,7 @@ using Random = UnityEngine.Random;
 
 //using static MyRenderPipeline.Other.OtherUtils;
 
-namespace MyRenderPipeline.RenderPass.BachRenderer
+namespace MyRenderPipeline.RenderPass.BatchRenderer
 {
 	//https://docs.unity3d.com/ScriptReference/Rendering.BatchRendererGroup.AddBatch.html
 	public class BatchRender : MonoBehaviour

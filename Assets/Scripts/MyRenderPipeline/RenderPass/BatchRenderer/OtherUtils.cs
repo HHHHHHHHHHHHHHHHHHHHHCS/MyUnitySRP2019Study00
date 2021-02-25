@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass.BachRenderer
+namespace MyRenderPipeline.RenderPass.BatchRenderer
 {
 	//因为有一些Unity.Mathematics没有 在ECS包里面 所以抽出来了
 	public class OtherUtils
