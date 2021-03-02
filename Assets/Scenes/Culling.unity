@@ -377,7 +377,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
   mat: {fileID: 2100000, guid: ee61075d2fad44743bef79bcff6033c1, type: 2}
-  rendererType: 2
+  rendererType: 3
   x: 50
   y: 50
   z: 50

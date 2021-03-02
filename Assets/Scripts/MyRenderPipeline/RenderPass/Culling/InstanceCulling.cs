@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -89,24 +90,27 @@ namespace MyRenderPipeline.RenderPass.Culling
 
 		private void Update()
 		{
-			var planes = new NativeArray<Plane>(GeometryUtility.CalculateFrustumPlanes(Camera.main), Allocator.Temp);
+			var planes = new NativeArray<Plane>(GeometryUtility.CalculateFrustumPlanes(Camera.main), Allocator.TempJob);
 
 			result.Clear();
-			if (rendererType == RendererType.NoCulling)
+
+			switch (rendererType)
 			{
-				foreach (var item in objInfos)
-				{
-					result.Add(InfoToMatrix(item));
-				}
+				case RendererType.NoCulling:
+					NoCulling(objInfos, result);
+					break;
+				case RendererType.CPUCulling:
+					CPUCulling(planes, objInfos, result);
+					break;
+				case RendererType.ThreadCulling:
+					MultiThreadCulling(planes, objInfos, result);
+					break;
+				case RendererType.JobCulling:
+					JobCulling(planes, objInfos, result);
+					break;
 			}
-			else if (rendererType == RendererType.CPUCulling)
-			{
-				CPUCulling(planes, objInfos, result);
-			}
-			else if (rendererType == RendererType.ThreadCulling)
-			{
-				MultiThreadCulling(planes, objInfos, result);
-			}
+
+			planes.Dispose();
 
 			if (bufferCB == null || bufferCB.count != result.Count)
 			{
@@ -128,12 +132,14 @@ namespace MyRenderPipeline.RenderPass.Culling
 			Graphics.DrawMeshInstancedIndirect(mesh, 0, mat, objBounds, argsBufferCB);
 		}
 
-		public static Matrix4x4 InfoToMatrix(ObjInfo info) =>
+		[BurstCompile]
+		public static Matrix4x4 ObjInfoToMatrix(ObjInfo info) =>
 			Matrix4x4.TRS(info.bounds.center, info.rotation, info.scale);
 
 		//也可以通过下面API调用  只是比较慢
 		//GeometryUtility.CalculateFrustumPlanes(cam);
 		//GeometryUtility.TestPlanesAABB(planes, objCollider.bounds)
+		[BurstCompile]
 		public static IntersectResult TestPlaneAABBFast(NativeArray<Plane> planes, Bounds bounds
 			, bool testIntersection = false)
 		{
@@ -200,6 +206,14 @@ namespace MyRenderPipeline.RenderPass.Culling
 			return testResult;
 		}
 
+		public void NoCulling(List<ObjInfo> infos, List<Matrix4x4> result)
+		{
+			foreach (var item in infos)
+			{
+				result.Add(ObjInfoToMatrix(item));
+			}
+		}
+
 		public void CPUCulling(NativeArray<Plane> planes, List<ObjInfo> infos, List<Matrix4x4> result)
 		{
 			foreach (var item in infos)
@@ -207,7 +221,7 @@ namespace MyRenderPipeline.RenderPass.Culling
 				var noCulled = TestPlaneAABBFast(planes, item.bounds);
 				if (noCulled != IntersectResult.Outside)
 				{
-					result.Add(InfoToMatrix(item));
+					result.Add(ObjInfoToMatrix(item));
 				}
 			}
 		}
@@ -245,9 +259,74 @@ namespace MyRenderPipeline.RenderPass.Culling
 					var isIn = TestPlaneAABBFast(planes, item.bounds);
 					if (isIn != IntersectResult.Outside)
 					{
-						queue.Enqueue(InfoToMatrix(item));
+						queue.Enqueue(ObjInfoToMatrix(item));
 					}
 				}
+			}
+		}
+
+		public void JobCulling(NativeArray<Plane> planes, List<ObjInfo> infos,
+			List<Matrix4x4> result)
+		{
+			NativeArray<ObjInfo> objinfos = new NativeArray<ObjInfo>(infos.ToArray(), Allocator.TempJob);
+
+			var cullingJob = new CullingJob()
+			{
+				objInfos = objinfos,
+				planes = planes
+			};
+
+
+			NativeList<int> indexList = new NativeList<int>(Allocator.TempJob);
+			//第三个参数innerloopBatchCount  表示分块大小
+			var handle = cullingJob.ScheduleAppend(indexList, objinfos.Length, 64);
+			handle.Complete();
+
+			NativeArray<Matrix4x4> matrix4X4s = new NativeArray<Matrix4x4>(indexList.Length, Allocator.TempJob);
+			var makeJob = new MakeMatrixListJob()
+			{
+				objInfos = objinfos,
+				indexList = indexList,
+				matrix4X4s = matrix4X4s
+			};
+			handle = makeJob.Schedule(indexList.Length, 64);
+			handle.Complete();
+			result.AddRange(matrix4X4s);
+
+			objinfos.Dispose();
+			indexList.Dispose();
+			matrix4X4s.Dispose();
+		}
+
+		[BurstCompile]
+		public struct CullingJob : IJobParallelForFilter
+		{
+			[ReadOnly] public NativeArray<ObjInfo> objInfos;
+
+			[ReadOnly] public NativeArray<Plane> planes;
+
+
+			public bool Execute(int index)
+			{
+				var isIn = TestPlaneAABBFast(planes, objInfos[index].bounds);
+				return isIn != IntersectResult.Outside;
+			}
+		}
+
+		[BurstCompile]
+		public struct MakeMatrixListJob : IJobParallelFor
+		{
+			[ReadOnly, NativeDisableParallelForRestriction]
+			public NativeArray<ObjInfo> objInfos;
+
+			[ReadOnly, NativeDisableParallelForRestriction]
+			public NativeArray<int> indexList;
+
+			public NativeArray<Matrix4x4> matrix4X4s;
+
+			public void Execute(int index)
+			{
+				matrix4X4s[index] = ObjInfoToMatrix(objInfos[indexList[index]]);
 			}
 		}
 	}
