@@ -1,4 +1,5 @@
-﻿Shader "MyRP/Cloud/ParallaxCloud"
+﻿//https://zhuanlan.zhihu.com/p/83355147
+Shader "MyRP/Cloud/ParallaxCloud"
 {
 	Properties
 	{
@@ -108,6 +109,30 @@
 				float3 prev_shadeP = shadeP;
 				float3 mainP = shadeP;
 				
+				//RPM版
+				/*
+				const int linearStep = 2;
+				const int binaryStep = 5;
+				float4 T = tex2D(_MainTex, shadeP2.xy);
+				float h2 = T.a * _HeightAmount;
+				// linear search
+				float3 lioffset = viewRay / (viewRay.z * (linearStep+1));
+				for(int k=0; k<linearStep; k++)
+				{
+					float d = 1.0 - tex2Dlod(_MainTex, float4(shadeP.xy,0,0)).a * h2;
+					shadeP += lioffset * step(shadeP.z, d);
+				}
+				// binary search
+				float3 biOffset = lioffset;
+				for(int j=0; j<binaryStep; j++)
+				{
+					biOffset = biOffset * 0.5;
+					float d = 1.0 - tex2Dlod(_MainTex, float4(shadeP.xy,0,0)).a * h2;
+					shadeP += biOffset * sign(d - shadeP.z);
+				}
+				*/
+
+				//POM版
 				while(d > mainP.z)
 				{
 					prev_shadeP = mainP;
