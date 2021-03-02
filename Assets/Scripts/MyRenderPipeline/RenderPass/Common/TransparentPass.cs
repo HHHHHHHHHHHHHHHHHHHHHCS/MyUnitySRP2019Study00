@@ -64,6 +64,8 @@ namespace MyRenderPipeline.RenderPass.Common
 				perObjectData = PerObjectData.ReflectionProbes,
 			};
 			drawingSettings.SetShaderPassName(1, new ShaderTagId("TransparentFront"));
+			drawingSettings.SetShaderPassName(1, new ShaderTagId("Transparent"));
+
 			RenderStateBlock stateBlock = new RenderStateBlock(RenderStateMask.Nothing);
 
 			context.DrawRenderers(renderingData.cullResults, ref drawingSettings, ref filteringSettings,

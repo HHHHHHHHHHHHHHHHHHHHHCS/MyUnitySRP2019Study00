@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Cloud_ParallaxCloud
+  m_Shader: {fileID: 4800000, guid: 83833b75319d7db44983e9d6ae4de456, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: c21f7b8b3813ae74caa19d2a76c6dee1, type: 3}
+        m_Scale: {x: 5, y: 5}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Alpha: 0.77
+    - _Height: 0.18
+    - _HeightAmount: 1
+    - _LightIntensity: 1
+    - _UseFixedLight: 0
+    m_Colors:
+    - _Color: {r: 0.69411767, g: 0.7882353, b: 0.8509804, a: 1}
+    - _FixedLightDir: {r: 0.981, g: 0.122, b: -0.148, a: 0}
+    - _HeightTileSpeed: {r: 1, g: 1, b: 0.05, a: 0}

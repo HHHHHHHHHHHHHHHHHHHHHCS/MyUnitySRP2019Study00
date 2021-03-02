@@ -9,6 +9,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 	[CreateAssetMenu(fileName ="CloudPass", menuName ="MyRP/RenderPass/CloudPass")]
 	public class CloudPass : MyRenderPassAsset
 	{
+		public bool enablePass = true;
 		public bool drawFullScreen = false;
 		public Material material;
 		public ComputeShader curlNoiseMotionComputeShader;
@@ -42,6 +43,12 @@ namespace MyRenderPipeline.RenderPass.Cloud
 
 		public override void Render(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
+			if (!asset.enablePass)
+			{
+				return;
+			}
+			
+			
 			if (renderingData.camera.cameraType == CameraType.Preview)
 			{
 				return;

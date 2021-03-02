@@ -13,7 +13,7 @@ namespace MyRenderPipeline
 		[Header("Max Shadow Distance"), SerializeField,]
 		private float m_MaxShadowDistance;
 
-		[Header("HDR"), SerializeField,] private bool m_HDR;
+		[Header("HDR"), SerializeField] private bool m_HDR;
 
 		//Delayed : 用于在脚本中使float，int或string变量的属性被延迟。只有按了回车或焦点离开字段才会返回新值。
 		[Header("Resolution Scale"), Range(0.25f, 2f), Delayed, SerializeField,]

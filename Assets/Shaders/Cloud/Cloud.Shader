@@ -429,7 +429,6 @@ Shader "MyRP/Cloud"
 			
 		}
 		
-		/*
 		Pass
 		{
 			Cull Back
@@ -439,12 +438,12 @@ Shader "MyRP/Cloud"
 			
 			HLSLPROGRAM
 			
+			/*
 			#pragma vertex cloudCubeVert
 			#pragma fragment cloudCubeFrag
-			
+			*/
+
 			ENDHLSL
-			
 		}
-		*/
 	}
 }
