@@ -95,7 +95,8 @@ namespace MyRenderPipeline.RenderPass.Cloud
 				}
 				else
 				{
-					var cubes = Resources.FindObjectsOfTypeAll<VolumetricCloudCube>();
+					//美术效果不是很好  而且有问题算了
+					var cubes = Object.FindObjectsOfType<VolumetricCloudCube>();
 					foreach (var cube in cubes)
 					{
 						cmd.SetGlobalVector("_CubeSize", cube.transform.localScale);

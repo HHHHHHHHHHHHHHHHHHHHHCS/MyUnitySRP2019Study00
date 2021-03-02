@@ -107,6 +107,11 @@ Shader "MyRP/Cloud"
 	float2 _CoverageMotionVelocity;
 	
 	
+	//Only Cube---------------
+	float3 _CubeSize;
+	float3 _CubePos;
+	
+	
 	inline float pow2(float3 v)
 	{
 		return pow(length(v), 2);
@@ -307,7 +312,7 @@ Shader "MyRP/Cloud"
 				far = 0;
 			}
 		}
-		else if(r < _GroundRadius + _CloudTop)//云里面
+		else if (r < _GroundRadius + _CloudTop)//云里面
 		{
 			//近处有  优先近处
 			if (bn)
@@ -409,6 +414,101 @@ Shader "MyRP/Cloud"
 		return float4(color, saturate(1 - transmittance));
 	}
 	
+	//Only Cube---------------------
+	
+	inline float Intersect(float3 origin, float3 ray, float3 pos, float3 normal)
+	{
+		float t = (dot(normal, pos) - dot(normal, origin)) / dot(normal, ray);
+		
+		return t;
+	}
+	
+	inline float DensityAt(float3 pos)
+	{
+		float3 d = abs(pos - _CubePos) - (_CubeSize / 2);
+		if (length(saturate(d)) > 0)
+			return 0;
+		float3 coord = pos;
+		float3 height = (pos.y - _CubePos.y + .5 * _CubeSize.y) / _CubeSize.y;
+		coord.xz /= _Scale;
+		coord.y /= _HeightScale;
+		return CloudDensity(SampleNoise(coord.xzy) * CloudShape(height));
+	}
+	
+	
+	v2f cloudCubeVert(appdata_full i)
+	{
+		v2f o;
+		o.pos = UnityObjectToClipPos(i.vertex);
+		o.uv = i.texcoord;
+		o.worldPos = mul(unity_ObjectToWorld, i.vertex);
+		o.ray = o.worldPos - _WorldCameraPos;
+		return o;
+	}
+	
+	
+	float4 cloudCubeFrag(v2f i): SV_TARGET
+	{
+		float3 ray = normalize(i.worldPos - _WorldCameraPos);
+		float3 intersectA = float3(
+			Intersect(_WorldCameraPos, ray, _CubePos + float3(.5, 0, 0) * _CubeSize, float3(1, 0, 0)),
+			Intersect(_WorldCameraPos, ray, _CubePos + float3(0, .5, 0) * _CubeSize, float3(0, 1, 0)),
+			Intersect(_WorldCameraPos, ray, _CubePos + float3(0, 0, .5) * _CubeSize, float3(0, 0, 1))
+		);
+		float3 intersectB = float3(
+			Intersect(_WorldCameraPos, ray, _CubePos - float3(.5, 0, 0) * _CubeSize, float3(-1, 0, 0)),
+			Intersect(_WorldCameraPos, ray, _CubePos - float3(0, .5, 0) * _CubeSize, float3(0, -1, 0)),
+			Intersect(_WorldCameraPos, ray, _CubePos - float3(0, 0, .5) * _CubeSize, float3(0, 0, -1))
+		);
+		float3 front = min(intersectA, intersectB);
+		float3 back = max(intersectA, intersectB);
+		float near = max(front.x, max(front.y, front.z));
+		float far = min(back.x, min(back.y, back.z));
+		float dist = near;//length(i.worldPos - _WorldCameraPos);
+		float maxDist = far - near;//length(_CubeSize);
+		float raymarchingStepSize = maxDist / _Samples;
+		float transmittance = 1;
+		float3 light = 0;
+		//return float4(frac(near), frac(far), 0, 1);
+		
+		[loop]
+		for (float i = 1; i <= _Samples; i ++)
+		{
+			dist += raymarchingStepSize;
+			float3 pos = _WorldCameraPos + ray * dist;
+			float3 d = abs(pos - _CubePos) - (_CubeSize / 2);
+			if (length(saturate(d)) > 0)
+				break;
+			float density = DensityAt(pos);
+			
+			transmittance *= exp(-density * raymarchingStepSize * _Absorption);
+			
+			float occlusion = 0;
+			[loop]
+			for (float i = 1; i < 6; i ++)
+			{
+				occlusion += DensityAt(pos + (-_MainLightDirection * _ScatterDistanceMultiply * (i / 5))) * (_ScatterDistanceMultiply * .2);
+			}
+			float lightTransmittance = exp(-occlusion * _AbsorptionToLight) * (1 - exp( - (occlusion + 0.01) * 2 * _PowderEffectScale));
+			light += _Color * _LightScale * lightTransmittance * density * transmittance * raymarchingStepSize;
+			if (transmittance < 0.01)
+				break;
+		}
+		light = light / saturate(1 - transmittance + 0.0001);
+		float3 color = lerp(_DarkColor, _LightColor, light) * saturate(1 - transmittance);
+		
+		return float4(color, saturate(1 - transmittance));
+		
+		
+		
+		// return float4(ray, 1);
+		// float3 color;
+		// float density = raymarchingCloud(ray, color);
+		// return float4(0, 0, 0,1 -  density);
+		
+		// return 0;
+	}
+	
 	ENDHLSL
 	
 	SubShader
@@ -425,25 +525,34 @@ Shader "MyRP/Cloud"
 			#pragma vertex cloudSkyVert
 			#pragma fragment cloudOnSkyFrag
 			
+			//可以让DX 不进行汇编模式 可以debug  可以加入到compute shader中
+			//#pragma enable_d3d11_debug_symbols
+			
 			ENDHLSL
 			
 		}
 		
 		Pass
 		{
+			//避免被自动渲染
+			Tags { "LightMode" = "RaymarchingTest" }
+			
+			
 			Cull Back
 			ZWrite Off
 			ZTest Off
 			Blend One OneMinusSrcAlpha
 			
+			
+			
 			HLSLPROGRAM
 			
-			/*
 			#pragma vertex cloudCubeVert
 			#pragma fragment cloudCubeFrag
-			*/
-
+			
+			
 			ENDHLSL
+			
 		}
 	}
 }

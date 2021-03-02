@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c677f18a436ccfd449fce06a55d0c5b4, type: 3}
-  m_Name: CloudPass
+  m_Name: CloudCubePass
   m_EditorClassIdentifier: 
   enablePass: 1
-  drawFullScreen: 1
-  material: {fileID: 2100000, guid: 4600d8022962ad541926b72e706fc883, type: 2}
+  drawFullScreen: 0
+  material: {fileID: 2100000, guid: 229ed2a7a3946574c87e9c7eb2090361, type: 2}
   curlNoiseMotionComputeShader: {fileID: 0}
   curlNoiseTexture: {fileID: 0}
