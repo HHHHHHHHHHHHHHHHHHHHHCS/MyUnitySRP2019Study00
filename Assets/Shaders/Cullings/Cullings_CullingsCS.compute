@@ -1,0 +1,70 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel GPUCulling
+
+#pragma enable_d3d11_debug_symbols
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+#define BLOCK_COUNT_X 64
+
+
+uint _InfosCount;
+RWStructuredBuffer<float3x2> _ObjsAABB;
+RWStructuredBuffer<float4> _Planes;
+RWBuffer<uint> _DrawArgs;
+AppendStructuredBuffer<uint> _Result;
+
+inline bool IsCulled(in float3x2 bound)
+{
+	
+	float3 center = bound._11_21_31;
+	float3 extens = bound._12_22_32;
+	float3 minPos = center - extens;
+	float3 maxPos = center + extens;
+	
+	float3 vmin, vmax;
+	
+	[unroll]
+	for (int i = 0; i < 6; i ++)
+	{
+		float4 normalDist = _Planes[i];
+		
+		bool b = normalDist.x < 0;
+		vmin.x = minPos.x * b + maxPos.x * !b;
+		vmax.x = maxPos.x * b + minPos.x * !b;
+		
+		b = normalDist.y < 0;
+		vmin.y = minPos.y * b + maxPos.y * !b;
+		vmax.y = maxPos.y * b + minPos.y * !b;
+		
+		b = normalDist.z < 0;
+		vmin.z = minPos.z * b + maxPos.z * !b;
+		vmax.z = maxPos.z * b + minPos.z * !b;
+		
+		float dot1 = dot(normalDist.xyz, vmin);
+		
+		if (dot1 < - normalDist.w)
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+[numthreads(BLOCK_COUNT_X, 1, 1)]
+void GPUCulling(uint3 id: SV_DispatchThreadID)
+{
+	uint idx = id.x ;
+	
+	if (idx >= _InfosCount)
+	{
+		return;
+	}
+	
+	if (!IsCulled(_ObjsAABB[idx]))
+	{
+		InterlockedAdd(_DrawArgs[1], 1);
+		_Result.Append(idx);
+	}
+}

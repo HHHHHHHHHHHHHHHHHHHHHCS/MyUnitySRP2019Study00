@@ -36,10 +36,13 @@ namespace MyRenderPipeline.RenderPass.Culling
 			public Vector3 scale;
 		}
 
-		private static readonly int MatrixsIDBuffer = Shader.PropertyToID("_MatrixsBuffer");
+		private static readonly int MatrixsBuffer_ID = Shader.PropertyToID("_MatrixsBuffer");
+		private static readonly int IndexBuffer_ID = Shader.PropertyToID("_IndexBuffer");
+		private static readonly int InfosCount_ID = Shader.PropertyToID("_InfosCount");
 
 		public Mesh mesh;
 		public Material mat;
+		public ComputeShader cullingComputeShader;
 
 		public RendererType rendererType;
 
@@ -56,6 +59,12 @@ namespace MyRenderPipeline.RenderPass.Culling
 		private ComputeBuffer argsBufferCB;
 		private uint[] args;
 
+		//compute shader
+		private ComputeBuffer indexBufferCB;
+		private ComputeBuffer aabbBufferCB;
+		private ComputeBuffer planesBufferCB;
+		private int gpuCullingKernel = -1;
+		private int gpuThreadCount = -1;
 
 		private void Start()
 		{
@@ -108,25 +117,38 @@ namespace MyRenderPipeline.RenderPass.Culling
 				case RendererType.JobCulling:
 					JobCulling(planes, objInfos, result);
 					break;
+				case RendererType.GPUCulling:
+					GPUCulling(planes, objInfos);
+					break;
 			}
 
 			planes.Dispose();
 
-			if (bufferCB == null || bufferCB.count != result.Count)
+			if (rendererType != RendererType.GPUCulling)
 			{
-				bufferCB?.Dispose();
-				bufferCB = new ComputeBuffer(result.Count, sizeof(float) * 16, ComputeBufferType.Structured);
+				if (bufferCB == null || bufferCB.count != result.Count)
+				{
+					bufferCB?.Dispose();
+					bufferCB = new ComputeBuffer(result.Count, sizeof(float) * 16, ComputeBufferType.Structured);
+				}
+
+				bufferCB.SetData(result);
+				mat.SetBuffer(MatrixsBuffer_ID, bufferCB);
+
+				if (args[1] != result.Count)
+				{
+					args[1] = (uint) result.Count;
+				}
+
+				argsBufferCB.SetData(args);
+				mat.DisableKeyword("_GPUCULLING");
 			}
-
-			bufferCB.SetData(result);
-			mat.SetBuffer(MatrixsIDBuffer, bufferCB);
-
-			if (args[1] != result.Count)
+			else
 			{
-				args[1] = (uint) result.Count;
+				mat.EnableKeyword("_GPUCULLING");
 			}
+			
 
-			argsBufferCB.SetData(args);
 
 			var objBounds = new Bounds(new Vector3(x / 2.0f, y / 2.0f, z / 2.0f), new Vector3(x, y, z));
 			Graphics.DrawMeshInstancedIndirect(mesh, 0, mat, objBounds, argsBufferCB);
@@ -254,7 +276,7 @@ namespace MyRenderPipeline.RenderPass.Culling
 						break;
 					}
 
-					var item = objInfos[tmp];
+					var item = infos[tmp];
 
 					var isIn = TestPlaneAABBFast(planes, item.bounds);
 					if (isIn != IntersectResult.Outside)
@@ -297,6 +319,77 @@ namespace MyRenderPipeline.RenderPass.Culling
 			indexList.Dispose();
 			matrix4X4s.Dispose();
 		}
+
+		public void GPUCulling(NativeArray<Plane> planes, List<ObjInfo> infos)
+		{
+			if (argsBufferCB == null)
+			{
+				argsBufferCB = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
+			}
+
+			if (bufferCB == null)
+			{
+				bufferCB = new ComputeBuffer(infos.Count, sizeof(float) * 16, ComputeBufferType.Structured);
+				
+				Matrix4x4[] matrixsList = new Matrix4x4[infos.Count];
+				for (int i = 0; i < infos.Count; i++)
+				{
+					matrixsList[i] = ObjInfoToMatrix(infos[i]);
+				}
+
+				bufferCB.SetData(matrixsList);
+				mat.SetBuffer(MatrixsBuffer_ID, bufferCB);
+			}
+
+			if (indexBufferCB == null)
+			{
+				indexBufferCB = new ComputeBuffer(infos.Count, sizeof(uint), ComputeBufferType.Append);
+			}
+
+			if (aabbBufferCB == null)
+			{
+				aabbBufferCB = new ComputeBuffer(infos.Count, 6 * sizeof(float));
+				Bounds[] aabbList = new Bounds[infos.Count];
+				for (int i = 0; i < infos.Count; i++)
+				{
+					aabbList[i] = infos[i].bounds;
+				}
+				aabbBufferCB.SetData(aabbList);
+			}
+
+			if (planesBufferCB == null)
+			{
+				planesBufferCB = new ComputeBuffer(6, 4 * sizeof(float));
+			}
+
+
+			if (gpuCullingKernel < 0)
+			{
+				gpuCullingKernel = cullingComputeShader.FindKernel("GPUCulling");
+				cullingComputeShader.GetKernelThreadGroupSizes(gpuCullingKernel, out var x, out var y, out var z);
+				gpuThreadCount = Mathf.CeilToInt((float) infos.Count / (x * y * z));
+
+				//Input
+				cullingComputeShader.SetBuffer(gpuCullingKernel, "_ObjsAABB", aabbBufferCB);
+				cullingComputeShader.SetBuffer(gpuCullingKernel, "_Planes", planesBufferCB);
+				cullingComputeShader.SetInt(InfosCount_ID, infos.Count);
+
+				//Out
+				cullingComputeShader.SetBuffer(gpuCullingKernel, "_DrawArgs", argsBufferCB);
+				cullingComputeShader.SetBuffer(gpuCullingKernel, "_Result", indexBufferCB);
+
+				mat.SetBuffer(IndexBuffer_ID, indexBufferCB);
+			}
+
+			//Set Input Data 
+			argsBufferCB.SetData(args);
+			indexBufferCB.SetCounterValue(0);
+			planesBufferCB.SetData(planes);
+
+
+			cullingComputeShader.Dispatch(gpuCullingKernel, gpuThreadCount, 1, 1);
+		}
+
 
 		[BurstCompile]
 		public struct CullingJob : IJobParallelForFilter

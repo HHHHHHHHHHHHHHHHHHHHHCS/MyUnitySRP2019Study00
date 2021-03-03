@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Cullings_Indirect
   m_Shader: {fileID: 4800000, guid: 454d1d436f12d5642bd7b69538a54b37, type: 3}
-  m_ShaderKeywords: _Indirect _PROCEDURAL
+  m_ShaderKeywords: _GPUCULLING _Indirect _PROCEDURAL
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0

@@ -377,7 +377,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
   mat: {fileID: 2100000, guid: ee61075d2fad44743bef79bcff6033c1, type: 2}
-  rendererType: 3
+  cullingComputeShader: {fileID: 7200000, guid: dfd94748b8a73064c816d351597e5b08,
+    type: 3}
+  rendererType: 4
   x: 50
   y: 50
   z: 50

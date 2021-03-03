@@ -65,7 +65,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 				{
 					property.SetFloat(Thickness_ID, thickness);
 					property.SetFloat(ClipRate_ID, thickness);
-					Graphics.DrawMesh(mesh, matrix, cloudMaterial, layer, camera, 0, property, false, receiveShadows,
+					Graphics.DrawMesh(mesh, matrix, cloudMaterial, layer, null, 0, property, false, receiveShadows,
 						false);
 				}
 			}
@@ -76,7 +76,7 @@ namespace MyRenderPipeline.RenderPass.Cloud
 				property.SetFloatArray(ClipRate_ID, clipRates);
 
 				Graphics.DrawMeshInstanced(mesh, 0, cloudMaterial, matrices, count, property,
-					UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows, layer, camera);
+					UnityEngine.Rendering.ShadowCastingMode.Off, receiveShadows, layer);//, camera);
 			}
 		}
 	}

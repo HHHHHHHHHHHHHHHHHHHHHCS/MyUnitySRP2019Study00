@@ -17,7 +17,7 @@
 			#pragma vertex vert
 			#pragma fragment frag
 			
-			#pragma multi_compile _ _PROCEDURAL
+			#pragma multi_compile _ _GPUCULLING
 			
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 			
@@ -49,6 +49,10 @@
 			#define _INDIRECT_ENABLE (SHADER_TARGET >= 45)
 			#ifdef _INDIRECT_ENABLE
 				StructuredBuffer<float4x4> _MatrixsBuffer;
+				#ifdef _GPUCULLING
+					StructuredBuffer<uint> _IndexBuffer;
+				#endif
+				
 			#endif
 			
 			TEXTURE2D(_MainTex);
@@ -63,7 +67,11 @@
 				v2f o;
 				
 				#ifdef _INDIRECT_ENABLE
-					UNITY_MATRIX_M = _MatrixsBuffer[instanceID];
+					uint idx = instanceID;
+					#ifdef _GPUCULLING
+						idx = _IndexBuffer[instanceID];
+					#endif
+					UNITY_MATRIX_M = _MatrixsBuffer[idx];
 					
 					UNITY_MATRIX_I_M = UNITY_MATRIX_M;
 					UNITY_MATRIX_I_M._14_24_34 *= -1;
