@@ -24,7 +24,7 @@ inline bool IsCulled(in float3x2 bound)
 	
 	float3 vmin, vmax;
 	
-	[unroll]
+	[loop]
 	for (int i = 0; i < 6; i ++)
 	{
 		float4 normalDist = _Planes[i];

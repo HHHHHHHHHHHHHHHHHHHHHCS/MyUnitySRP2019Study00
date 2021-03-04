@@ -38,9 +38,9 @@
 			struct a2v
 			{
 				float4 vertex: POSITION;
-				float2 uv: TEXCOORD0;
+				// float2 uv: TEXCOORD0;
 				float4 normal: NORMAL;
-				float2 lightmapUV: TEXCOORD1;
+				// float2 lightmapUV: TEXCOORD1;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 			
@@ -50,14 +50,13 @@
 				float3 worldPos: TEXCOORD0;
 				float4 uv: TEXCOORD1;
 				float3 worldNormal: TEXCOORD2;
-				
-				DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 3);
-				
-				half4 fogFactorAndVertexLight: TEXCOORD4; // x: fogFactor, yzw: vertex light
-				
+				half fogFactor: TEXCOORD3;
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-					float4 shadowCoord: TEXCOORD5;
+					float4 shadowCoord: TEXCOORD4;
 				#endif
+
+				// DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 3);
+				// half4 fogFactorAndVertexLight: TEXCOORD4; // x: fogFactor, yzw: vertex light
 				
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
@@ -106,13 +105,13 @@
 				#endif
 				
 				
-				OUTPUT_LIGHTMAP_UV(v.lightmapUV, unity_LightmapST, o.lightmapUV);
-				OUTPUT_SH(o.worldNormal.xyz, o.vertexSH);
+				o.fogFactor = ComputeFogFactor(o.pos.z);
 				
 				
-				half fogFactor = ComputeFogFactor(o.pos.z);
-				half3 vertexLight = VertexLighting(o.worldPos, o.worldNormal);
-				o.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
+				// OUTPUT_LIGHTMAP_UV(v.lightmapUV, unity_LightmapST, o.lightmapUV);
+				// OUTPUT_SH(o.worldNormal.xyz, o.vertexSH);
+				// half3 vertexLight = VertexLighting(o.worldPos, o.worldNormal);
+				// o.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
 				
 				return o;
 			}
@@ -168,7 +167,7 @@
 				//Final Color
 				half4 finalCol = half4(0, 0, 0, 1);
 				finalCol.rgb = lerp(_CloudColorDark, lightCol, finalLit);// *atten
-				finalCol.rgb = MixFog(finalCol.rgb, i.fogFactorAndVertexLight.x);
+				finalCol.rgb = MixFog(finalCol.rgb, i.fogFactor);
 				
 				return finalCol;
 			}

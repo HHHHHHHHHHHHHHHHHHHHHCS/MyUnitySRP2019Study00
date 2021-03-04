@@ -36,21 +36,23 @@
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 			
+			//因为这种云是可以烘焙的  如果需要可以加上lightmapuUV
 			struct a2v
 			{
 				float4 vertex: POSITION;
-				float2 uv: TEXCOORD0;
 				float4 normal: NORMAL;
-				float2 lightmapUV: TEXCOORD1;
+				// float2 uv: TEXCOORD0;
+				// float2 lightmapUV: TEXCOORD1;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 			
 			struct v2g
 			{
 				float4 vertex: SV_POSITION;
-				// float2 uv: TEXCOORD0;
-				float4 normal: NORMAL;
 				// float2 lightmapUV: TEXCOORD1;
+				float3 worldNormal: TEXCOORD2;
+				float distFade: TEXCOORD3;
+				// DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 4);
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 			
@@ -60,14 +62,13 @@
 				float3 worldPos: TEXCOORD0;
 				float4 uv: TEXCOORD1;
 				float3 worldNormal: TEXCOORD2;
-				
-				DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 3);
-				
-				half4 fogFactorAndVertexLight: TEXCOORD4; // x: fogFactor, yzw: vertex light
-				
+				float2 fogFactorAndClipRate: TEXCOORD3;
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-					float4 shadowCoord: TEXCOORD5;
+					float4 shadowCoord: TEXCOORD4;
 				#endif
+
+				// DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 3);
+				// half4 fogFactorAndVertexLight: TEXCOORD4; // x: fogFactor, yzw: vertex light
 				
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
@@ -82,10 +83,10 @@
 			float _BackLightStrength;
 			float _BackSssStrength;
 			
-			UNITY_INSTANCING_BUFFER_START(Props)
-			UNITY_DEFINE_INSTANCED_PROP(float, _Thickness)
-			UNITY_DEFINE_INSTANCED_PROP(float, _ClipRate)
-			UNITY_INSTANCING_BUFFER_END(Props)
+			uint _Count;
+			float _Thickness[10];
+			float _ClipRate[10];
+			
 			
 			v2g vert(a2v v)
 			{
@@ -95,71 +96,68 @@
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				
 				o.vertex = v.vertex;
-				o.normal = v.normal;
-				
-				/*
-				o.pos = TransformObjectToHClip(v.vertex.xyz);
-				
-				//nowZ/far=z占比
-				float distFade = (o.pos.w / _ProjectionParams.z) * 100;
-				distFade = clamp(distFade, 1, 5);
-				
-				float flowOffset = sin((v.vertex.x + v.vertex.y + v.vertex.z));
-				v.vertex.xyz += v.normal.xyz * (UNITY_ACCESS_INSTANCED_PROP(Props, _Thickness) * distFade + flowOffset);
-				
-				o.worldPos = TransformObjectToWorld(v.vertex.xyz);
-				
 				o.worldNormal = TransformObjectToWorldNormal(v.normal.xyz);
 				
-				o.pos = TransformWorldToHClip(o.worldPos);
+				float4 pos = TransformObjectToHClip(v.vertex.xyz);
 				
-				o.uv.xyz = v.vertex.xyz * 0.5 + 0.5;
+				//nowZ/far=z占比
+				float distFade = (pos.w / _ProjectionParams.z) * 100;
+				o.distFade = clamp(distFade, 1, 5);
 				
-				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-					o.shadowCoord = TransformWorldToShadowCoord(o.worldPos);
-				#endif
+				// OUTPUT_LIGHTMAP_UV(v.lightmapUV, unity_LightmapST, o.lightmapUV);
+				// OUTPUT_SH(o.worldNormal.xyz, o.vertexSH);
 				
-				
-				OUTPUT_LIGHTMAP_UV(v.lightmapUV, unity_LightmapST, o.lightmapUV);
-				OUTPUT_SH(o.worldNormal.xyz, o.vertexSH);
-				
-				
-				half fogFactor = ComputeFogFactor(o.pos.z);
-				half3 vertexLight = VertexLighting(o.worldPos, o.worldNormal);
-				o.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
-				*/
 				return o;
 			}
 			
 			
-			[maxvertexcount(30)]// or 60
-			void geom(triangle v2g v[3], inout TriangleStream < g2f > TriStream)
+			[maxvertexcount(60)]// or 60
+			void geom(triangle v2g vertexs[3], inout TriangleStream < g2f > TriStream)
 			{
 				g2f o = (g2f)0;
 				
-				for (int i = 0; i < 10; i ++)
+				for (uint i = 0; i < _Count; i ++)
 				{
-					for (int j = 0; j < 3; j ++)
+					[unroll]
+					for (uint j = 0; j < 3; j ++)
 					{
-						v2g temp = v[j];
-						o.pos = TransformObjectToHClip(temp.vertex.xyz + temp.vertex.xyz * i);
-						o.worldNormal = temp.normal.xyz;//TransformObjectToWorldNormal(temp.normal.xyz);
+						v2g v = vertexs[j];
+						
+						UNITY_TRANSFER_INSTANCE_ID(v, o);
+						
+						o.worldNormal = v.worldNormal.xyz;
+						
+						float4 vertex = v.vertex;
+						
+						float flowOffset = sin((v.vertex.x + v.vertex.y + v.vertex.z));
+						//这里用(顶点位置-零点位置) 作为外扩的方向
+						vertex.xyz += normalize(vertex.xyz) * (_Thickness[i] * v.distFade + flowOffset);
+						
+						o.worldPos = TransformObjectToWorld(vertex.xyz);
+						
+						o.pos = TransformWorldToHClip(o.worldPos);
+						
+						o.uv.xyz = vertex.xyz * 0.5 + 0.5;
+						
+						#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+							o.shadowCoord = TransformWorldToShadowCoord(o.worldPos);
+						#endif
+						
+						
+						o.fogFactorAndClipRate.x = ComputeFogFactor(o.pos.z);
+						o.fogFactorAndClipRate.y = _ClipRate[i];
+						
+						
 						TriStream.Append(o);
 					}
 					TriStream.RestartStrip();
 				}
-				
-				
-				
-				// UNITY_SETUP_INSTANCE_ID(v);
-				// UNITY_TRANSFER_INSTANCE_ID(v, o);
 			}
 			
 			half4 frag(g2f i): SV_Target
 			{
 				UNITY_SETUP_INSTANCE_ID(i);
-				return half4(i.worldNormal,1.0);
-				/*
+				
 				i.worldNormal = SafeNormalize(i.worldNormal);
 				float4 shadowCoord = float4(0, 0, 0, 0);
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
@@ -170,7 +168,7 @@
 					// 	i.shadowCoord = float4(0, 0, 0, 0);
 				#endif
 				
-				half clipRate = UNITY_ACCESS_INSTANCED_PROP(Props, _ClipRate);
+				half clipRate = i.fogFactorAndClipRate.y;
 				clipRate = PositivePow(clipRate, _NoiseSmoothness);
 				
 				//Light
@@ -207,10 +205,9 @@
 				//Final Color
 				half4 finalCol = half4(0, 0, 0, 1);
 				finalCol.rgb = lerp(_CloudColorDark, lightCol, finalLit);// *atten
-				finalCol.rgb = MixFog(finalCol.rgb, i.fogFactorAndVertexLight.x);
+				finalCol.rgb = MixFog(finalCol.rgb, i.fogFactorAndClipRate.x);
 				
 				return finalCol;
-				*/
 			}
 			
 			ENDHLSL
