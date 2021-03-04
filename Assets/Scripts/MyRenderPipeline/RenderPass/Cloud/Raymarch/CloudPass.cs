@@ -4,7 +4,7 @@ using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass.Cloud
+namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 {
 	[CreateAssetMenu(fileName ="CloudPass", menuName ="MyRP/RenderPass/CloudPass")]
 	public class CloudPass : MyRenderPassAsset

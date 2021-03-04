@@ -1,8 +1,7 @@
-﻿using System;
-using MyRenderPipeline.Utility;
+﻿using MyRenderPipeline.Utility;
 using UnityEngine;
 
-namespace MyRenderPipeline.RenderPass.Cloud
+namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 {
 	[ExecuteInEditMode]
 	public class CurlNoiseMotion2D : MonoBehaviour

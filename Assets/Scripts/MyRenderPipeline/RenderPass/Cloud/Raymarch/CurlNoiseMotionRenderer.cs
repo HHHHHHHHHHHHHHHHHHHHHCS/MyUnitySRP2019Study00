@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace MyRenderPipeline.RenderPass.Cloud
+namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 {
 	public class CurlNoiseMotionRenderer
 	{

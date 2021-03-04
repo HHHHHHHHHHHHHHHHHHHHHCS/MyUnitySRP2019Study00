@@ -1,0 +1,10 @@
+﻿#pragma kernel CSMain
+
+Texture3D<float4> _Src;
+RWTexture3D<float4> _Target;
+
+[numthreads(8, 8, 8)]
+void CSMain(uint3 id: SV_DispatchThreadID)
+{
+	_Target[id] = _Src[id];
+}

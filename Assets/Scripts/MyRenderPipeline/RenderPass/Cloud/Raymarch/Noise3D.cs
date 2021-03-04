@@ -1,7 +1,7 @@
 ﻿using MyRenderPipeline.Utility;
 using UnityEngine;
 
-namespace MyRenderPipeline.RenderPass.Cloud
+namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 {
 	public class Noise3D : MonoBehaviour
 	{
