@@ -23,7 +23,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		public float persistence = 0.5f;
 		public Vector2 offset;
 
-		public override int stride => 7 * sizeof(float);
+		public override int Stride => 7 * sizeof(float);
 
 
 		public override Array GetDataArray()

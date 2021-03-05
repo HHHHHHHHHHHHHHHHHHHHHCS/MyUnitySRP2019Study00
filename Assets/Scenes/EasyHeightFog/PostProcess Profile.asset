@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-4119660870799804714
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b24c9f92cb57a3f42a1dafa0b1fcc352, type: 3}
+  m_Name: EasyHeightFogPostProcess
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  fogDensity:
+    m_OverrideState: 0
+    m_Value: 0.02
+    min: 0
+    max: 0.05
+  fogHeightFalloff:
+    m_OverrideState: 0
+    m_Value: 0.02
+    min: 0.001
+    max: 0.1
+  fogHeight:
+    m_OverrideState: 0
+    m_Value: 0
+  fogDensity2:
+    m_OverrideState: 0
+    m_Value: 0.02
+    min: 0
+    max: 0.05
+  fogHeightFalloff2:
+    m_OverrideState: 0
+    m_Value: 0.02
+    min: 0.001
+    max: 0.1
+  fogHeight2:
+    m_OverrideState: 0
+    m_Value: 0
+  fogInscatteringColor:
+    m_OverrideState: 0
+    m_Value: {r: 0.447, g: 0.639, b: 1, a: 1}
+    hdr: 0
+    showAlpha: 0
+    showEyeDropper: 1
+  fogMaxOpacity:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
+  startDistance:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 5000
+  fogCutoffDistance:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 20000000
+  directionalInscatteringExponent:
+    m_OverrideState: 0
+    m_Value: 4
+    min: 2
+    max: 64
+  directionalInscatteringStartDistance:
+    m_OverrideState: 0
+    m_Value: 0
+  directionalInscatteringColor:
+    m_OverrideState: 0
+    m_Value: {r: 0.25, g: 0.25, b: 0.125, a: 1}
+    hdr: 0
+    showAlpha: 0
+    showEyeDropper: 1
+  directionalInscatteringIntensity:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 10
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: PostProcess Profile
+  m_EditorClassIdentifier: 
+  components:
+  - {fileID: -4119660870799804714}

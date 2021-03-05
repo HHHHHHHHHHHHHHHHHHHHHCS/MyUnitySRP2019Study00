@@ -9,7 +9,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		public abstract System.Array GetDataArray();
 
-		public abstract int stride { get; }
+		public abstract int Stride { get; }
 
 		private void OnValidate()
 		{
