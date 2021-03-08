@@ -4,9 +4,9 @@
 // static const int threads = 8;
 // static const int minMaxAccuracy = 10000000;
 #define threads 8
-#define minMaxAccuracy 1e + 7
+#define minMaxAccuracy 10000000
 
-uint resolution;
+uint _Resolution;
 RWTexture3D<float4> _Result;
 RWBuffer<int> _MinMax;
 
@@ -109,23 +109,24 @@ float Worley(StructuredBuffer < float3 > points, int numCells, float3 samplePos)
 [numthreads(threads, threads, threads)]
 void CSWorley(uint3 id: SV_DispatchThreadID)
 {
-	float3 pos = id / (float)resolution;
+	float3 pos = id / (float)_Resolution;
 	// Layer 3 levels of noise
 	float layerA = Worley(_PointsA, _NumCellsA, pos);
 	float layerB = Worley(_PointsB, _NumCellsB, pos);
 	float layerC = Worley(_PointsC, _NumCellsC, pos);
-	
+
 	float noiseSum = layerA + (layerB * _Persistence) + (layerC * _Persistence * _Persistence);
 	float maxVal = 1 + (_Persistence) + (_Persistence * _Persistence);
 	
 	// keep inside range [0,1] as will be clamped in texture
 	noiseSum /= maxVal;
+
 	// Invert
 	if (_InvertNoise)
 	{
-		noiseSum = 1 - noiseSum;
+		noiseSum = 1.0 - noiseSum;
 	}
-	
+
 	// keep track of min max (using int to support atomic operation)
 	int val = (int) (noiseSum * minMaxAccuracy);
 	InterlockedMin(_MinMax[0], val);

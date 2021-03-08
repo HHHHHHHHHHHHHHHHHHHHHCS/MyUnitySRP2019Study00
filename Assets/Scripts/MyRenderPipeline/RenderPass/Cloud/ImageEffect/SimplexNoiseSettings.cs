@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 {
-	[CreateAssetMenu]
+	[CreateAssetMenu(menuName = "Noise/SimplexNoiseSettings")]
 	public class SimplexNoiseSettings : NoiseSettings
 	{
 		public struct DataStruct

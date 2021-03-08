@@ -8,6 +8,20 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 {
 	public class WeatherMap : MonoBehaviour
 	{
+		private const int main_Kernel = 0;
+		private const int normalize_Kernel = 1;
+		private const int threadGroupSize = 16;
+
+
+		private static readonly int offsets_ID = Shader.PropertyToID("_Offsets");
+		private static readonly int noiseSettings_ID = Shader.PropertyToID("_NoiseSettings");
+		private static readonly int minMaxBuffer_ID = Shader.PropertyToID("_MinMaxBuffer");
+		private static readonly int result_ID = Shader.PropertyToID("_Result");
+		private static readonly int resolution_ID = Shader.PropertyToID("_Resolution");
+		private static readonly int minMax_ID = Shader.PropertyToID("_MinMax");
+		private static readonly int params_ID = Shader.PropertyToID("_Params");
+
+
 		public bool logTime;
 		public ComputeShader noiseCompute;
 		public SimplexNoiseSettings noiseSettings;
@@ -17,14 +31,18 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		public Transform container;
 
 		public bool viewerEnabled;
-		[HideInInspector] public bool showSettingsEditor = true;
 
-		List<ComputeBuffer> buffersToRelease;
+#if UNITY_EDITOR
+		[HideInInspector] public bool showSettingsEditor = true;
+#endif
 
 		public Vector2 minMax = new Vector2(0, 1);
 		//public int[] minMaxTest;
 
-		public void UpdateMap()
+		private List<ComputeBuffer> buffersToRelease;
+
+
+		public void UpdateMap(Vector2 heightOffset)
 		{
 			var sw = System.Diagnostics.Stopwatch.StartNew();
 
@@ -46,24 +64,24 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				offsets[i] = (o * 2 - Vector4.one) * 1000 + (Vector4) container.position;
 			}
 
-			CreateBuffer(offsets, sizeof(float) * 4, "offsets");
+			CreateBuffer(offsets, sizeof(float) * 4, offsets_ID);
 
 			var settings = (SimplexNoiseSettings.DataStruct) noiseSettings.GetDataArray().GetValue(0);
-			settings.offset += FindObjectOfType<CloudMaster>().heightOffset;
-			CreateBuffer(new SimplexNoiseSettings.DataStruct[] {settings}, noiseSettings.Stride, "noiseSettings", 0);
-			noiseCompute.SetTexture(0, "Result", weatherMap);
-			noiseCompute.SetInt("resolution", resolution);
-			var minMaxBuffer = CreateBuffer(new int[] {int.MaxValue, 0}, sizeof(int), "minMaxBuffer", 0);
-			noiseCompute.SetBuffer(1, "minMaxBuffer", minMaxBuffer);
-			noiseCompute.SetVector("minMax", minMax);
-			noiseCompute.SetVector("params", testParams);
+			settings.offset += heightOffset;
+			CreateBuffer(new SimplexNoiseSettings.DataStruct[] {settings}, noiseSettings.Stride, noiseSettings_ID,
+				main_Kernel);
+			noiseCompute.SetTexture(0, result_ID, weatherMap);
+			noiseCompute.SetInt(resolution_ID, resolution);
+			var minMaxBuffer = CreateBuffer(new int[] {int.MaxValue, 0}, sizeof(int), minMaxBuffer_ID, main_Kernel);
+			noiseCompute.SetVector(minMax_ID, minMax);
+			noiseCompute.SetVector(params_ID, testParams);
 
-			int threadGroupSize = 16;
 			int numThreadGroups = Mathf.CeilToInt(resolution / (float) threadGroupSize);
 			noiseCompute.Dispatch(0, numThreadGroups, numThreadGroups, 1);
 
-			noiseCompute.SetTexture(1, "Result", weatherMap);
-			//noiseCompute.Dispatch (1, numThreadGroups, numThreadGroups, 1);
+			// noiseCompute.SetBuffer(normalize_Kernel, minMaxBuffer_ID, minMaxBuffer);
+			// noiseCompute.SetTexture(normalize_Kernel, result_ID, weatherMap);
+			//noiseCompute.Dispatch (normalize_Kernel, numThreadGroups, numThreadGroups, normalize_Kernel);
 
 			//minMaxTest = new int[2];
 			//minMaxBuffer.GetData (minMaxTest);
@@ -80,12 +98,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			}
 		}
 
-		ComputeBuffer CreateBuffer(System.Array data, int stride, string bufferName, int kernel = 0)
+		ComputeBuffer CreateBuffer(System.Array data, int stride, int bufferID, int kernel = 0)
 		{
 			var buffer = new ComputeBuffer(data.Length, stride, ComputeBufferType.Raw);
 			buffersToRelease.Add(buffer);
 			buffer.SetData(data);
-			noiseCompute.SetBuffer(kernel, bufferName, buffer);
+			noiseCompute.SetBuffer(kernel, bufferID, buffer);
 			return buffer;
 		}
 

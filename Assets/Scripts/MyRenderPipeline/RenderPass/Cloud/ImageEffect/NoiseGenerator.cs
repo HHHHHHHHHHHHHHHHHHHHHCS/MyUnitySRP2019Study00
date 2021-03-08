@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -16,6 +15,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		private const int computeThreadGroupSize = 8;
 
+		private const int copy_Kernel = 0;
 		private const int worley_Kernel = 0;
 		private const int normalize_Kernel = 1;
 
@@ -62,8 +62,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		public WorleyNoiseSettings[] shapeSettings;
 		public WorleyNoiseSettings[] detailSettings;
-		public ComputeShader noiseCompute;
-		public ComputeShader copy;
+		public ComputeShader noiseCS;
+		public ComputeShader copyCS;
+		public ComputeShader slicerCS;
+
 
 		[Header("Viewer Settings")] public bool viewerEnabled;
 		public bool viewerGreyscale = true;
@@ -73,10 +75,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		[Range(0, 1)] public float viewerSize = 1;
 
 
-		[HideInInspector] public bool showSettingsEditor = true;
 		[SerializeField, HideInInspector] public RenderTexture shapeTexture;
 		[SerializeField, HideInInspector] public RenderTexture detailTexture;
 
+#if UNITY_EDITOR
+		[HideInInspector] public bool showSettingsEditor = true;
+#endif
+		
 		// Internal
 		private List<ComputeBuffer> buffersToRelease;
 		private bool updateNoise;
@@ -128,7 +133,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			CreateTexture(ref shapeTexture, shapeResolution, shapeNoiseName);
 			CreateTexture(ref detailTexture, detailResolution, detailNoiseName);
 
-			if (updateNoise && noiseCompute)
+			if (updateNoise && noiseCS)
 			{
 				var timer = System.Diagnostics.Stopwatch.StartNew();
 
@@ -151,12 +156,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				int activeTextureResolution = ActiveTexture.width;
 
 				//set values:
-				noiseCompute.SetFloat(persistence_ID, activeSettings.persistence);
-				noiseCompute.SetInt(resolution_ID, activeTextureResolution);
-				noiseCompute.SetVector(channelMask_ID, ChannelMask);
+				noiseCS.SetFloat(persistence_ID, activeSettings.persistence);
+				noiseCS.SetInt(resolution_ID, activeTextureResolution);
+				noiseCS.SetVector(channelMask_ID, ChannelMask);
 
 				//也可以用 noiseCompute.FindKernel("CSWorley");
-				noiseCompute.SetTexture(worley_Kernel, result_ID, ActiveTexture);
+				noiseCS.SetTexture(worley_Kernel, result_ID, ActiveTexture);
 				var minMaxBuffer = CreateBuffer(new int[] {int.MaxValue, 0}, sizeof(int),
 					minmax_ID, worley_Kernel);
 				UpdateWorley(activeSettings);
@@ -164,20 +169,21 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				//dispatch noise gen kernel
 				//也可以用 noiseCompute.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
 				int numThreadGroups = Mathf.CeilToInt(activeTextureResolution / (float) computeThreadGroupSize);
-				noiseCompute.Dispatch(worley_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
+				noiseCS.Dispatch(worley_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
 
 
 				//set normalization  
-				noiseCompute.SetBuffer(normalize_Kernel, minmax_ID, minMaxBuffer);
-				noiseCompute.SetTexture(normalize_Kernel, result_ID, ActiveTexture);
+				noiseCS.SetBuffer(normalize_Kernel, minmax_ID, minMaxBuffer);
+				noiseCS.SetTexture(normalize_Kernel, result_ID, ActiveTexture);
 				//dispatch normalization
-				noiseCompute.Dispatch(normalize_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
+				noiseCS.Dispatch(normalize_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
 
 				if (logComputeTime)
 				{
 					//use getData can make sure wait really time
 					var minMax = new int[2];
 					minMaxBuffer.GetData(minMax);
+					// Debug.Log(minMax[0] + "___" + minMax[1]);
 
 					Debug.Log($"Noise Generation: {timer.ElapsedMilliseconds} ms");
 				}
@@ -225,17 +231,17 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 
 		//读取本地出存的tex3d 赋值给target
-		private void Load(string saveName, RenderTexture target)
+		public void Load(string saveName, RenderTexture target)
 		{
 			string sceneName = SceneManager.GetActiveScene().name;
 			saveName = sceneName + "_" + saveName;
 			Texture3D saveTex = (Texture3D) Resources.Load(saveName);
 			if (saveTex != null && saveTex.width == target.width)
 			{
-				copy.SetTexture(worley_Kernel, src_ID, saveTex);
-				copy.SetTexture(worley_Kernel, target_ID, target);
+				copyCS.SetTexture(copy_Kernel, src_ID, saveTex);
+				copyCS.SetTexture(copy_Kernel, target_ID, target);
 				int numThreadGroups = Mathf.CeilToInt(saveTex.width / 8f);
-				copy.Dispatch(worley_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
+				copyCS.Dispatch(copy_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
 			}
 		}
 
@@ -245,7 +251,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			var buffer = new ComputeBuffer(data.Length, stride, ComputeBufferType.Structured);
 			buffersToRelease.Add(buffer);
 			buffer.SetData(data);
-			noiseCompute.SetBuffer(kernel, bufferName, buffer);
+			noiseCS.SetBuffer(kernel, bufferName, buffer);
 			return buffer;
 		}
 
@@ -283,11 +289,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			CreateWorleyPointsBuffer(prng, settings.numDivisionsB, pointsB_ID);
 			CreateWorleyPointsBuffer(prng, settings.numDivisionsC, pointsC_ID);
 
-			noiseCompute.SetInt(numCellsA_ID, settings.numDivisionsA);
-			noiseCompute.SetInt(numCellsB_ID, settings.numDivisionsB);
-			noiseCompute.SetInt(numCellsC_ID, settings.numDivisionsC);
-			noiseCompute.SetBool(invertNoise_ID, settings.invert);
-			noiseCompute.SetInt(tile_ID, settings.tile);
+			noiseCS.SetInt(numCellsA_ID, settings.numDivisionsA);
+			noiseCS.SetInt(numCellsB_ID, settings.numDivisionsB);
+			noiseCS.SetInt(numCellsC_ID, settings.numDivisionsC);
+			noiseCS.SetBool(invertNoise_ID, settings.invert);
+			noiseCS.SetInt(tile_ID, settings.tile);
 		}
 	}
 }

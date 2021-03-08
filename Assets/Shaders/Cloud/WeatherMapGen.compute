@@ -1,0 +1,86 @@
+﻿#pragma kernel CSMain
+#pragma kernel CSNormalize
+
+#include "SimplexNoise.hlsl"
+
+struct NoiseSettings
+{
+	int seed;
+	int numLayers;
+	float noiseScale;
+	float lacunarity;
+	float persistence;
+	float2 offset;//
+};
+
+static const int threadGroupSize = 16;
+static const int minMaxAccuracy = 10000;
+static const float pi = 3.14159265359;
+static const float radius = 1 / (2 * pi);
+
+StructuredBuffer<NoiseSettings> _NoiseSettings;
+StructuredBuffer<float4> _Offsets;
+
+RWTexture2D<float4> _Result;
+
+RWBuffer<int> _MinMaxBuffer;
+uint _Resolution;
+float2 _MinMax;
+float4 _Params;
+
+
+[numthreads(threadGroupSize, threadGroupSize, 1)]
+void CSMain(uint3 id: SV_DispatchThreadID)
+{
+	NoiseSettings settings = _NoiseSettings[0];
+	
+	float amplitude = 1;
+	float frequency = settings.noiseScale;
+	
+	float mapValue = 0;
+	
+	float2 pos = float2(id.x, id.y) / _Resolution;
+	
+	for (int layer = 0; layer < settings.numLayers; layer ++)
+	{
+		float noise = snoise((pos + settings.offset / 100) * frequency + _Offsets[layer].xy) * 0.5 + 0.5;
+		mapValue += noise * amplitude;
+		amplitude *= settings.persistence;
+		frequency *= settings.lacunarity;
+	}
+	
+	/*
+	float2 angle = float2(id.x,id.y) / resolution * 2 * pi;//
+	float x = settings.offset.x/100.0 + cos(angle.x) * radius;
+	float y = settings.offset.x/100.0 + cos(angle.y) * radius;
+	float z = settings.offset.y/100.0 + sin(angle.x) * radius;
+	float w = settings.offset.y/100.0 + sin(angle.y) * radius;
+	float4 samplePos = float4(x,y,z,w);
+	
+	for (int layer = 0; layer < settings.numLayers; layer++) {
+		float noise = snoise(samplePos * frequency + offsets[layer])*.5+.5;//
+		mapValue += noise * amplitude;
+		amplitude *= settings.persistence;
+		frequency *= settings.lacunarity;
+	}
+	*/
+	
+	mapValue /= settings.numLayers;
+	
+	InterlockedMin(_MinMaxBuffer[0], (int) (mapValue * minMaxAccuracy));
+	InterlockedMax(_MinMaxBuffer[1], (int) (mapValue * minMaxAccuracy));
+	
+	_Result[id.xy] = pow(saturate(((mapValue - _MinMax.x) / (_MinMax.y - _MinMax.x) - _Params.x) * _Params.y), _Params.z);
+}
+
+
+[numthreads(threadGroupSize, threadGroupSize, 1)]
+void CSNormalize(uint3 id: SV_DispatchThreadID)
+{
+	float minVal = (float)_MinMaxBuffer[0] / minMaxAccuracy;
+	float maxVal = (float)_MinMaxBuffer[1] / minMaxAccuracy;
+	
+	float4 normalizedVal = (_Result[id.xy] - minVal) / (maxVal - minVal);
+	_Result[id.xy] = normalizedVal;
+	//Result[id.xy] = 1;//
+}
