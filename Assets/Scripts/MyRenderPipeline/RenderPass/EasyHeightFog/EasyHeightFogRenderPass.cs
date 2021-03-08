@@ -20,12 +20,9 @@ namespace MyRenderPipeline.RenderPass.EasyHeightFog
 		private static readonly int exponentialFogColorParameter_ID =
 			Shader.PropertyToID("_ExponentialFogColorParameter");
 
-		private Material easyHeightFogMaterial;
 
-
-		public EasyHeightFogRenderPass(Material _material)
+		public EasyHeightFogRenderPass()
 		{
-			easyHeightFogMaterial = _material;
 		}
 
 		private static float RayOriginTerm(float density, float heightFalloff, float heightOffset)
@@ -84,12 +81,13 @@ namespace MyRenderPipeline.RenderPass.EasyHeightFog
 				1.0f - settings.fogMaxOpacity.value
 			);
 
-			easyHeightFogMaterial.SetVector(exponentialFogParameters_ID, exponentialFogParameters);
-			easyHeightFogMaterial.SetVector(exponentialFogParameters2_ID, exponentialFogParameters2);
-			easyHeightFogMaterial.SetVector(exponentialFogParameters3_ID, exponentialFogParameters3);
-			easyHeightFogMaterial.SetVector(directionalInscatteringColor_ID, directionalInscatteringColor);
-			easyHeightFogMaterial.SetVector(inscatteringLightDirection_ID, inscatteringLightDirection);
-			easyHeightFogMaterial.SetVector(exponentialFogColorParameter_ID, exponentialFogColorParameter);
+			//这里没有做什么enable disable  keyword
+			Shader.SetGlobalVector(exponentialFogParameters_ID, exponentialFogParameters);
+			Shader.SetGlobalVector(exponentialFogParameters2_ID, exponentialFogParameters2);
+			Shader.SetGlobalVector(exponentialFogParameters3_ID, exponentialFogParameters3);
+			Shader.SetGlobalVector(directionalInscatteringColor_ID, directionalInscatteringColor);
+			Shader.SetGlobalVector(inscatteringLightDirection_ID, inscatteringLightDirection);
+			Shader.SetGlobalVector(exponentialFogColorParameter_ID, exponentialFogColorParameter);
 		}
 	}
 }
