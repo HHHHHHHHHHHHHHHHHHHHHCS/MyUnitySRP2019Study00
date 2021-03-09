@@ -50,5 +50,6 @@ MonoBehaviour:
   m_Name: CloudImageEffectRenderFeature
   m_EditorClassIdentifier: 
   m_Active: 1
-  shader: {fileID: 4800000, guid: c08a74ec7dddef44b8e84c82b9e66858, type: 3}
-  blueNoise: {fileID: 0}
+  enable: 1
+  shader: {fileID: 4800000, guid: 108cda3c5dfabed4f817833a8803f1f1, type: 3}
+  blueNoise: {fileID: 2800000, guid: c761ef275f603484db9b580b63208338, type: 3}
