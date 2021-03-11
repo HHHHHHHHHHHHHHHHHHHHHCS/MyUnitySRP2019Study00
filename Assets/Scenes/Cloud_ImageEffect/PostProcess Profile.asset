@@ -455,78 +455,78 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 8
   rayOffsetStrength:
-    m_OverrideState: 0
-    m_Value: 0
+    m_OverrideState: 1
+    m_Value: 10
   cloudScale:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.62
   densityMultiplier:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 1.07
   densityOffset:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: -4.27
   shapeOffset:
-    m_OverrideState: 0
-    m_Value: {x: 0, y: 0, z: 0}
+    m_OverrideState: 1
+    m_Value: {x: 190.44, y: 0, z: 0}
   heightOffset:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0}
   shapeNoiseWeights:
-    m_OverrideState: 0
-    m_Value: {x: 0, y: 0, z: 0, w: 0}
+    m_OverrideState: 1
+    m_Value: {x: 1, y: 0.48, z: 0.15, w: 0}
   detailNoiseScale:
-    m_OverrideState: 0
-    m_Value: 10
+    m_OverrideState: 1
+    m_Value: 3
   detailNoiseWeight:
-    m_OverrideState: 0
-    m_Value: 0.1
+    m_OverrideState: 1
+    m_Value: 3.42
   detailNoiseWeights:
-    m_OverrideState: 0
-    m_Value: {x: 0, y: 0, z: 0}
+    m_OverrideState: 1
+    m_Value: {x: 1, y: 0.5, z: 0.5}
   detailOffset:
-    m_OverrideState: 0
-    m_Value: {x: 0, y: 0, z: 0}
+    m_OverrideState: 1
+    m_Value: {x: 51.25, y: 0, z: 0}
   lightAbsorptionThroughCloud:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.75
   lightAbsorptionTowardSun:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 1.21
   darknessThreshold:
-    m_OverrideState: 0
-    m_Value: 0.2
+    m_OverrideState: 1
+    m_Value: 0.15
     min: 0
     max: 1
   forwardScattering:
-    m_OverrideState: 0
-    m_Value: 0.83
+    m_OverrideState: 1
+    m_Value: 0.811
     min: 0
     max: 1
   backScattering:
-    m_OverrideState: 0
-    m_Value: 0.3
+    m_OverrideState: 1
+    m_Value: 0.33
     min: 0
     max: 1
   baseBrightness:
-    m_OverrideState: 0
-    m_Value: 0.8
+    m_OverrideState: 1
+    m_Value: 1
     min: 0
     max: 1
   phaseFactor:
-    m_OverrideState: 0
-    m_Value: 0.15
+    m_OverrideState: 1
+    m_Value: 0.488
     min: 0
     max: 1
   timeScale:
     m_OverrideState: 0
     m_Value: 1
   baseSpeed:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0.5
   detailSpeed:
-    m_OverrideState: 0
-    m_Value: 2
+    m_OverrideState: 1
+    m_Value: 1
   colA:
     m_OverrideState: 0
     m_Value: {r: 0, g: 0, b: 0, a: 1}

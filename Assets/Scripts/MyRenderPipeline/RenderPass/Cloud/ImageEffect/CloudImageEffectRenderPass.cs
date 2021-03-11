@@ -66,20 +66,26 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			if (weatherMap == null)
 			{
 				weatherMap = Object.FindObjectOfType<WeatherMap>();
-				if (settings != null)
+				if (weatherMap != null)
 				{
-					weatherMap.UpdateMap(settings.heightOffset.value);
-				}
-				else
-				{
-					weatherMap.UpdateMap(Vector2.zero);
+					if (settings != null)
+					{
+						weatherMap.UpdateMap(settings.heightOffset.value);
+					}
+					else
+					{
+						weatherMap.UpdateMap(Vector2.zero);
+					}
 				}
 			}
 
 			if (noiseGenerator == null)
 			{
 				noiseGenerator = Object.FindObjectOfType<NoiseGenerator>();
-				noiseGenerator.UpdateNoise();
+				if (noiseGenerator != null)
+				{
+					noiseGenerator.UpdateNoise();
+				}
 			}
 
 			if (containerVis == null)
@@ -105,6 +111,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				return;
 			}
 
+			//TODO:生成全部的Noise  然后raymarch 再看看
 
 			var cmd = CommandBufferPool.Get(k_CloudImageEffectPass);
 			var sampler = new ProfilingSampler(k_CloudImageEffectPass);
@@ -115,7 +122,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				material.SetTexture(DetailNoiseTex_ID, noiseGenerator.detailTexture);
 				material.SetTexture(BlueNoise_ID, blueNoise);
 				material.SetTexture(WeatherMap_ID, weatherMap.weatherMap);
-
 
 
 				material.SetFloat(Scale_ID, settings.cloudScale.value);
@@ -159,7 +165,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 				material.SetColor(ColA_ID, settings.colA.value);
 				material.SetColor(ColB_ID, settings.colB.value);
-
 
 
 				CoreUtils.DrawFullScreen(cmd, material);

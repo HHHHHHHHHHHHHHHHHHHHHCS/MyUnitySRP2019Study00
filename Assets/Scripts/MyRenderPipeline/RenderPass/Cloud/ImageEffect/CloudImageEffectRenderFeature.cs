@@ -27,7 +27,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 			cloudImageEffectRenderPass = new CloudImageEffectRenderPass()
 			{
-				renderPassEvent = RenderPassEvent.AfterRenderingOpaques
+				renderPassEvent = RenderPassEvent.AfterRenderingTransparents
 			};
 
 			cloudImageEffectRenderPass.Init(material, blueNoise);
