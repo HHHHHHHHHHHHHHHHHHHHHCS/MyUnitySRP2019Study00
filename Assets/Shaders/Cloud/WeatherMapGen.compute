@@ -21,7 +21,7 @@ static const float radius = 1 / (2 * pi);
 StructuredBuffer<NoiseSettings> _NoiseSettings;
 StructuredBuffer<float4> _Offsets;
 
-RWTexture2D<float4> _Result;
+RWTexture2D<float> _Result;
 
 RWBuffer<int> _MinMaxBuffer;
 uint _Resolution;

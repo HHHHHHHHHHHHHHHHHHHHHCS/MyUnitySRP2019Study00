@@ -81,7 +81,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 #if UNITY_EDITOR
 		[HideInInspector] public bool showSettingsEditor = true;
 #endif
-		
+
 		// Internal
 		private List<ComputeBuffer> buffersToRelease;
 		private bool updateNoise;
@@ -111,6 +111,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			(activeChannel == TextureChannel.B) ? 1 : 0,
 			(activeChannel == TextureChannel.A) ? 1 : 0
 		);
+
+
+		public void OnlyLoad()
+		{
+			ValidateParamaters();
+
+			CreateTexture(ref shapeTexture, shapeResolution, shapeNoiseName);
+			CreateTexture(ref detailTexture, detailResolution, detailNoiseName);
+		}
 
 		public void ManualUpdate()
 		{
@@ -225,7 +234,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				};
 				texture.Create();
 
-				Load(name, texture);
+				Load(textureName, texture);
 			}
 		}
 
@@ -235,7 +244,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		{
 			string sceneName = SceneManager.GetActiveScene().name;
 			saveName = sceneName + "_" + saveName;
-			Texture3D saveTex = (Texture3D) Resources.Load(saveName);
+			Texture3D saveTex = Resources.Load<Texture3D>(saveName);
 			if (saveTex != null && saveTex.width == target.width)
 			{
 				copyCS.SetTexture(copy_Kernel, src_ID, saveTex);

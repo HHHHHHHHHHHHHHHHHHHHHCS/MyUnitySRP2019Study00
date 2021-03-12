@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: ImageEffectCloudRenderPipelineAsset_Renderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
+  - {fileID: 539851590648470729}
   - {fileID: 4693974585576541392}
-  m_RendererFeatureMap: d04c000e04592441
+  m_RendererFeatureMap: c91c085429f07d07d04c000e04592441
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -37,6 +38,22 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
+--- !u!114 &539851590648470729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51a30af1f17607b4085e5fd76fdebd45, type: 3}
+  m_Name: MyBlitRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  renderPassEvent: 400
+  downsampling: 0
+  blitShader: {fileID: 4800000, guid: a0a187241eb58cf47896a17b781bc684, type: 3}
 --- !u!114 &4693974585576541392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51,5 +68,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Active: 1
   enable: 1
-  shader: {fileID: 4800000, guid: 108cda3c5dfabed4f817833a8803f1f1, type: 3}
+  cloudShader: {fileID: 4800000, guid: 108cda3c5dfabed4f817833a8803f1f1, type: 3}
+  cloudSkyShader: {fileID: 4800000, guid: d8360527b1f5afd4a9dd3d1fb0f2a2e1, type: 3}
+  shapeTexture: {fileID: 11700000, guid: 41e77a213c7884c42b239e4f3ac1712a, type: 2}
+  detailTexture: {fileID: 11700000, guid: 94543efdf0b4d7f4694b5845730e5148, type: 2}
+  weatherMap: {fileID: 2800000, guid: 73313e1c8ad39d74e913b835e795ed69, type: 3}
   blueNoise: {fileID: 2800000, guid: c761ef275f603484db9b580b63208338, type: 3}

@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -105,6 +108,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &-6812612767688413750
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -119,6 +149,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -210,6 +243,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &-5471519438998547528
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -224,6 +284,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -315,6 +378,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -343,6 +433,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -434,6 +527,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &3651966529399668248
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -448,9 +568,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 1
+    m_Value: 1
   cloudTestParams:
-    m_OverrideState: 0
-    m_Value: {x: 0, y: 0, z: 0}
+    m_OverrideState: 1
+    m_Value: {x: 0.9, y: 7.29, z: 0.64}
   numStepsLight:
     m_OverrideState: 0
     m_Value: 8
@@ -528,17 +651,44 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
   colA:
-    m_OverrideState: 0
-    m_Value: {r: 0, g: 0, b: 0, a: 1}
+    m_OverrideState: 1
+    m_Value: {r: 0.8901961, g: 0.94509804, b: 1, a: 1}
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
   colB:
-    m_OverrideState: 0
-    m_Value: {r: 0, g: 0, b: 0, a: 1}
+    m_OverrideState: 1
+    m_Value: {r: 0.44313726, g: 0.6431373, b: 0.8, a: 1}
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 3
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 1
+    m_Value: 0.744
+    min: 0
+    max: 1
 --- !u!114 &4047570230106007666
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -553,6 +703,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -644,6 +797,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &4527390283449211890
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -658,6 +838,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -749,6 +932,33 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &5038193151299820593
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -763,6 +973,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  useSkybox:
+    m_OverrideState: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 0
     m_Value: {x: 0, y: 0, z: 0}
@@ -854,3 +1067,30 @@ MonoBehaviour:
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerShadowAllChannels:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerColorMask:
+    m_OverrideState: 0
+    m_Value: 0
+  viewerGreyScale:
+    m_OverrideState: 0
+    m_Value: 1
+  viewerSliceDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  viewerTileAmount:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 1
+    max: 5
+  viewerSize:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1

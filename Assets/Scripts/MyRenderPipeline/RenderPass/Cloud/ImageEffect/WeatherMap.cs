@@ -20,12 +20,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		private static readonly int minMax_ID = Shader.PropertyToID("_MinMax");
 		private static readonly int params_ID = Shader.PropertyToID("_Params");
 
-
 		public bool logTime;
 		public ComputeShader noiseCompute;
 		public SimplexNoiseSettings noiseSettings;
 		public int resolution = 512;
 		public RenderTexture weatherMap;
+		public Vector2 heightOffset;
 		public Vector4 testParams;
 		public Transform container;
 
@@ -41,7 +41,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		private List<ComputeBuffer> buffersToRelease;
 
 
-		public void UpdateMap(Vector2 heightOffset)
+		public void UpdateMap()
 		{
 			var sw = System.Diagnostics.Stopwatch.StartNew();
 
@@ -109,7 +109,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		private void CreateTexture(ref RenderTexture texture, int resolution)
 		{
-			var format = GraphicsFormat.R16G16B16A16_UNorm;
+			var format = GraphicsFormat.R16_SNorm;
 			if (texture == null || !texture.IsCreated() || texture.width != resolution || texture.height != resolution
 			    || texture.graphicsFormat != format)
 			{

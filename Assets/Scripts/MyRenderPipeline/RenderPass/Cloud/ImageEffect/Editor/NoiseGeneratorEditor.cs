@@ -66,8 +66,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 
 		void Load()
 		{
-			noise.Load(NoiseGenerator.shapeNoiseName, noise.shapeTexture);
-			noise.Load(NoiseGenerator.detailNoiseName, noise.detailTexture);
+			noise.OnlyLoad();
 			EditorApplication.QueuePlayerLoopUpdate();
 		}
 

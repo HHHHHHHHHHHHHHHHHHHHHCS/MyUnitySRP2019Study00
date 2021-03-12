@@ -7,7 +7,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 	[VolumeComponentEditor(typeof(CloudImageEffectPostProcess))]
 	public class CloudImageEffectPostProcessEditor : VolumeComponentEditor
 	{
-		private SerializedDataParameter m_container;
+		private SerializedDataParameter m_useSkybox;
 		private SerializedDataParameter m_cloudTestParams;
 		private SerializedDataParameter m_numStepsLight;
 		private SerializedDataParameter m_rayOffsetStrength;
@@ -33,11 +33,19 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 		private SerializedDataParameter m_detailSpeed;
 		private SerializedDataParameter m_colA;
 		private SerializedDataParameter m_colB;
+		private SerializedDataParameter m_debugMode;
+		private SerializedDataParameter m_viewerShadowAllChannels;
+		private SerializedDataParameter m_viewerColorMask;
+		private SerializedDataParameter m_viewerGreyScale;
+		private SerializedDataParameter m_viewerSliceDepth;
+		private SerializedDataParameter m_viewerTileAmount;
+		private SerializedDataParameter m_viewerSize;
 
 		public override void OnEnable()
 		{
 			var o = new PropertyFetcher<CloudImageEffectPostProcess>(serializedObject);
 
+			m_useSkybox = Unpack(o.Find(x => x.useSkybox));
 			m_cloudTestParams = Unpack(o.Find(x => x.cloudTestParams));
 			m_numStepsLight = Unpack(o.Find(x => x.numStepsLight));
 			m_rayOffsetStrength = Unpack(o.Find(x => x.rayOffsetStrength));
@@ -63,6 +71,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			m_detailSpeed = Unpack(o.Find(x => x.detailSpeed));
 			m_colA = Unpack(o.Find(x => x.colA));
 			m_colB = Unpack(o.Find(x => x.colB));
+			m_debugMode = Unpack(o.Find(x => x.debugMode));
+			m_viewerShadowAllChannels = Unpack(o.Find(x => x.viewerShadowAllChannels));
+			m_viewerColorMask = Unpack(o.Find(x => x.viewerColorMask));
+			m_viewerGreyScale = Unpack(o.Find(x => x.viewerGreyScale));
+			m_viewerSliceDepth = Unpack(o.Find(x => x.viewerSliceDepth));
+			m_viewerTileAmount = Unpack(o.Find(x => x.viewerTileAmount));
+			m_viewerSize = Unpack(o.Find(x => x.viewerSize));
 		}
 
 		public override void OnInspectorGUI()
@@ -76,6 +91,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 
 			EditorGUILayout.LabelField("CloudImageEffect", EditorStyles.miniLabel);
 
+			PropertyField(m_useSkybox);
 			PropertyField(m_cloudTestParams);
 			PropertyField(m_numStepsLight);
 			PropertyField(m_rayOffsetStrength);
@@ -101,6 +117,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			PropertyField(m_detailSpeed);
 			PropertyField(m_colA);
 			PropertyField(m_colB);
+			PropertyField(m_debugMode);
+			PropertyField(m_viewerShadowAllChannels);
+			PropertyField(m_viewerColorMask);
+			PropertyField(m_viewerGreyScale);
+			PropertyField(m_viewerSliceDepth);
+			PropertyField(m_viewerTileAmount);
+			PropertyField(m_viewerSize);
 		}
 	}
 }

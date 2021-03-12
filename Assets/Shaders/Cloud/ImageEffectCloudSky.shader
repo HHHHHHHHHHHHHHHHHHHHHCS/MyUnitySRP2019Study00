@@ -1,4 +1,4 @@
-﻿Shader "MyRP/Cloud/ImageEffectCloud"
+﻿Shader "MyRP/Cloud/ImageEffectCloudSky"
 {
 	Properties
 	{
@@ -35,7 +35,7 @@
 				float3 viewVector: TEXCOORD1;
 			};
 
-			#define DEBUG_MODE 0
+			#define DEBUG_MODE 1
 
 			// Textures
 			TEXTURE3D(_NoiseTex);
@@ -43,14 +43,14 @@
 			TEXTURE3D(_DetailNoiseTex);
 			SAMPLER(sampler_DetailNoiseTex);
 
-			// TEXTURE2D(_WeatherMap);
-			// SAMPLER(sampler_WeatherMap);
+			TEXTURE2D(_WeatherMap);
+			SAMPLER(sampler_WeatherMap);
 			TEXTURE2D(_BlueNoise);
 			SAMPLER(sampler_BlueNoise);
 
 
 			// Shape settings
-			// float4 _Params;
+			float4 _Params;
 			// int3 _MapSize;
 			float _DensityMultiplier;
 			float _DensityOffset;
@@ -75,8 +75,8 @@
 			float _LightAbsorptionTowardSun;
 			float _LightAbsorptionThroughCloud;
 			float _DarknessThreshold;
-			// float4 _ColA;
-			// float4 _ColB;
+			float3 _ColA;
+			float3 _ColB;
 
 			// Animation settings
 			float _TimeScale;
@@ -174,14 +174,14 @@
 				float edgeWeight = min(dstFromEdgeZ, dstFromEdgeX) / containerEdgeFadeDst;
 
 				// Calculate height gradient from weather map
-				//float2 weatherUV = (size.xz * .5 + (rayPos.xz-boundsCentre.xz)) / max(size.x,size.z);
-				//float weatherMap = _WeatherMap.SampleLevel(sampler_WeatherMap, weatherUV, mipLevel).x;
+				float2 weatherUV = (size.xz * .5 + (rayPos.xz - boundsCenter.xz)) / max(size.x, size.z);
+				float weatherMap = _WeatherMap.SampleLevel(sampler_WeatherMap, weatherUV, mipLevel).x;
 
-				const float gMin = 0.2;
-				const float gMax = 0.7;
+				const float gMin = Remap(weatherMap.x, 0, 1, 0.1, 0.5);
+				const float gMax = Remap(weatherMap.x, 0, 1, gMin, 0.9);
 				float heightPercent = (rayPos.y - _BoundsMin.y) / size.y;
-				float heightGradient = saturate(Remap(heightPercent, 0.0, gMin, 0, 1)) 
-				* saturate(Remap(heightPercent, 1, gMax, 0, 1));
+				float heightGradient = saturate(Remap(heightPercent, 0.0, gMin, 0, 1))
+					* saturate(Remap(heightPercent, 1, gMax, 0, 1));
 				heightGradient *= edgeWeight;
 
 				//Calculate base shape density
@@ -198,7 +198,8 @@
 					//Sample detail noise
 					float3 detailSamplePos = uvw * _DetailNoiseScale + _DetailOffset * offsetSpeed
 						+ float3(time * 0.4, -time, time * 0.1) * _DetailSpeed;
-					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).rgb;
+					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).
+					                                     rgb;
 					float3 normalizedDetailWeights = _DetailWeights / dot(_DetailWeights, float3(1, 1, 1));
 					float detailFBM = dot(detailNoise, normalizedDetailWeights);
 
@@ -225,15 +226,16 @@
 				float dstInsideBox = RayBoxDst(_BoundsMin, _BoundsMax, position, 1 / dirToLight).y;
 
 				float stepSize = dstInsideBox / _NumStepsLight;
+				position += dirToLight * stepSize * 0.5;
 				float totalDensity = 0;
 
 				for (int step = 0; step < _NumStepsLight; step ++)
 				{
-					position += dirToLight * stepSize;
 					totalDensity += max(0.0, SampleDensity(position) * stepSize);
+					position += dirToLight * stepSize;
 				}
 
-				float transmittance = exp(-totalDensity * _LightAbsorptionTowardSun);
+				float transmittance = Beer(totalDensity * _LightAbsorptionTowardSun);
 				// _DarknessThreshold 决定了 向光采样 的强度 
 				return _DarknessThreshold + transmittance * (1 - _DarknessThreshold);
 			}
@@ -299,7 +301,7 @@
 				{
 					rayPos = entryPoint + rayDir * dstTravelled;
 					float density = SampleDensity(rayPos);
-					
+
 					if (density > 0)
 					{
 						float lightTransmittance = LightMarch(rayPos);
@@ -308,8 +310,8 @@
 						//强度越高 透射率越低
 						//Beer–Lambert  https://zhuanlan.zhihu.com/p/151851272
 						transmittance *= exp(-density * stepSize * _LightAbsorptionThroughCloud);
-					
-					
+
+
 						// Exit early if T is close to zero as further samples won't affect the result much
 						//当透射率很小了 就退出去   因为颜色已经不怎么会改变了
 						if (transmittance < 0.01)
@@ -320,10 +322,20 @@
 					dstTravelled += stepSize;
 				}
 
-				// Add clouds to background
+				// Composite sky + backgrouynd
+				float3 skyColBase = lerp(_ColA, _ColB, sqrt(saturate(rayDir.y)));
 				float3 backgroundCol = SampleSceneColor(i.uv);
+				float dstFog = 1 - exp(-max(0, depth) * 8 * 0.0001);
+				backgroundCol = lerp(backgroundCol, skyColBase, dstFog);
+
+				//Sun
+				float focusedEyeCos = pow(saturate(cosAngle), _Params.x);
+				float sun = saturate(HG(focusedEyeCos, 0.9995)) * transmittance;
+				
 				float3 cloudCol = lightEnergy * _MainLightColor.rgb;
 				float3 col = backgroundCol * transmittance + cloudCol;
+
+				col = lerp(col, _MainLightColor, sun);
 				return float4(col, 0);
 			}
 			ENDHLSL

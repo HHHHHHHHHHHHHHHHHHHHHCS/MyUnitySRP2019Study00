@@ -8,7 +8,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 	{
 		private const string k_CloudImageEffectPass = "CloudImageEffectPass";
 
-		
+
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
 		private static readonly int DetailNoiseTex_ID = Shader.PropertyToID("_DetailNoiseTex");
 		private static readonly int BlueNoise_ID = Shader.PropertyToID("_BlueNoise");
@@ -16,7 +16,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		private static readonly int Scale_ID = Shader.PropertyToID("_Scale");
 		private static readonly int DensityMultiplier_ID = Shader.PropertyToID("_DensityMultiplier");
 		private static readonly int DensityOffset_ID = Shader.PropertyToID("_DensityOffset");
-		private static readonly int LightAbsorptionThroughCloud_ID = Shader.PropertyToID("_LightAbsorptionThroughCloud");
+
+		private static readonly int LightAbsorptionThroughCloud_ID =
+			Shader.PropertyToID("_LightAbsorptionThroughCloud");
+
 		private static readonly int LightAbsorptionTowardSun_ID = Shader.PropertyToID("_LightAbsorptionTowardSun");
 		private static readonly int DarknessThreshold_ID = Shader.PropertyToID("_DarknessThreshold");
 		private static readonly int Params_ID = Shader.PropertyToID("_Params");
@@ -45,49 +48,31 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		private static readonly int DebugGreyscale_ID = Shader.PropertyToID("_DebugGreyscale");
 		private static readonly int DebugShowAllChannels_ID = Shader.PropertyToID("_DebugShowAllChannels");
 
-		
-		private Material material;
+
+		private Material cloudMaterial;
+		private Material cloudSkyMaterial;
+
+		private Texture3D shapeTexture;
+		private Texture3D detailTexture;
+		private Texture2D weatherMap;
 		private Texture2D blueNoise;
 
-		private WeatherMap weatherMap;
-		private NoiseGenerator noiseGenerator;
+
 		private ContainerVis containerVis;
-		
-		public void Init(Material material, Texture2D blueNoise)
+
+		public void Init(Material cloudMaterial, Material cloudSkyMaterial,
+			Texture3D shapeTexture, Texture3D detailTexture, Texture2D weatherMap, Texture2D blueNoise)
 		{
-			this.material = material;
+			this.cloudMaterial = cloudMaterial;
+			this.cloudSkyMaterial = cloudSkyMaterial;
+			this.shapeTexture = shapeTexture;
+			this.detailTexture = detailTexture;
+			this.weatherMap = weatherMap;
 			this.blueNoise = blueNoise;
 		}
 
 		public void Setup()
 		{
-			var settings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
-
-			if (weatherMap == null)
-			{
-				weatherMap = Object.FindObjectOfType<WeatherMap>();
-				if (weatherMap != null)
-				{
-					if (settings != null)
-					{
-						weatherMap.UpdateMap(settings.heightOffset.value);
-					}
-					else
-					{
-						weatherMap.UpdateMap(Vector2.zero);
-					}
-				}
-			}
-
-			if (noiseGenerator == null)
-			{
-				noiseGenerator = Object.FindObjectOfType<NoiseGenerator>();
-				if (noiseGenerator != null)
-				{
-					noiseGenerator.UpdateNoise();
-				}
-			}
-
 			if (containerVis == null)
 			{
 				containerVis = Object.FindObjectOfType<ContainerVis>();
@@ -95,6 +80,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		}
 
 
+		//TODO:可以添加GodRay效果  但是先要把云渲染到RT上 alpha 决定云的厚度
+		//然后传入太阳位置  opaque下 有GodRay     最后blur  在合并到主贴图
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
 			var settings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
@@ -104,24 +91,24 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				return;
 			}
 
-			if (weatherMap is null || noiseGenerator is null || containerVis is null)
+			if (containerVis is null)
 			{
 				Debug.LogError(
-					$"weatherMap: {weatherMap != null}, noiseGenerator: {noiseGenerator != null},containerVis:{containerVis != null}");
+					$"containerVis:{containerVis != null}");
 				return;
 			}
 
-			//TODO:生成全部的Noise  然后raymarch 再看看
+			var material = settings.useSkybox.value ? cloudSkyMaterial : cloudMaterial;
 
 			var cmd = CommandBufferPool.Get(k_CloudImageEffectPass);
 			var sampler = new ProfilingSampler(k_CloudImageEffectPass);
-			
+
 			using (new ProfilingScope(cmd, sampler))
 			{
-				material.SetTexture(NoiseTex_ID, noiseGenerator.shapeTexture);
-				material.SetTexture(DetailNoiseTex_ID, noiseGenerator.detailTexture);
+				material.SetTexture(NoiseTex_ID, shapeTexture);
+				material.SetTexture(DetailNoiseTex_ID, detailTexture);
 				material.SetTexture(BlueNoise_ID, blueNoise);
-				material.SetTexture(WeatherMap_ID, weatherMap.weatherMap);
+				material.SetTexture(WeatherMap_ID, weatherMap);
 
 
 				material.SetFloat(Scale_ID, settings.cloudScale.value);
@@ -149,53 +136,65 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				int width = Mathf.CeilToInt(size.x);
 				int height = Mathf.CeilToInt(size.y);
 				int depth = Mathf.CeilToInt(size.z);
-				
+
 				material.SetVector(BoundsMin_ID, pos - size / 2);
 				material.SetVector(BoundsMax_ID, pos + size / 2);
 
 				material.SetVector(MapSize_ID, new Vector4(width, height, depth, 0));
 
 				material.SetInt(NumStepsLight_ID, settings.numStepsLight.value);
-				
+
 				material.SetFloat(TimeScale_ID, (Application.isPlaying) ? settings.timeScale.value : 0);
 				material.SetFloat(BaseSpeed_ID, settings.baseSpeed.value);
 				material.SetFloat(DetailSpeed_ID, settings.detailSpeed.value);
 
-				SetDebugParams();
+				SetDebugParams(settings, material);
 
 				material.SetColor(ColA_ID, settings.colA.value);
 				material.SetColor(ColB_ID, settings.colB.value);
 
-
 				CoreUtils.DrawFullScreen(cmd, material);
-				
+
 				context.ExecuteCommandBuffer(cmd);
 				context.Submit();
 				CommandBufferPool.Release(cmd);
 			}
-
 		}
 
-		void SetDebugParams()
+		void SetDebugParams(CloudImageEffectPostProcess settings, Material material)
 		{
-			int debugModeIndex = 0;
-			if (noiseGenerator.viewerEnabled)
-			{
-				debugModeIndex = (noiseGenerator.activeTextureType == NoiseGenerator.CloudNoiseType.Shape) ? 1 : 2;
-			}
+			material.SetInt(DebugViewMode_ID, (int) settings.debugMode.value);
 
-			if (weatherMap.viewerEnabled)
+			if (settings.debugMode.value != 0)
 			{
-				debugModeIndex = 3;
-			}
+				material.SetFloat(DebugNoiseSliceDepth_ID, settings.viewerSliceDepth.value);
+				material.SetFloat(DebugTileAmount_ID, settings.viewerTileAmount.value);
+				material.SetFloat(ViewerSize_ID, settings.viewerSize.value);
 
-			material.SetInt(DebugViewMode_ID, debugModeIndex);
-			material.SetFloat(DebugNoiseSliceDepth_ID, noiseGenerator.viewerSliceDepth);
-			material.SetFloat(DebugTileAmount_ID, noiseGenerator.viewerTileAmount);
-			material.SetFloat(ViewerSize_ID, noiseGenerator.viewerSize);
-			material.SetVector(DebugChannelWeight_ID, noiseGenerator.ChannelMask);
-			material.SetInt(DebugGreyscale_ID, (noiseGenerator.viewerGreyscale) ? 1 : 0);
-			material.SetInt(DebugShowAllChannels_ID, (noiseGenerator.viewerShowAllChannels) ? 1 : 0);
+				Vector4 colorMask;
+				switch (settings.viewerColorMask.value)
+				{
+					case CloudImageEffectPostProcess.ColorMask.R:
+						colorMask = new Vector4(1, 0, 0, 0);
+						break;
+					case CloudImageEffectPostProcess.ColorMask.G:
+						colorMask = new Vector4(0, 1, 0, 0);
+						break;
+					case CloudImageEffectPostProcess.ColorMask.B:
+						colorMask = new Vector4(0, 0, 1, 0);
+						break;
+					case CloudImageEffectPostProcess.ColorMask.A:
+						colorMask = new Vector4(0, 0, 0, 1);
+						break;
+					default:
+						colorMask = Vector4.zero;
+						break;
+				}
+
+				material.SetVector(DebugChannelWeight_ID, colorMask);
+				material.SetInt(DebugGreyscale_ID, (settings.viewerGreyScale.value) ? 1 : 0);
+				material.SetInt(DebugShowAllChannels_ID, (settings.viewerShadowAllChannels.value) ? 1 : 0);
+			}
 		}
 	}
 }

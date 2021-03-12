@@ -67,9 +67,15 @@ bool _DrawDebugView(float2 uv, out float4 outCol)
                                            y / (minDim * _ViewerSize) * _DebugTileAmount));
             return true;
         }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
         return false;
     }
-    return false;
 }
 
 #define DrawDebugView(uv) \
