@@ -259,12 +259,19 @@
 			{
 				DrawDebugView(i.uv);
 
-				//TODO:视野y 平行 又不在box内可以优化
-
 				// Create ray
 				float3 rayPos = _WorldSpaceCameraPos;
 				float viewLength = length(i.viewVector);
 				float3 rayDir = i.viewVector / viewLength;
+
+				float3 backgroundCol = SampleSceneColor(i.uv);
+
+
+				if ((rayDir.y <= 0.000001 && rayPos.y < _BoundsMin.y ) ||
+					(rayDir.y >= 0.000001 && rayPos.y > _BoundsMax.y ))
+				{
+					return float4(backgroundCol, 0);
+				}
 
 				// Depth and cloud container intersection info:
 				float2 rayToContainerInfo = RayBoxDst(_BoundsMin, _BoundsMax, rayPos, 1 / rayDir);
@@ -321,7 +328,7 @@
 				}
 
 				// Add clouds to background
-				float3 backgroundCol = SampleSceneColor(i.uv);
+				// float3 backgroundCol = SampleSceneColor(i.uv);
 				float3 cloudCol = lightEnergy * _MainLightColor.rgb;
 				float3 col = backgroundCol * transmittance + cloudCol;
 				return float4(col, 0);
