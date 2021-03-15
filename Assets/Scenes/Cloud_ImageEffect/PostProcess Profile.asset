@@ -570,7 +570,7 @@ MonoBehaviour:
   m_AdvancedMode: 0
   useSkybox:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   cloudTestParams:
     m_OverrideState: 1
     m_Value: {x: 0.9, y: 7.29, z: 0.64}

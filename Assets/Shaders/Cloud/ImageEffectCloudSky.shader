@@ -284,6 +284,7 @@
 				randomOffset *= _RayOffsetStrength;
 
 				float nonlin_depth = SampleSceneDepth(i.uv);
+				//这里如果不乘viewLength  则四周区域会缺失/畸变
 				float depth = LinearEyeDepth(nonlin_depth, _ZBufferParams) * viewLength;
 
 				// Phase function makes clouds brighter around sun
@@ -301,7 +302,7 @@
 
 				float dstTravelled = randomOffset;
 				float dstLimit = min(depth - dstToBox, dstInsideBox);
-
+				
 				while (dstTravelled < dstLimit)
 				{
 					rayPos = entryPoint + rayDir * dstTravelled;
@@ -310,7 +311,7 @@
 					if (density > 0)
 					{
 						float lightTransmittance = LightMarch(rayPos);
-						//视野方向的强度 * stepSize * 透射率 * 光方向强度  * * 大气散射
+						//视野方向的强度 * stepSize * 透射率 * 光方向强度 * 大气散射
 						lightEnergy += density * stepSize * transmittance * lightTransmittance * phaseVal;
 						//强度越高 透射率越低
 						//Beer–Lambert  https://zhuanlan.zhihu.com/p/151851272
