@@ -278,11 +278,6 @@
 				float dstToBox = rayToContainerInfo.x;
 				float dstInsideBox = rayToContainerInfo.y;
 
-
-				// random starting offset (makes low-res results noisy rather than jagged/glitchy, which is nicer)
-				float randomOffset = _BlueNoise.SampleLevel(sampler_BlueNoise, SquareUV(i.uv * 3), 0).r;
-				randomOffset *= _RayOffsetStrength;
-
 				float nonlin_depth = SampleSceneDepth(i.uv);
 				//这里如果不乘viewLength  则四周区域会缺失/畸变
 				float depth = LinearEyeDepth(nonlin_depth, _ZBufferParams) * viewLength;
@@ -293,6 +288,10 @@
 
 				// point of intersection with the cloud container
 				float3 entryPoint = rayPos + rayDir * dstToBox;
+
+				// random starting offset (makes low-res results noisy rather than jagged/glitchy, which is nicer)
+				float randomOffset = _BlueNoise.SampleLevel(sampler_BlueNoise, SquareUV(i.uv * 3), 0).r;
+				randomOffset *= _RayOffsetStrength;
 
 				const float stepSize = 11;
 
