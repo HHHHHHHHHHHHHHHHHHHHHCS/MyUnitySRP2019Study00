@@ -100,7 +100,7 @@
 
 			float2 SquareUV(float2 uv)
 			{
-				return uv.xy * _ScreenParams.xy / 1000.0;
+				return frac(uv.xy * _ScreenParams.xy / 1000.0);
 			}
 
 			// Returns (dstToBox, dstInsideBox). If ray misses box, dstInsideBox will be zero
@@ -163,8 +163,8 @@
 				float3 size = _BoundsMax - _BoundsMin;
 				float3 boundsCenter = (_BoundsMin + _BoundsMax) * 0.5;
 				float3 uvw = (size * 0.5 + rayPos) * baseScale * _Scale;
-				float3 shapeSamplePos = frac(uvw + _ShapeOffset * offsetSpeed
-					+ float3(time, time * 0.1, time * 0.2) * _BaseSpeed);
+				float3 shapeSamplePos = uvw + _ShapeOffset * offsetSpeed
+					+ float3(time, time * 0.1, time * 0.2) * _BaseSpeed;
 
 
 				// Calculate falloff at along x/z edges of the cloud container
@@ -198,8 +198,7 @@
 					//Sample detail noise
 					float3 detailSamplePos = uvw * _DetailNoiseScale + _DetailOffset * offsetSpeed
 						+ float3(time * 0.4, -time, time * 0.1) * _DetailSpeed;
-					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).
-					                                     rgb;
+					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).rgb;
 					float3 normalizedDetailWeights = _DetailWeights / dot(_DetailWeights, float3(1, 1, 1));
 					float detailFBM = dot(detailNoise, normalizedDetailWeights);
 

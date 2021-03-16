@@ -159,10 +159,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			{
 				// Color c = slices[z].GetPixel(0, 0);
 				Color[] layerPixels = slices[z].GetPixels();
-				for (int x = 0; x < resolution; x++)
 				for (int y = 0; y < resolution; y++)
 				{
-					outputPixels[x + resolution * (y + z * resolution)] = layerPixels[x + y * resolution];
+					for (int x = 0; x < resolution; x++)
+					{
+						outputPixels[x + resolution * (y + z * resolution)] = layerPixels[x + y * resolution];
+					}
 				}
 			}
 
