@@ -42,7 +42,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			{
 			}
 		}
+		
+		public BoolParameter enableEffect = new BoolParameter(false);
 
+		public BoolParameter followCamera = new BoolParameter(false);
+		
 		public BoolParameter useSkybox = new BoolParameter(true);
 		
 		private const string headerDecoration = " --- ";
@@ -118,7 +122,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		public ClampedFloatParameter viewerSize = new ClampedFloatParameter(1, 0, 1);
 
 
-		public bool IsActive() => active;
+		public bool IsActive() => enableEffect.value;
 
 		public bool IsTileCompatible() => false;
 	}

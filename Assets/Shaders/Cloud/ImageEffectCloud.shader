@@ -180,8 +180,8 @@
 				const float gMin = 0.2;
 				const float gMax = 0.7;
 				float heightPercent = (rayPos.y - _BoundsMin.y) / size.y;
-				float heightGradient = saturate(Remap(heightPercent, 0.0, gMin, 0, 1)) 
-				* saturate(Remap(heightPercent, 1, gMax, 0, 1));
+				float heightGradient = saturate(Remap(heightPercent, 0.0, gMin, 0, 1))
+					* saturate(Remap(heightPercent, 1, gMax, 0, 1));
 				heightGradient *= edgeWeight;
 
 				//Calculate base shape density
@@ -198,7 +198,8 @@
 					//Sample detail noise
 					float3 detailSamplePos = uvw * _DetailNoiseScale + _DetailOffset * offsetSpeed
 						+ float3(time * 0.4, -time, time * 0.1) * _DetailSpeed;
-					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).rgb;
+					float3 detailNoise = _DetailNoiseTex.SampleLevel(sampler_DetailNoiseTex, detailSamplePos, mipLevel).
+					                                     rgb;
 					float3 normalizedDetailWeights = _DetailWeights / dot(_DetailWeights, float3(1, 1, 1));
 					float detailFBM = dot(detailNoise, normalizedDetailWeights);
 
@@ -267,8 +268,8 @@
 				float3 backgroundCol = SampleSceneColor(i.uv);
 
 
-				if ((rayDir.y <= 0.000001 && rayPos.y < _BoundsMin.y ) ||
-					(rayDir.y >= 0.000001 && rayPos.y > _BoundsMax.y ))
+				if ((rayDir.y <= 0.000001 && rayPos.y < _BoundsMin.y) ||
+					(rayDir.y >= 0.000001 && rayPos.y > _BoundsMax.y))
 				{
 					return float4(backgroundCol, 0);
 				}
@@ -300,13 +301,14 @@
 				float lightEnergy = 0;
 
 				float dstTravelled = randomOffset;
+				// depth = depth > _ProjectionParams.z - 1 ? 2 * dstToBox : depth;
 				float dstLimit = min(depth - dstToBox, dstInsideBox);
 
 				while (dstTravelled < dstLimit)
 				{
 					rayPos = entryPoint + rayDir * dstTravelled;
 					float density = SampleDensity(rayPos);
-					
+
 					if (density > 0)
 					{
 						float lightTransmittance = LightMarch(rayPos);
@@ -315,8 +317,8 @@
 						//强度越高 透射率越低
 						//Beer–Lambert  https://zhuanlan.zhihu.com/p/151851272
 						transmittance *= Beer(density * stepSize * _LightAbsorptionThroughCloud);
-					
-					
+
+
 						// Exit early if T is close to zero as further samples won't affect the result much
 						//当透射率很小了 就退出去   因为颜色已经不怎么会改变了
 						if (transmittance < 0.01)

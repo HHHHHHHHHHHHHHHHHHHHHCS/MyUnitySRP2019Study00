@@ -7,6 +7,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 	[VolumeComponentEditor(typeof(CloudImageEffectPostProcess))]
 	public class CloudImageEffectPostProcessEditor : VolumeComponentEditor
 	{
+		
+		private SerializedDataParameter m_enableEffect;
+		private SerializedDataParameter m_followCamera;
 		private SerializedDataParameter m_useSkybox;
 		private SerializedDataParameter m_cloudTestParams;
 		private SerializedDataParameter m_numStepsLight;
@@ -44,7 +47,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 		public override void OnEnable()
 		{
 			var o = new PropertyFetcher<CloudImageEffectPostProcess>(serializedObject);
-
+			
+			m_enableEffect = Unpack(o.Find(x => x.enableEffect));
+			m_followCamera = Unpack(o.Find(x => x.followCamera));
 			m_useSkybox = Unpack(o.Find(x => x.useSkybox));
 			m_cloudTestParams = Unpack(o.Find(x => x.cloudTestParams));
 			m_numStepsLight = Unpack(o.Find(x => x.numStepsLight));
@@ -91,6 +96,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 
 			EditorGUILayout.LabelField("CloudImageEffect", EditorStyles.miniLabel);
 
+			PropertyField(m_enableEffect);
+			PropertyField(m_followCamera);
 			PropertyField(m_useSkybox);
 			PropertyField(m_cloudTestParams);
 			PropertyField(m_numStepsLight);

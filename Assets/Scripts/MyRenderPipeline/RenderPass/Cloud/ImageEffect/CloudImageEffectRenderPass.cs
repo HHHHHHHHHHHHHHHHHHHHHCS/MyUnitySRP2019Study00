@@ -132,6 +132,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 				var container = containerVis.transform;
 				Vector3 pos = container.position;
+				if (settings.followCamera.value)
+				{
+					var camPos = Camera.main.transform.position;
+					pos += camPos;
+				}
 				Vector3 size = container.lossyScale;
 				int width = Mathf.CeilToInt(size.x);
 				int height = Mathf.CeilToInt(size.y);
