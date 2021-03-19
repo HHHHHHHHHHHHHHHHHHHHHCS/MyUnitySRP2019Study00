@@ -44,10 +44,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
-			if (enable && cloudImageEffectRenderPass != null) //&& Application.isPlaying)
+			if (enable && renderingData.postProcessingEnabled
+			           && cloudImageEffectRenderPass != null) //&& Application.isPlaying)
 			{
-				cloudImageEffectRenderPass.Setup();
-				renderer.EnqueuePass(cloudImageEffectRenderPass);
+				var cloudSettings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
+				if (cloudSettings != null && cloudSettings.IsActive())
+				{
+					cloudImageEffectRenderPass.Setup(cloudSettings);
+					renderer.EnqueuePass(cloudImageEffectRenderPass);
+				}
 			}
 		}
 	}

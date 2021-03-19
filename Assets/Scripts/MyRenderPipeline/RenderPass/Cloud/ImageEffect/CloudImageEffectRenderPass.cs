@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using MyRenderPipeline.RenderPass.GodRay;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -8,6 +9,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 	{
 		private const string k_CloudImageEffectPass = "CloudImageEffectPass";
 
+		private const string c_OnlyCloud = "_OnlyCloud";
+
+		private static readonly int cloudRT_ID = Shader.PropertyToID("_CloudRT");
+		private static readonly RenderTargetIdentifier cloudRT_RTI = new RenderTargetIdentifier(cloudRT_ID);
 
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
 		private static readonly int DetailNoiseTex_ID = Shader.PropertyToID("_DetailNoiseTex");
@@ -60,6 +65,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		private ContainerVis containerVis;
 
+		private CloudImageEffectPostProcess cloudSettings;
+
 		public void Init(Material cloudMaterial, Material cloudSkyMaterial,
 			Texture3D shapeTexture, Texture3D detailTexture, Texture2D weatherMap, Texture2D blueNoise)
 		{
@@ -71,26 +78,29 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			this.blueNoise = blueNoise;
 		}
 
-		public void Setup()
+		public void Setup(CloudImageEffectPostProcess cloudSettings)
 		{
 			if (containerVis == null)
 			{
 				containerVis = Object.FindObjectOfType<ContainerVis>();
 			}
+
+			this.cloudSettings = cloudSettings;
+		}
+
+		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
+		{
+			cmd.GetTemporaryRT(cloudRT_ID, cameraTextureDescriptor);
+		}
+
+		public override void FrameCleanup(CommandBuffer cmd)
+		{
+			cmd.ReleaseTemporaryRT(cloudRT_ID);
 		}
 
 
-		//TODO:可以添加GodRay效果  但是先要把云渲染到RT上 alpha 决定云的厚度
-		//然后传入太阳位置  opaque下 有GodRay     最后blur  在合并到主贴图
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-			var settings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
-
-			if (settings == null || !settings.IsActive())
-			{
-				return;
-			}
-
 			if (containerVis is null)
 			{
 				Debug.LogError(
@@ -98,45 +108,59 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				return;
 			}
 
-			var material = settings.useSkybox.value ? cloudSkyMaterial : cloudMaterial;
+
+			bool enableGodRay = false;
+
+			var godRaySettings = VolumeManager.instance.stack.GetComponent<GodRayPostProcess>();
+
+			if (godRaySettings && godRaySettings.IsActive())
+			{
+				enableGodRay = true;
+			}
+
+			//开启godray 现在只支持 onlyCloudMaterial
+			Material material = enableGodRay || !cloudSettings.useSkybox.value ? cloudMaterial : cloudSkyMaterial;
 
 			var cmd = CommandBufferPool.Get(k_CloudImageEffectPass);
 			var sampler = new ProfilingSampler(k_CloudImageEffectPass);
 
 			using (new ProfilingScope(cmd, sampler))
 			{
+				CoreUtils.SetKeyword(material, c_OnlyCloud, enableGodRay);
+
 				material.SetTexture(NoiseTex_ID, shapeTexture);
 				material.SetTexture(DetailNoiseTex_ID, detailTexture);
 				material.SetTexture(BlueNoise_ID, blueNoise);
 				material.SetTexture(WeatherMap_ID, weatherMap);
 
+				material.SetFloat(Scale_ID, cloudSettings.cloudScale.value);
+				material.SetFloat(DensityMultiplier_ID, cloudSettings.densityMultiplier.value);
+				material.SetFloat(DensityOffset_ID, cloudSettings.densityOffset.value);
+				material.SetFloat(LightAbsorptionThroughCloud_ID, cloudSettings.lightAbsorptionThroughCloud.value);
+				material.SetFloat(LightAbsorptionTowardSun_ID, cloudSettings.lightAbsorptionTowardSun.value);
+				material.SetFloat(DarknessThreshold_ID, cloudSettings.darknessThreshold.value);
+				material.SetVector(Params_ID, cloudSettings.cloudTestParams.value);
+				material.SetFloat(RayOffsetStrength_ID, cloudSettings.rayOffsetStrength.value);
 
-				material.SetFloat(Scale_ID, settings.cloudScale.value);
-				material.SetFloat(DensityMultiplier_ID, settings.densityMultiplier.value);
-				material.SetFloat(DensityOffset_ID, settings.densityOffset.value);
-				material.SetFloat(LightAbsorptionThroughCloud_ID, settings.lightAbsorptionThroughCloud.value);
-				material.SetFloat(LightAbsorptionTowardSun_ID, settings.lightAbsorptionTowardSun.value);
-				material.SetFloat(DarknessThreshold_ID, settings.darknessThreshold.value);
-				material.SetVector(Params_ID, settings.cloudTestParams.value);
-				material.SetFloat(RayOffsetStrength_ID, settings.rayOffsetStrength.value);
-
-				material.SetFloat(DetailNoiseScale_ID, settings.detailNoiseScale.value);
-				material.SetFloat(DetailNoiseWeight_ID, settings.detailNoiseWeight.value);
-				material.SetVector(ShapeOffset_ID, settings.shapeOffset.value);
-				material.SetVector(DetailOffset_ID, settings.detailOffset.value);
-				material.SetVector(DetailWeights_ID, settings.detailNoiseWeights.value);
-				material.SetVector(ShapeNoiseWeights_ID, settings.shapeNoiseWeights.value);
+				material.SetFloat(DetailNoiseScale_ID, cloudSettings.detailNoiseScale.value);
+				material.SetFloat(DetailNoiseWeight_ID, cloudSettings.detailNoiseWeight.value);
+				material.SetVector(ShapeOffset_ID, cloudSettings.shapeOffset.value);
+				material.SetVector(DetailOffset_ID, cloudSettings.detailOffset.value);
+				material.SetVector(DetailWeights_ID, cloudSettings.detailNoiseWeights.value);
+				material.SetVector(ShapeNoiseWeights_ID, cloudSettings.shapeNoiseWeights.value);
 				material.SetVector(PhaseParams_ID,
-					new Vector4(settings.forwardScattering.value,
-						settings.backScattering.value, settings.baseBrightness.value, settings.phaseFactor.value));
+					new Vector4(cloudSettings.forwardScattering.value,
+						cloudSettings.backScattering.value, cloudSettings.baseBrightness.value,
+						cloudSettings.phaseFactor.value));
 
 				var container = containerVis.transform;
 				Vector3 pos = container.position;
-				if (settings.followCamera.value)
+				if (cloudSettings.followCamera.value)
 				{
-					var camPos = Camera.main.transform.position;
+					var camPos = Camera.main.transform.position; //renderingData.cameraData.camera.transform.position;
 					pos += camPos;
 				}
+
 				Vector3 size = container.lossyScale;
 				int width = Mathf.CeilToInt(size.x);
 				int height = Mathf.CeilToInt(size.y);
@@ -147,16 +171,29 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 				material.SetVector(MapSize_ID, new Vector4(width, height, depth, 0));
 
-				material.SetInt(NumStepsLight_ID, settings.numStepsLight.value);
+				material.SetInt(NumStepsLight_ID, cloudSettings.numStepsLight.value);
 
-				material.SetFloat(TimeScale_ID, (Application.isPlaying) ? settings.timeScale.value : 0);
-				material.SetFloat(BaseSpeed_ID, settings.baseSpeed.value);
-				material.SetFloat(DetailSpeed_ID, settings.detailSpeed.value);
+				material.SetFloat(TimeScale_ID, (Application.isPlaying) ? cloudSettings.timeScale.value : 0);
+				material.SetFloat(BaseSpeed_ID, cloudSettings.baseSpeed.value);
+				material.SetFloat(DetailSpeed_ID, cloudSettings.detailSpeed.value);
 
-				SetDebugParams(settings, material);
+				SetDebugParams(cloudSettings, material);
 
-				material.SetColor(ColA_ID, settings.colA.value);
-				material.SetColor(ColB_ID, settings.colB.value);
+				material.SetColor(ColA_ID, cloudSettings.colA.value);
+				material.SetColor(ColB_ID, cloudSettings.colB.value);
+
+				if (enableGodRay)
+				{
+					//var msaa = renderingData.cameraData.cameraTargetDescriptor.msaaSamples > 1;
+					cmd.SetRenderTarget(cloudRT_RTI,
+						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store
+						, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+					// cmd.ClearRenderTarget(false, true, Color.black);
+					// cmd.SetRenderTarget(cloudRT_RTI);
+
+
+					cmd.SetGlobalTexture(cloudRT_ID, cloudRT_RTI);
+				}
 
 				CoreUtils.DrawFullScreen(cmd, material);
 
