@@ -644,7 +644,7 @@ MonoBehaviour:
   m_AdvancedMode: 0
   enableEffect:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   godRayDir:
     m_OverrideState: 1
     m_Value: {x: -1, y: -1}
@@ -686,7 +686,7 @@ MonoBehaviour:
     m_Value: 0
   useSkybox:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   cloudTestParams:
     m_OverrideState: 1
     m_Value: {x: 0.9, y: 7.29, z: 0.64}
@@ -704,7 +704,7 @@ MonoBehaviour:
     m_Value: 1.07
   densityOffset:
     m_OverrideState: 1
-    m_Value: -3.84
+    m_Value: -2.36
   shapeOffset:
     m_OverrideState: 1
     m_Value: {x: 190.44, y: 0, z: 0}
@@ -768,13 +768,13 @@ MonoBehaviour:
     m_Value: 1
   colA:
     m_OverrideState: 1
-    m_Value: {r: 0.8901961, g: 0.94509804, b: 1, a: 1}
+    m_Value: {r: 0.01886791, g: 0.01886791, b: 0.01886791, a: 1}
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
   colB:
     m_OverrideState: 1
-    m_Value: {r: 0.44313726, g: 0.6431373, b: 0.8, a: 1}
+    m_Value: {r: 0.084905684, g: 0.084905684, b: 0.084905684, a: 1}
     hdr: 0
     showAlpha: 1
     showEyeDropper: 1
@@ -801,7 +801,7 @@ MonoBehaviour:
     min: 1
     max: 5
   viewerSize:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0.744
     min: 0
     max: 1

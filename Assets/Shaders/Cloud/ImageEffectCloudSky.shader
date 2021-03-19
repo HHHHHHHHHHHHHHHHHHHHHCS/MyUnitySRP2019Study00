@@ -328,7 +328,6 @@
 
 				// Composite sky + backgrouynd
 				float3 skyColBase = lerp(_ColA, _ColB, sqrt(saturate(rayDir.y)));
-				// float3 backgroundCol = SampleSceneColor(i.uv);
 				float dstFog = 1 - exp(-max(0, depth) * 8 * 0.0001);
 				backgroundCol = lerp(backgroundCol, skyColBase, dstFog);
 
@@ -340,7 +339,7 @@
 				float3 col = backgroundCol * transmittance + cloudCol;
 
 				col = lerp(col, _MainLightColor, sun);
-				return float4(col, 0);
+				return float4(col.rgb, 0);
 			}
 			ENDHLSL
 
