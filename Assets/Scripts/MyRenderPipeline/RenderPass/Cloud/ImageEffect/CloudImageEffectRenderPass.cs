@@ -197,10 +197,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 				CoreUtils.DrawFullScreen(cmd, material);
 
-				context.ExecuteCommandBuffer(cmd);
-				context.Submit();
-				CommandBufferPool.Release(cmd);
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			context.Submit();
+			CommandBufferPool.Release(cmd);
 		}
 
 		void SetDebugParams(CloudImageEffectPostProcess settings, Material material)

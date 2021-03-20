@@ -69,10 +69,7 @@ namespace MyRenderPipeline.RenderPass.GodRay
 			var sun2uv = math.mul(w2vMatrix, -light.light.transform.forward);
 			sun2uv = math.mul(mainCamera.projectionMatrix, new float4(sun2uv.xyz, 1.0f)).xyz;
 
-			if (sun2uv.z < 0)
-			{
-				return;
-			}
+
 
 			var cmd = CommandBufferPool.Get(k_GodRayPass);
 			var sampler = new ProfilingSampler(k_GodRayPass);
@@ -82,28 +79,33 @@ namespace MyRenderPipeline.RenderPass.GodRay
 				var cloudSettings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
 				bool enableCloud = cloudSettings != null && cloudSettings.IsActive();
 
-				//1.setup------------------
-				CoreUtils.SetKeyword(godRayMaterial, c_EnableCloud, enableCloud);
-				godRayMaterial.SetVector(SunUV_ID, (Vector3) sun2uv);
-				godRayMaterial.SetVector(GodRayStrength_ID,
-					new Vector4(godRaySettings.godRayDir.value.x, godRaySettings.godRayDir.value.y
-						, godRaySettings.godRayStrength.value, godRaySettings.godRayMaxDistance.value));
-				godRayMaterial.SetVector(GodRayColor_ID, godRaySettings.godRayColor.value);
+				if (sun2uv.z >= 0)
+				{
+					
+					//1.setup------------------
+					CoreUtils.SetKeyword(godRayMaterial, c_EnableCloud, enableCloud);
+					godRayMaterial.SetVector(SunUV_ID, (Vector3) sun2uv);
+					godRayMaterial.SetVector(GodRayStrength_ID,
+						new Vector4(godRaySettings.godRayDir.value.x, godRaySettings.godRayDir.value.y
+							, godRaySettings.godRayStrength.value, godRaySettings.godRayMaxDistance.value));
+					godRayMaterial.SetVector(GodRayColor_ID, godRaySettings.godRayColor.value);
 
 
-				cmd.SetRenderTarget(godRay_RTI);
+					cmd.SetRenderTarget(godRay_RTI);
 
-				CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 0);
+					CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 0);
 
 
-				//2.blur------------------
+					//2.blur------------------
 
-				cmd.SetRenderTarget(godRayBlur_RTI);
+					cmd.SetRenderTarget(godRayBlur_RTI);
 
-				// cmd.SetGlobalTexture(GodRayRT_ID, godRay_RTI);
+					// cmd.SetGlobalTexture(GodRayRT_ID, godRay_RTI);
 
-				CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 1);
+					CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 1);
 
+				}
+				
 				//3.composite------------------
 				
 				// cmd.SetRenderTarget();
@@ -113,12 +115,11 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 
 				CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 2);
-
-
-				context.ExecuteCommandBuffer(cmd);
-				context.Submit();
-				CommandBufferPool.Release(cmd);
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			context.Submit();
+			CommandBufferPool.Release(cmd);
 		}
 	}
 }
