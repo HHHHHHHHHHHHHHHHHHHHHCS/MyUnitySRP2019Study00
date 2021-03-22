@@ -35,7 +35,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 
 			if (GUILayout.Button("Load"))
 			{
-				var t2d = Resources.Load<Texture2D>(textureName);
+				var t2d = AssetDatabase.LoadAssetAtPath<Texture2D>(dirPath + textureName + ".tga");
 				weatherMap.weatherMap = new RenderTexture(t2d.width, t2d.height, 0);
 				Graphics.Blit(t2d, weatherMap.weatherMap);
 				EditorApplication.QueuePlayerLoopUpdate();
@@ -67,7 +67,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 
 		#region Save2DTexture
 
-		private const string dirPath = "Assets/Res/Cloud/Resources";
+		private const string dirPath = "Assets/Res/Cloud/Textures/ImageEffect/";
 		private const string textureName = "WeatherMap";
 
 
@@ -88,7 +88,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			}
 
 			// weatherMap.EncodeToTGA();
-			var file = File.Create(dirPath + "/" + saveName + ".tga");
+			var file = File.Create(dirPath + saveName + ".tga");
 			var data = weatherMap.EncodeToTGA();
 			file.Write(data, 0, data.Length);
 			file.Dispose();

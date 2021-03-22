@@ -132,5 +132,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			PropertyField(m_viewerTileAmount);
 			PropertyField(m_viewerSize);
 		}
+		
+		
 	}
 }

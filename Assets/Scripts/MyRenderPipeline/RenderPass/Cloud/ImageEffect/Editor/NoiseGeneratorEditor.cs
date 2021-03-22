@@ -95,7 +95,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 		#region Save3DTexture
 
 		private const int threadGroupSize = 32;
-		private const string dirPath = "Assets/Cloud/Res/Resources";
+		private const string dirPath = NoiseGenerator.dirPath;// "Assets/Cloud/Res/Textures/ImageEffect/";
 
 		public void Save(RenderTexture volumeTexture, string saveName)
 		{
@@ -148,6 +148,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect.Editor
 			AssetDatabase.Refresh();
 			Debug.Log("Save : " + saveName);
 		}
+
 
 		Texture3D Tex3DFromTex2DArray(Texture2D[] slices, int resolution)
 		{

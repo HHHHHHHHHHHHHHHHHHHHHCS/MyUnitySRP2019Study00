@@ -10,6 +10,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 {
 	public class NoiseGenerator : MonoBehaviour
 	{
+#if UNITY_EDITOR
+		public const string dirPath = "Assets/Cloud/Res/Textures/ImageEffect/";
+#endif
+
 		public const string detailNoiseName = "DetailNoise";
 		public const string shapeNoiseName = "ShapeNoise";
 
@@ -234,17 +238,22 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				};
 				texture.Create();
 
+#if UNITY_EDITOR
 				Load(textureName, texture);
+#endif
 			}
 		}
 
-
+#if UNITY_EDITOR
 		//读取本地出存的tex3d 赋值给target
 		public void Load(string saveName, RenderTexture target)
 		{
 			string sceneName = SceneManager.GetActiveScene().name;
 			saveName = sceneName + "_" + saveName;
-			Texture3D saveTex = Resources.Load<Texture3D>(saveName);
+			// Texture3D saveTex = Resources.Load<Texture3D>(saveName);
+
+			Texture3D saveTex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture3D>(dirPath + saveName + ".asset");
+
 			if (saveTex != null && saveTex.width == target.width)
 			{
 				copyCS.SetTexture(copy_Kernel, src_ID, saveTex);
@@ -252,7 +261,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				int numThreadGroups = Mathf.CeilToInt(saveTex.width / 8f);
 				copyCS.Dispatch(copy_Kernel, numThreadGroups, numThreadGroups, numThreadGroups);
 			}
+			else
+			{
+				Debug.Log("load is null!");
+			}
 		}
+#endif
 
 		//private ComputeBuffer CreateBuffer<T>(T[] data, int stride, int bufferName, int kernel = 0)
 		private ComputeBuffer CreateBuffer(Array data, int stride, int bufferName, int kernel = 0)
