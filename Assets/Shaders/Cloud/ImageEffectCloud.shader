@@ -239,7 +239,7 @@
 					totalDensity += max(0.0, SampleDensity(position) * stepSize);
 				}
 				
-				float transmittance = exp(-totalDensity * _LightAbsorptionTowardSun);
+				float transmittance = Beer(totalDensity * _LightAbsorptionTowardSun);
 				// _DarknessThreshold 决定了 向光采样 的强度
 				return _DarknessThreshold + transmittance * (1 - _DarknessThreshold);
 			}
@@ -309,6 +309,8 @@
 				// depth = depth > _ProjectionParams.z - 1 ? 2 * dstToBox : depth;
 				float dstLimit = min(depth - dstToBox, dstInsideBox);
 				
+				//可以添加_LoopMaxCount
+				//for(int loopCount = 0; loopCount < _LoopMaxCount || dstTravelled < dstLimit; loopCount++)
 				while(dstTravelled < dstLimit)
 				{
 					rayPos = entryPoint + rayDir * dstTravelled;
