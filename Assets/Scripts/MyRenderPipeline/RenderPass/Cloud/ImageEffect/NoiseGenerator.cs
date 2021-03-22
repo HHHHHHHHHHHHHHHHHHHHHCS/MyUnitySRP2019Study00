@@ -11,7 +11,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 	public class NoiseGenerator : MonoBehaviour
 	{
 #if UNITY_EDITOR
-		public const string dirPath = "Assets/Cloud/Res/Textures/ImageEffect/";
+		public const string dirPath = "Assets/Res/Cloud/Textures/ImageEffect/";
 #endif
 
 		public const string detailNoiseName = "DetailNoise";
@@ -263,7 +263,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			}
 			else
 			{
-				Debug.Log("load is null!");
+				Debug.Log("load is null! path : " + dirPath + saveName + ".asset");
 			}
 		}
 #endif
