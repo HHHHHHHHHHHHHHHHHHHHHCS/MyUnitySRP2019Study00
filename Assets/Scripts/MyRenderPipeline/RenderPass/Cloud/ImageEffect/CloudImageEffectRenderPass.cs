@@ -90,7 +90,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
 		{
-			cmd.GetTemporaryRT(cloudRT_ID, cameraTextureDescriptor);
+			var desc = cameraTextureDescriptor;
+			desc.depthBufferBits = 0;
+			cmd.GetTemporaryRT(cloudRT_ID, desc);
 		}
 
 		public override void FrameCleanup(CommandBuffer cmd)
@@ -186,8 +188,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 				{
 					//var msaa = renderingData.cameraData.cameraTargetDescriptor.msaaSamples > 1;
 					cmd.SetRenderTarget(cloudRT_RTI,
-						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store
-						, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 					// cmd.ClearRenderTarget(false, true, Color.black);
 					// cmd.SetRenderTarget(cloudRT_RTI);
 

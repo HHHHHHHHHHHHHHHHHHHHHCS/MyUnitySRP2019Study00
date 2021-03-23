@@ -23,6 +23,7 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 		private static readonly RenderTargetIdentifier godRay_RTI = new RenderTargetIdentifier(GodRayRT_ID);
 		private static readonly RenderTargetIdentifier godRayBlur_RTI = new RenderTargetIdentifier(GodRayBlurRT_ID);
+		private static readonly RenderTargetIdentifier cameraTarget_RTI = new RenderTargetIdentifier("_CameraColorTexture");
 
 
 		private Material godRayMaterial;
@@ -42,8 +43,10 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
 		{
-			cmd.GetTemporaryRT(GodRayRT_ID, cameraTextureDescriptor);
-			cmd.GetTemporaryRT(GodRayBlurRT_ID, cameraTextureDescriptor);
+			var desc = cameraTextureDescriptor;
+			desc.depthBufferBits = 0;
+			cmd.GetTemporaryRT(GodRayRT_ID, desc);
+			cmd.GetTemporaryRT(GodRayBlurRT_ID, desc);
 		}
 
 		public override void FrameCleanup(CommandBuffer cmd)
@@ -70,7 +73,6 @@ namespace MyRenderPipeline.RenderPass.GodRay
 			sun2uv = math.mul(mainCamera.projectionMatrix, new float4(sun2uv.xyz, 1.0f)).xyz;
 
 
-
 			var cmd = CommandBufferPool.Get(k_GodRayPass);
 			var sampler = new ProfilingSampler(k_GodRayPass);
 
@@ -81,7 +83,6 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 				if (sun2uv.z >= 0)
 				{
-					
 					//1.setup------------------
 					CoreUtils.SetKeyword(godRayMaterial, c_EnableCloud, enableCloud);
 					godRayMaterial.SetVector(SunUV_ID, (Vector3) sun2uv);
@@ -91,32 +92,29 @@ namespace MyRenderPipeline.RenderPass.GodRay
 					godRayMaterial.SetVector(GodRayColor_ID, godRaySettings.godRayColor.value);
 
 
-					cmd.SetRenderTarget(godRay_RTI);
+					cmd.SetRenderTarget(godRay_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 
 					CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 0);
 
 
 					//2.blur------------------
 
-					cmd.SetRenderTarget(godRayBlur_RTI);
+					cmd.SetRenderTarget(godRayBlur_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 
 					// cmd.SetGlobalTexture(GodRayRT_ID, godRay_RTI);
 
 					CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 1);
-
 				}
-				
+
 				//3.composite------------------
-				
+
 				// cmd.SetRenderTarget();
 
-				RenderTargetIdentifier cameraTarget = new RenderTargetIdentifier("_CameraColorTexture");
-				cmd.SetRenderTarget(cameraTarget);
-
+				cmd.SetRenderTarget(cameraTarget_RTI, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
 
 				CoreUtils.DrawFullScreen(cmd, godRayMaterial, null, 2);
 			}
-			
+
 			context.ExecuteCommandBuffer(cmd);
 			context.Submit();
 			CommandBufferPool.Release(cmd);
