@@ -35,6 +35,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 				renderPassEvent = RenderPassEvent.BeforeRenderingTransparents
 			};
 
+			cloudMaterial = CoreUtils.CreateEngineMaterial(cloudShader);
+
 			cloudWithGodRayRenderPass.Init(cloudMaterial, shapeTexture, detailTexture
 				, weatherMap, blueNoise, maskNoise);
 		}

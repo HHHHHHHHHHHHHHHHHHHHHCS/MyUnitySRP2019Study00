@@ -1,5 +1,37 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5811880853684667711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ae1c2d1bf8b2b48b3d530c0c729822, type: 3}
+  m_Name: NewCrepuscularRayRenderFeatures
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  enable: 1
+  crepuscularRayShader: {fileID: 4800000, guid: 21d37017cb57e5c4da6a82e3878aa6dd,
+    type: 3}
+--- !u!114 &-2791300520868405081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51a30af1f17607b4085e5fd76fdebd45, type: 3}
+  m_Name: MyBlitRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  renderPassEvent: 450
+  downsampling: 0
+  blitShader: {fileID: 4800000, guid: a0a187241eb58cf47896a17b781bc684, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13,8 +45,10 @@ MonoBehaviour:
   m_Name: WithGodRayCloud_Renderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
+  - {fileID: -2791300520868405081}
   - {fileID: 9021080297744979253}
-  m_RendererFeatureMap: 35555d2dbc50317d
+  - {fileID: -5811880853684667711}
+  m_RendererFeatureMap: a7a04618f74e43d935555d2dbc50317dc13a3bff270d58af
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -47,13 +81,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b93034df768227748ab77573364a034a, type: 3}
-  m_Name: NewCloudWithGodRayRenderFeature
+  m_Name: CloudWithGodRayRenderFeature
   m_EditorClassIdentifier: 
   m_Active: 1
   enable: 1
-  cloudShader: {fileID: 0}
-  shapeTexture: {fileID: 0}
-  detailTexture: {fileID: 0}
-  weatherMap: {fileID: 0}
-  blueNoise: {fileID: 0}
-  maskNoise: {fileID: 0}
+  cloudShader: {fileID: 4800000, guid: ff5eee83ae0c8fe47ac575e838115bcc, type: 3}
+  shapeTexture: {fileID: 11700000, guid: cb4b6eb5c9e81414487f4f275cfce048, type: 2}
+  detailTexture: {fileID: 11700000, guid: dde5d5a1451767d48b0ea30f597f1983, type: 2}
+  weatherMap: {fileID: 2800000, guid: bc830ae7850741344b2f0b6671d6de80, type: 3}
+  blueNoise: {fileID: 2800000, guid: d25158ef7a361f6409bbeb2b86bb2118, type: 3}
+  maskNoise: {fileID: 2800000, guid: f9bcaf1da924d0742b9c341e5d80235f, type: 3}
