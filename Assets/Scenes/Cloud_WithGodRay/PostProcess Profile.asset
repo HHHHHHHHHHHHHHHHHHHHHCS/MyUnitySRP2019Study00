@@ -104,3 +104,68 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   components:
   - {fileID: -1671381805374413927}
+  - {fileID: 3023538849638755451}
+--- !u!114 &3023538849638755451
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ec00ae331570ec49848f8661d8586c7, type: 3}
+  m_Name: CrepuscularRayPostProcess
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  enableEffect:
+    m_OverrideState: 1
+    m_Value: 0
+  qualityMode:
+    m_OverrideState: 1
+    m_Value: 1
+  lightColor:
+    m_OverrideState: 0
+    m_Value: {r: 1.33, g: 0.98, b: 0.69, a: 1}
+    hdr: 0
+    showAlpha: 1
+    showEyeDropper: 1
+  rayRange:
+    m_OverrideState: 0
+    m_Value: 0.94
+    min: 0
+    max: 2
+  rayIntensity:
+    m_OverrideState: 0
+    m_Value: 2
+  rayPower:
+    m_OverrideState: 1
+    m_Value: 2
+    min: 1
+    max: 3
+  lightThreshold:
+    m_OverrideState: 0
+    m_Value: 0.29
+    min: 0
+    max: 1
+  qualityStep:
+    m_OverrideState: 0
+    m_Value: 32
+    min: 2
+    max: 64
+  offsetUV:
+    m_OverrideState: 0
+    m_Value: 0.027
+    min: 0
+    max: 0.1
+  boxBlur:
+    m_OverrideState: 0
+    m_Value: 0.00126
+    min: 0
+    max: 0.01
+  downsample:
+    m_OverrideState: 0
+    m_Value: 4
+    min: 1
+    max: 16

@@ -48,7 +48,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 		{
 			HLSLPROGRAM
 			#pragma vertex Vert
-			#pragma fragment CloudFrag
+			#pragma fragment FragCloud
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -235,7 +235,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 			}
 
 
-			float4 CloudFrag(v2f i) : SV_Target
+			float4 FragCloud(v2f i) : SV_Target
 			{
 				float depth = SAMPLE_DEPTH_TEXTURE(_DownsampleDepthTex, sampler_DownsampleDepthTex, i.uv);
 				float3 rayPos = _WorldSpaceCameraPos;
@@ -309,14 +309,14 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 
 			HLSLPROGRAM
 			#pragma vertex Vert
-			#pragma fragment DownsampleDepthFrag
+			#pragma fragment FragDownsampleDepth
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
 
 			float4 _CameraDepthTexture_TexelSize;
 
-			float DownsampleDepthFrag(v2f i) : SV_Target
+			float FragDownsampleDepth(v2f i) : SV_Target
 			{
 				float2 texelSize = 0.5 * _CameraDepthTexture_TexelSize.xy;
 				float2 taps[4] =
@@ -345,14 +345,14 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 			Name "CombineColor"
 			HLSLPROGRAM
 			#pragma vertex Vert
-			#pragma fragment CombineColorFrag
+			#pragma fragment FragCombineColor
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
 			TEXTURE2D(_DownsampleColorTex);
 			SAMPLER(sampler_DownsampleColorTex);
 
-			float4 CombineColorFrag(v2f i) : SV_Target
+			float4 FragCombineColor(v2f i) : SV_Target
 			{
 				float3 color = SampleSceneColor(i.uv);
 				float4 cloudColor = SAMPLE_TEXTURE2D(_DownsampleColorTex, sampler_DownsampleColorTex, i.uv);

@@ -1,5 +1,21 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5811880853684667711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5ae1c2d1bf8b2b48b3d530c0c729822, type: 3}
+  m_Name: NewCrepuscularRayRenderFeatures
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  enable: 1
+  crepuscularRayShader: {fileID: 4800000, guid: 21d37017cb57e5c4da6a82e3878aa6dd,
+    type: 3}
 --- !u!114 &-2791300520868405081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31,7 +47,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: -2791300520868405081}
   - {fileID: 9021080297744979253}
-  m_RendererFeatureMap: a7a04618f74e43d935555d2dbc50317d
+  - {fileID: -5811880853684667711}
+  m_RendererFeatureMap: a7a04618f74e43d935555d2dbc50317dc13a3bff270d58af
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}

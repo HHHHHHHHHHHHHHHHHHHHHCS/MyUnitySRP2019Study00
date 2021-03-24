@@ -67,7 +67,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay.Editor
 			// 	return;
 			// }
 
-			EditorGUILayout.LabelField("CloudImageEffect", EditorStyles.miniLabel);
+			EditorGUILayout.LabelField("CloudWithGodRay", EditorStyles.miniLabel);
 
 			PropertyField(m_enableEffect);
 			PropertyField(m_shapeTiling);

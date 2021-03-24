@@ -67,6 +67,7 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 			var mainCamera = Camera.main;
 
+			//其实也可以用camera.viewpoint 算UV
 			var w2vMatrix = new float3x3(mainCamera.worldToCameraMatrix);
 			//x左右-1~1  y高低1~-1  面对z是-1  背对z是1
 			var sun2uv = math.mul(w2vMatrix, -light.light.transform.forward);

@@ -200,23 +200,3 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 		}
 	}
 }
-
-/*
- 		private static readonly int InverseProjectionMatrix_ID = Shader.PropertyToID("_InverseProjectionMatrix");
-		private static readonly int InverseViewMatrix_ID = Shader.PropertyToID("_InverseViewMatrix");
-		private static readonly int RayRange_ID = Shader.PropertyToID("_RayRange");
-		private static readonly int RayIntensity_ID = Shader.PropertyToID("_RayIntensity");
-		private static readonly int RayPower_ID = Shader.PropertyToID("_RayPower");
-		private static readonly int LightThreshold_ID = Shader.PropertyToID("_LightThreshold");
-		private static readonly int QualityStep_ID = Shader.PropertyToID("_QualityStep");
-		private static readonly int OffsetUV_ID = Shader.PropertyToID("_OffsetUV");
-		private static readonly int BoxBlur_ID = Shader.PropertyToID("_BoxBlur");
-		private static readonly int LightColor_ID = Shader.PropertyToID("_LightColor");
-		private static readonly int LightViewPos_ID = Shader.PropertyToID("_LightViewPos");
-		private static readonly int LightDir_ID = Shader.PropertyToID("_LightDir");
-		private static readonly int CamDir_ID = Shader.PropertyToID("_CamDir");
-		private static readonly int DownsampleTemp_ID = Shader.PropertyToID("_DownsampleTemp");
-		private static readonly int LowResTexture_ID = Shader.PropertyToID("_LowResTexture");
-
-
- */
