@@ -201,8 +201,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			}
 			
 			context.ExecuteCommandBuffer(cmd);
-			context.Submit();
 			CommandBufferPool.Release(cmd);
+			context.Submit();
 		}
 
 		void SetDebugParams(CloudImageEffectPostProcess settings, Material material)

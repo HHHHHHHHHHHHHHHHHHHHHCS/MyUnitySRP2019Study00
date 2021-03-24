@@ -23,8 +23,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 		public FloatParameter colorOffset2 = new FloatParameter(1.02f);
 		public FloatParameter lightAbsorptionTowardSun = new FloatParameter(0.1f);
 		public FloatParameter lightAbsorptionThroughCloud = new FloatParameter(1);
+		public ClampedFloatParameter darknessThreshold = new ClampedFloatParameter(0,0.0f,1.0f);
 		public Vector4Parameter phaseParams = new Vector4Parameter(new Vector4(0.72f, 1, 0.5f, 1.58f));
-
+		
 		//density
 		[Header("Density==============")] public FloatParameter densityOffset = new FloatParameter(4.02f);
 		public FloatParameter densityMultiplier = new FloatParameter(2.31f);

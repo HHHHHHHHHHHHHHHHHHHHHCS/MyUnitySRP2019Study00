@@ -81,7 +81,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 			float _DetailNoiseWeight;
 			float4 _DetailNoiseWeights;
 
-			
+
 			float4 _BlueNoiseCoords;
 			float _LightAbsorptionTowardSun;
 			float _LightAbsorptionThroughCloud;
@@ -93,6 +93,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 			float4 _PhaseParams;
 			float _HeightWeights;
 			float4 _XY_Speed_ZW_Warp;
+
 
 			float Remap(float v, float minOld, float maxOld, float minNew, float maxNew)
 			{
@@ -152,15 +153,16 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 
 			float SampleDensity(float3 rayPos)
 			{
-				float3 boundsCentre = (_BoundsMax + _BoundsMin) * 0.5;
+				float3 boundsCenter = (_BoundsMax + _BoundsMin) * 0.5;
 				float3 size = _BoundsMax - _BoundsMin;
-				float speedShape = _Time.y * _XY_Speed_ZW_Warp.x;
-				float speedDetail = _Time.y * _XY_Speed_ZW_Warp.y;
+				float time = _Time.y;
+				float speedShape = time * _XY_Speed_ZW_Warp.x;
+				float speedDetail = time * _XY_Speed_ZW_Warp.y;
 
 				float3 uvwShape = rayPos * _ShapeTiling + float3(speedShape, speedShape * 0.2, 0);
 				float3 uvwDetail = rayPos * _DetailTiling + float3(speedDetail, speedDetail * 0.2, 0);
 
-				float2 uv = (size.xz * 0.5f + (rayPos.xz - boundsCentre.xz)) / max(size.x, size.z);
+				float2 uv = (size.xz * 0.5f + (rayPos.xz - boundsCenter.xz)) / max(size.x, size.z);
 				float weatherMap = SAMPLE_TEXTURE2D_LOD(_WeatherMap, sampler_WeatherMap
 				                                        , uv + float2(speedShape * 0.4, 0), 0).r;
 
@@ -172,6 +174,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 
 				float gMin = Remap(weatherMap, 0, 1, 0.1, 0.6);
 				float gMax = Remap(weatherMap, 0, 1, gMin, 0.9);
+
 				float heightPercent = (rayPos.y - _BoundsMin.y) / size.y;
 				float heightGradient = saturate(Remap(heightPercent, 0.0, gMin, 0, 1))
 					* saturate(Remap(heightPercent, 1, gMax, 0, 1));
@@ -188,14 +191,13 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 				float shapeFBM = dot(shapeNoise, normalizedShapeWeights) * heightGradient;
 				float baseShapeDensity = shapeFBM + _DensityOffset * 0.01;
 
-
 				if (baseShapeDensity > 0)
 				{
 					float4 detailNoises = SAMPLE_TEXTURE3D_LOD(_NoiseDetail3D, sampler_NoiseDetail3D
-					                                          , uvwDetail + (shapeNoise.r * _XY_Speed_ZW_Warp.w * 0.1)
-					                                          , 0);
+					                                           , uvwDetail + (shapeNoise.r * _XY_Speed_ZW_Warp.w * 0.1)
+					                                           , 0);
 					float4 normalizedDetailWeights = _DetailNoiseWeights / dot(_DetailNoiseWeights, float4(1, 1, 1, 1));
-					float detailNoise = dot(detailNoises, normalizedDetailWeights) ;
+					float detailNoise = dot(detailNoises, normalizedDetailWeights);
 					float detailFBM = PositivePow(detailNoise, _DetailWeights);
 					float oneMinusShape = 1 - baseShapeDensity;
 					float detailErodeWeight = oneMinusShape * oneMinusShape * oneMinusShape;
@@ -234,16 +236,18 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 				return _DarknessThreshold + transmittance * (1 - _DarknessThreshold) * cloudColor;
 			}
 
-
-			float4 FragCloud(v2f i) : SV_Target
+			half4 FragCloud(v2f i) : SV_Target
 			{
-				float depth = SAMPLE_DEPTH_TEXTURE(_DownsampleDepthTex, sampler_DownsampleDepthTex, i.uv);
+				float depth = SAMPLE_TEXTURE2D(_DownsampleDepthTex, sampler_DownsampleDepthTex, i.uv).r;
+
 				float3 rayPos = _WorldSpaceCameraPos;
+
 
 				//世界空间坐标
 				float4 worldPos = GetWorldSpacePosition(depth, i.uv);
 				//世界空间相机方向
 				float3 worldViewDir = normalize(worldPos.xyz - rayPos.xyz);
+
 
 				//float depthEyeLinear = LinearEyeDepth(depth) ;
 				float depthEyeLinear = length(worldPos.xyz - _WorldSpaceCameraPos);
@@ -272,12 +276,14 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 				const float sizeLoop = 512;
 				float stepSize = exp(_Step) * _RayStep;
 
-				for (int j = 0; j < sizeLoop; j++)
+				int j;
+				for (j = 0; j < sizeLoop; j++)
 				{
 					if (dstTravelled < dstLimit)
 					{
 						rayPos = entryPoint + (worldViewDir * dstTravelled);
 						float density = SampleDensity(rayPos);
+
 						if (density > 0)
 						{
 							float3 lightTransmittance = Lightmarch(rayPos);
@@ -297,7 +303,8 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 					dstTravelled += stepSize;
 				}
 
-				return  float4(lightEnergy, sumDensity);
+
+				return float4(lightEnergy, sumDensity);
 			}
 			ENDHLSL
 		}

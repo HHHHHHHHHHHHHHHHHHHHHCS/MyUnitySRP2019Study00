@@ -1,4 +1,5 @@
-﻿using MyRenderPipeline.RenderPass.Cloud.ImageEffect;
+﻿using System.Collections.Generic;
+using MyRenderPipeline.RenderPass.Cloud.ImageEffect;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -33,6 +34,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 
 		private static readonly int LightAbsorptionThroughCloud_ID =
 			Shader.PropertyToID("_LightAbsorptionThroughCloud");
+		private static readonly int DarknessThreshold_ID =
+			Shader.PropertyToID("_DarknessThreshold");
 
 		private static readonly int RayOffsetStrength_ID = Shader.PropertyToID("_RayOffsetStrength");
 		private static readonly int PhaseParams_ID = Shader.PropertyToID("_PhaseParams");
@@ -149,7 +152,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 					cloudSettings.lightAbsorptionTowardSun.value);
 				cloudMaterial.SetFloat(LightAbsorptionThroughCloud_ID,
 					cloudSettings.lightAbsorptionThroughCloud.value);
-
+				cloudMaterial.SetFloat(DarknessThreshold_ID,
+					cloudSettings.darknessThreshold.value);
 
 				cloudMaterial.SetFloat(RayOffsetStrength_ID, cloudSettings.rayOffsetStrength.value);
 				cloudMaterial.SetVector(PhaseParams_ID, cloudSettings.phaseParams.value);
@@ -177,26 +181,28 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 				cmd.GetTemporaryRT(DownsampleColorTex_ID
 					, cameraTextureDescriptor.width / cloudSettings.downsample.value
 					, cameraTextureDescriptor.height / cloudSettings.downsample.value
-					, 0, FilterMode.Point, RenderTextureFormat.ARGBHalf);
+					, 0, FilterMode.Point, RenderTextureFormat.ARGB32);
 				cmd.SetRenderTarget(DownsampleColorTex_RTI, RenderBufferLoadAction.DontCare,
 					RenderBufferStoreAction.Store);
 				CoreUtils.DrawFullScreen(cmd, cloudMaterial, null, 0);
 				//降分辨率后的云设置回_DownsampleColor
 				cmd.SetGlobalTexture(DownsampleColorTex_ID, DownsampleColorTex_RTI);
 
+
 				//使用第2个Pass 合成
 				cmd.SetRenderTarget(CameraColorTex_RTI);
-
 				CoreUtils.DrawFullScreen(cmd, cloudMaterial, null, 2);
 
 
 				cmd.ReleaseTemporaryRT(DownsampleDepthTex_ID);
 				cmd.ReleaseTemporaryRT(DownsampleColorTex_ID);
 			}
+			
+
 
 			context.ExecuteCommandBuffer(cmd);
-			context.Submit();
 			CommandBufferPool.Release(cmd);
+			context.Submit();
 		}
 	}
 }

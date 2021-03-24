@@ -15,6 +15,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay.Editor
 		private SerializedDataParameter m_colorOffset2;
 		private SerializedDataParameter m_lightAbsorptionTowardSun;
 		private SerializedDataParameter m_lightAbsorptionThroughCloud;
+		private SerializedDataParameter m_darknessThreshold;
 		private SerializedDataParameter m_phaseParams;
 		private SerializedDataParameter m_densityOffset;
 		private SerializedDataParameter m_densityMultiplier;
@@ -42,6 +43,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay.Editor
 			m_colorOffset2 = Unpack(o.Find(x => x.colorOffset2));
 			m_lightAbsorptionTowardSun = Unpack(o.Find(x => x.lightAbsorptionTowardSun));
 			m_lightAbsorptionThroughCloud = Unpack(o.Find(x => x.lightAbsorptionThroughCloud));
+			m_darknessThreshold = Unpack(o.Find(x => x.darknessThreshold));
 			m_phaseParams = Unpack(o.Find(x => x.phaseParams));
 			m_densityOffset = Unpack(o.Find(x => x.densityOffset));
 			m_densityMultiplier = Unpack(o.Find(x => x.densityMultiplier));
@@ -78,6 +80,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay.Editor
 			PropertyField(m_colorOffset2);
 			PropertyField(m_lightAbsorptionTowardSun);
 			PropertyField(m_lightAbsorptionThroughCloud);
+			PropertyField(m_darknessThreshold);
 			PropertyField(m_phaseParams);
 			PropertyField(m_densityOffset);
 			PropertyField(m_densityMultiplier);
