@@ -10,10 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
-  m_Name: ByTianYuRenderPipelineAsset_Renderer
+  m_Name: SolidCloudRenderPipelineAsset_Renderer
   m_EditorClassIdentifier: 
-  m_RendererFeatures: []
-  m_RendererFeatureMap: 
+  m_RendererFeatures:
+  - {fileID: 517890468023162925}
+  m_RendererFeatureMap: 2dd81403a3ea2f07
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -36,3 +37,19 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
+--- !u!114 &517890468023162925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0438df388389e1439e5bfeb782b4dc1, type: 3}
+  m_Name: SolidCloudRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  enable: 1
+  solidCloudShader: {fileID: 4800000, guid: 9fc9069d155c1f8438665b47c80c9c9f, type: 3}
+  noiseTex: {fileID: 2800000, guid: 1000f26260034ee48832f27ecd19f34b, type: 3}
