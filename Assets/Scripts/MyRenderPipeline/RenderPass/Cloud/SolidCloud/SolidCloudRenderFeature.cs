@@ -35,8 +35,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
         {
             if (enable && renderingData.postProcessingEnabled && solidCloudMaterial != null)
             {
-                solidCloudRenderPass.Setup();
-                renderer.EnqueuePass(solidCloudRenderPass);
+                var settings = VolumeManager.instance.stack.GetComponent<SolidCloudRenderPostProcess>();
+
+                if (settings != null && settings.IsActive())
+                {
+                    solidCloudRenderPass.Setup(settings);
+                    renderer.EnqueuePass(solidCloudRenderPass); 
+                }
             }
         }
     }

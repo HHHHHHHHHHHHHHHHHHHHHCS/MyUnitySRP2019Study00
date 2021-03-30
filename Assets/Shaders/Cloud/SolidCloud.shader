@@ -4,6 +4,29 @@
 	{
 
 	}
+	HLSLINCLUDE
+	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+	struct a2v
+	{
+		uint vertexID:SV_VERTEXID;
+	};
+
+	struct v2f
+	{
+		float4 pos: SV_POSITION;
+		float2 uv: TEXCOORD0;
+	};
+
+	v2f Vert(a2v v)
+	{
+		v2f o = (v2f)0;
+		o.pos = GetFullScreenTriangleVertexPosition(v.vertexID);
+		o.uv = GetFullScreenTriangleTexCoord(v.vertexID);
+		return o;
+	}
+	ENDHLSL
+
 	SubShader
 	{
 		Pass
@@ -13,29 +36,19 @@
 
 			HLSLPROGRAM
 			#pragma vertex Vert
-			#pragma fragment Frag
+			#pragma fragment FragCloud
 
-			#pragma multi_compile CLOUD_SUN_SHADOWS_ON
-			#pragma multi_compile CLOUD_DISTANCE_ON
-			#pragma multi_compile CLOUD_AREA_BOX CLOUD_AREA_SPHERE //default CLOUD_AREA_BOX
+			#pragma multi_compile MAIN_LIGHT_CALCULATE_SHADOWS
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+			#pragma multi_compile _ CLOUD_SUN_SHADOWS_ON
+			#pragma multi_compile _ CLOUD_DISTANCE_ON
+			#pragma multi_compile CLOUD_AREA_BOX CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
+
+
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
-			struct a2v
-			{
-				// float4 vertex: POSITION;
-				// float2 uv: TEXCOORD0;
-				uint vertexID:SV_VERTEXID;
-			};
-
-			struct v2f
-			{
-				float4 pos: SV_POSITION;
-				float2 uv: TEXCOORD0;
-				// float3 camDir:TEXCOORD1;
-			};
 
 			TEXTURE2D(_NoiseTex);
 			SAMPLER(sampler_NoiseTex);
@@ -53,11 +66,7 @@
 			//#endif
 
 			#if CLOUD_SUN_SHADOWS_ON
-			// TEXTURE2D(_SunDepthTexture);
-			// float4 _SunDepthTexture_TexelSize;
-			// float4x4 _SunProj;
-			// float4 _SunWorldPos;
-			// half4 _SunShadowsData;
+			half3 _SunShadowsData; //x:sunShadowsStrength  y:sunShadowsJitterStrength  z:sunShadowsCancellation
 			#endif
 
 
@@ -77,24 +86,12 @@
 				return dither;
 			}
 
-
-			float3 GetShadowCoords(float3 worldPos)
-			{
-				// shadowCoord = TransformWorldToShadowCoord(worldPos);
-				// float4 shadowClipPos = mul(_SunProj, float4(worldPos, 1.0));
-				// // transform from clip to texture space
-				// shadowClipPos.xy /= shadowClipPos.w;
-				// shadowClipPos.xy *= 0.5;
-				// shadowClipPos.xy += 0.5;
-				// shadowClipPos.z = 0;
-				// return shadowClipPos.xyz;
-				return 0;
-			}
-
 			half4 GetFogColor(float2 uv, float3 worldPos, float depth01, float dither)
 			{
 				const half4 zeros = half4(0.0, 0.0, 0.0, 0.0);
-				const float3 wsCameraPos = _WorldSpaceCameraPos;
+				const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x
+				                                  , _WorldSpaceCameraPos.y - _CloudData.y, _WorldSpaceCameraPos.z);
+				worldPos.y -= _CloudData.x;
 
 				// early exit if fog is not crossed
 				if ((wsCameraPos.y > _CloudData.y && worldPos.y > _CloudData.y) ||
@@ -116,14 +113,19 @@
 				float c = dot(oc, oc) - _CloudAreaData.y;
 				float t = b * b - c;
 				if (t >= 0) t = sqrt(t);
-				float distanceToFog = max(-b - t, 0);
+				float distanceToCloud = max(-b - t, 0);
 				float dist = min(adir.w, _CloudDistance.z);
 				float t1 = min(-b + t, dist);
-				float fogLength = t1 - distanceToFog;
-				if (fogLength < 0) return zeros;
-				float3 fogCeilingCut = wsCameraPos + nadir * distanceToFog;
+				float cloudLength = t1 - distanceToCloud;
+				if (cloudLength < 0)
+				{
+					return zeros;
+				}
+				float3 cloudCeilingCut = wsCameraPos + nadir * distanceToCloud;
 				float2 areaData =  _CloudAreaData.xz;
+				
 				#else //if CLOUD_AREA_BOX
+
 				// compute box intersectionor early exit if ray does not cross box
 				float3 ro = _CloudAreaPosition - wsCameraPos;
 				float3 invR = adir.w / adir.xyz;
@@ -148,7 +150,6 @@
 				}
 
 				float3 cloudCeilingCut = wsCameraPos + distanceToCloud / invR;
-
 				float2 areaData = _CloudAreaData.xz / _CloudData.w;
 				#endif
 
@@ -191,19 +192,18 @@
 
 				// Shadow preparation
 				#if CLOUD_SUN_SHADOWS_ON
-				// fogCeilingCut.y += _CloudData.x;
-				// // reduce banding
-				// dir.w += frac(dither);
-				//
-				// float3 shadowCoords0 = GetShadowCoords(fogCeilingCut);
-				// float3 fogEndPos = fogCeilingCut.xyz +
-				// 	fogLength * (1.0 + dither * _SunShadowsData.y) * adir.xyz / adir.w;
-				// float3 shadowCoords1 = GetShadowCoords(fogEndPos);
-				// // shadow out of range, exclude with a subtle falloff
-				// _SunShadowsData.x *= saturate((_SunWorldPos.w - distanceToFog) / 35.0);
-				// _SunShadowsData.w = 1.0 / dir.w;
-				// // apply jitter to avoid banding
-				// //			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
+				cloudCeilingCut.y += _CloudData.x;
+				// reduce banding
+				dir.w += frac(dither);
+				half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
+				float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
+				float3 fogEndPos = cloudCeilingCut.xyz +
+					cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
+				float4 shadowCoords1 = TransformWorldToShadowCoord(fogEndPos);
+				// shadow out of range, exclude with a subtle falloff
+				// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
+				// apply jitter to avoid banding
+				//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
 				#endif
 
 				// Ray-march
@@ -212,19 +212,24 @@
 
 				for (; dir.w > 1; dir.w--, ft4.xyz += dir.xyz)
 				{
+					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, ft4.xz, 0);
+
 					#if CLOUD_AREA_SPHERE
 					float2 vd = (areaCenter - ft4.xz) * _CloudAreaData.x;
 					float voidDistance = dot(vd, vd);
-					if (voidDistance > 1) continue;
-					half4 ng = tex2Dlod(_NoiseTex, ft4.xzww);
+					if (voidDistance > 1)
+					{
+						continue;
+					}
 					ng.a -= abs(ft4.y) + voidDistance * _CloudAreaData.w - 0.3;
-
 					#else //if CLOUD_AREA_BOX
 
 					float2 vd = abs(areaCenter - ft4.xz) * areaData;
 					float voidDistance = max(vd.x, vd.y);
-					if (voidDistance > 1) continue;
-					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, float2(ft4.x,1-ft4.z), 0);
+					if (voidDistance > 1)
+					{
+						continue;
+					}
 					ng.a -= abs(ft4.y);
 					#endif
 
@@ -239,15 +244,12 @@
 						fgCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
 
 						#if CLOUD_SUN_SHADOWS_ON
-						// float t = dir.w * _SunShadowsData.w;
-						// float3 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
-						// float4 sunDepthWorldPos = tex2Dlod(_SunDepthTexture, shadowCoords.xyzz);
-						// float sunDepth = 1.0 / sunDepthWorldPos.r; //DecodeFloatRGBA(sunDepthWorldPos);
-						// float3 curPos = lerp(fogEndPos, fogCeilingCut, t);
-						// float sunDist = distance(curPos, _SunWorldPos.xyz);
-						// float shadowAtten = saturate(sunDepth - sunDist);
-						// ng.rgb *= lerp(1.0, shadowAtten, _SunShadowsData.x * sum.a);
-						// fgCol *= lerp(1, shadowAtten, _SunShadowsData.z);
+						float t = dir.w * shadowData.w;
+						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
+						half shadowAtten = MainLightRealtimeShadow(shadowCoords);
+
+						ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
+						fgCol *= lerp(1, shadowAtten, shadowData.z);
 						#endif
 
 						fgCol.rgb *= ng.rgb * fgCol.aaa;
@@ -265,34 +267,52 @@
 			}
 
 
-			v2f Vert(a2v v)
-			{
-				v2f o = (v2f)0;
-
-				float4 vertex = GetFullScreenTriangleVertexPosition(v.vertexID);
-				float2 uv = GetFullScreenTriangleTexCoord(v.vertexID);
-
-				o.pos = vertex; //TransformObjectToHClip(vertex.xyz);
-				o.uv = uv;
-				// o.camDir = GetWorldSpacePosition(uv) - _WorldSpaceCameraPos;
-				return o;
-			}
-
-			float4 _CameraDepthTexture_TexelSize;
-			half4 Frag(v2f i):SV_TARGET
+			half4 FragCloud(v2f i):SV_TARGET
 			{
 				float depth = SampleSceneDepth(i.uv);
 				// 因为来源是一个大三角形  所以这样子还是不准确 所以换下面的方法
+				//  VS :  o.camDir = GetWorldSpacePosition(uv) - _WorldSpaceCameraPos;
 				// depth = Linear01Depth(depth,_ZBufferParams);
 				// float3 wPos = _WorldSpaceCameraPos + i.camDir * depth;
 				float3 wPos = GetWorldSpacePosition(i.uv, depth);
-				
+
 				float dither = GetDither(i.uv);
 
 				half4 sum = GetFogColor(i.uv, wPos, depth, dither);
 				sum *= 1.0 + dither * _CloudStepping.w;
 
 				return half4(sum);
+			}
+			ENDHLSL
+		}
+
+		Pass
+		{
+			ZTest Always
+			ZWrite Off
+
+			HLSLPROGRAM
+			#pragma vertex Vert
+			#pragma fragment FragNoise
+
+			TEXTURE2D(_NoiseTex);
+			SAMPLER(sampler_NoiseTex);
+			float _Amount;
+
+			half4 FragNoise(v2f i):SV_TARGET
+			{
+				float sint, cost;
+				sincos(_Amount, sint, cost);
+				float4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
+				float4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.25,0.25), 0);
+				float t0 = (sint + 1.0) * 0.5;
+				float r0 = lerp(p0, p1, t0);
+
+				float4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.5,0.5), 0);
+				float4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.75,0.75), 0);
+				float t1 = (cost + 1.0) * 0.5;
+				float r1 = lerp(p2, p3, t1);
+				return max(r0, r1);
 			}
 			ENDHLSL
 		}
