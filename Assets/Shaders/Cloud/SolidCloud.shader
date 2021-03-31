@@ -29,11 +29,12 @@
 
 	SubShader
 	{
+		ZTest Always
+		ZWrite Off
+
+		//Cloud
 		Pass
 		{
-			ZTest Always
-			ZWrite Off
-
 			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment FragCloud
@@ -43,7 +44,7 @@
 
 			#pragma multi_compile _ CLOUD_SUN_SHADOWS_ON
 			#pragma multi_compile _ CLOUD_DISTANCE_ON
-			#pragma multi_compile CLOUD_AREA_BOX CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
+			#pragma multi_compile _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
 
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -90,7 +91,7 @@
 			{
 				const half4 zeros = half4(0.0, 0.0, 0.0, 0.0);
 				const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x
-				                                  , _WorldSpaceCameraPos.y - _CloudData.y, _WorldSpaceCameraPos.z);
+				                                  , _WorldSpaceCameraPos.y - _CloudData.x, _WorldSpaceCameraPos.z);
 				worldPos.y -= _CloudData.x;
 
 				// early exit if fog is not crossed
@@ -112,7 +113,10 @@
 				float b = dot(nadir, oc);
 				float c = dot(oc, oc) - _CloudAreaData.y;
 				float t = b * b - c;
-				if (t >= 0) t = sqrt(t);
+				if (t >= 0)
+				{
+					t = sqrt(t);
+				}
 				float distanceToCloud = max(-b - t, 0);
 				float dist = min(adir.w, _CloudDistance.z);
 				float t1 = min(-b + t, dist);
@@ -215,7 +219,7 @@
 					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, ft4.xz, 0);
 
 					#if CLOUD_AREA_SPHERE
-					float2 vd = (areaCenter - ft4.xz) * _CloudAreaData.x;
+					float2 vd = (areaCenter - ft4.xz) * areaData.x;
 					float voidDistance = dot(vd, vd);
 					if (voidDistance > 1)
 					{
@@ -230,7 +234,7 @@
 					{
 						continue;
 					}
-					ng.a -= abs(ft4.y);
+					ng.a -= abs(ft4.y);//+ voidDistance * _CloudAreaData.w - 0.3;
 					#endif
 
 					#if CLOUD_DISTANCE_ON
@@ -262,7 +266,6 @@
 				//		sum += (fogLength >= dist) * (sum.a<0.99) * fgCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
 				sum += (sum.a < 0.99) * fgCol * (1.0 - sum.a) * dir.w;
 				sum *= _CloudColor.a;
-
 				return sum;
 			}
 
@@ -286,11 +289,49 @@
 			ENDHLSL
 		}
 
+		//generateNoise
 		Pass
 		{
-			ZTest Always
-			ZWrite Off
+			HLSLPROGRAM
+			#pragma vertex Vert
+			#pragma fragment FragNoise
 
+			TEXTURE2D(_NoiseTex);
+			SAMPLER(sampler_NoiseTex);
+
+			float _NoiseStrength;
+			float _NoiseDensity;
+			int _NoiseSize;
+			int _NoiseCount;
+			int _NoiseSeed;
+			float3 _LightColor;
+			float4 _SpecularColor;
+
+
+			inline float GetAlpha(float2 uv)
+			{
+				const float alpha = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, uv, 0).r;
+				return pow((1.0f - alpha * _NoiseStrength), _NoiseDensity);
+				// return (1.0f - alpha * _NoiseStrength) * _NoiseDensity;
+				// return smoothstep(0, 1, (1.0f - alpha * _NoiseStrength) * _NoiseDensity);
+			}
+
+
+			half4 FragNoise(v2f i):SV_TARGET
+			{
+				int k = i.pos.y * _NoiseSize + i.pos.x;
+				int rd = (k + _NoiseSeed) % _NoiseCount;
+				float a = GetAlpha(i.uv);
+				float2 rdUV = float2(rd % _NoiseSize, floor(rd / _NoiseSize)) / _NoiseSize;
+				float r = saturate((a - GetAlpha(rdUV)) * _SpecularColor.a);
+				return half4(_LightColor.rgb + _SpecularColor.rgb * r, a);
+			}
+			ENDHLSL
+		}
+
+		//Random Noise
+		Pass
+		{
 			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment FragNoise
@@ -303,15 +344,15 @@
 			{
 				float sint, cost;
 				sincos(_Amount, sint, cost);
-				float4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
-				float4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.25,0.25), 0);
+				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
+				half4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.25,0.25), 0);
 				float t0 = (sint + 1.0) * 0.5;
-				float r0 = lerp(p0, p1, t0);
+				half4 r0 = lerp(p0, p1, t0);
 
-				float4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.5,0.5), 0);
-				float4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.75,0.75), 0);
+				half4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.5,0.5), 0);
+				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.75,0.75), 0);
 				float t1 = (cost + 1.0) * 0.5;
-				float r1 = lerp(p2, p3, t1);
+				half4 r1 = lerp(p2, p3, t1);
 				return max(r0, r1);
 			}
 			ENDHLSL

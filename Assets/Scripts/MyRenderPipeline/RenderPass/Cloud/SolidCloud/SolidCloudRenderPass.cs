@@ -9,7 +9,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 	{
 		private const string k_SolidCloudPass = "SolidCloud";
 
-		private const string k_CLOUD_AREA_BOX = "CLOUD_AREA_BOX";
+		// private const string k_CLOUD_AREA_BOX = "CLOUD_AREA_BOX";
 		private const string k_CLOUD_AREA_SPHERE = "CLOUD_AREA_SPHERE";
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
 		private const string k_CLOUD_DISTANCE_ONs = "CLOUD_DISTANCE_ON";
@@ -45,152 +45,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			settings = solidCloudRenderPostProcess;
 		}
 
-		/*
-		void UpdateTextureColors(Color[] colors, bool forceUpdateEntireTexture)
-		{
-			Vector3 nlight;
-			int nz, disp;
-			float nyspec;
-			float spec = 1.0001f - _specularThreshold;
-			int tw = adjustedTexture.width;
-			nlight = new Vector3(-_lightDirection.x, 0, -_lightDirection.z).normalized * 0.3f;
-			nlight.y = _lightDirection.y > 0
-				? Mathf.Clamp01(1.0f - _lightDirection.y)
-				: 1.0f - Mathf.Clamp01(-_lightDirection.y);
-			nz = Mathf.FloorToInt(nlight.z * tw) * tw;
-			disp = (int) (nz + nlight.x * tw) + colors.Length;
-			nyspec = nlight.y / spec;
-			Color specularColor = currentFogSpecularColor * (1.0f + _specularIntensity) * _specularIntensity;
-			bool hasChanged = false;
-			if (updatingTextureSlice >= 1 || forceUpdateEntireTexture)
-				hasChanged = true;
-			float lcr = updatingTextureLightColor.r * 0.5f;
-			float lcg = updatingTextureLightColor.g * 0.5f;
-			float lcb = updatingTextureLightColor.b * 0.5f;
-			float scr = specularColor.r * 0.5f;
-			float scg = specularColor.g * 0.5f;
-			float scb = specularColor.b * 0.5f;
-
-			int count = colors.Length;
-			int k0 = 0;
-			int k1 = count;
-			if (updatingTextureSlice >= 0)
-			{
-				if (updatingTextureSlice > _updateTextureSpread)
-				{
-					// detected change of configuration amid texture updates
-					updatingTextureSlice = -1;
-					needUpdateTexture = true;
-					return;
-				}
-
-				k0 = count * updatingTextureSlice / _updateTextureSpread;
-				k1 = count * (updatingTextureSlice + 1) / _updateTextureSpread;
-			}
-
-			int z = 0;
-			for (int k = k0; k < k1; k++)
-			{
-				int indexg = (k + disp) % count;
-				float a = colors[k].a;
-				float r = (a - colors[indexg].a) * nyspec;
-				if (r < 0f)
-					r = 0f;
-				else if (r > 1f)
-					r = 1f;
-				float cor = lcr + scr * r;
-				float cog = lcg + scg * r;
-				float cob = lcb + scb * r;
-				if (!hasChanged)
-				{
-					if (z++ < 100)
-					{
-						if (cor != colors[k].r || cog != colors[k].g || cob != colors[k].b)
-						{
-							hasChanged = true;
-						}
-					}
-					else if (!hasChanged)
-					{
-						break;
-					}
-				}
-
-				colors[k].r = cor;
-				colors[k].g = cog;
-				colors[k].b = cob;
-			}
-
-			bool hasNewTextureData = forceUpdateEntireTexture;
-			if (hasChanged)
-			{
-				if (updatingTextureSlice >= 0)
-				{
-					updatingTextureSlice++;
-					if (updatingTextureSlice >= _updateTextureSpread)
-					{
-						updatingTextureSlice = -1;
-						hasNewTextureData = true;
-					}
-				}
-				else
-				{
-					hasNewTextureData = true;
-				}
-			}
-			else
-			{
-				updatingTextureSlice = -1;
-			}
-
-			if (hasNewTextureData)
-			{
-				if (Application.isPlaying && _turbulenceStrength > 0f && adjustedChaosTexture)
-				{
-					adjustedChaosTexture.SetPixels(adjustedColors);
-					adjustedChaosTexture.Apply();
-				}
-				else
-				{
-					adjustedTexture.SetPixels(adjustedColors);
-					adjustedTexture.Apply();
-					fogMat.SetTexture("_NoiseTex", adjustedTexture);
-				}
-
-				lastTextureUpdate = Time.time;
-			}
-		}
-
-		void ApplyChaos()
-		{
-			if (!adjustedTexture)
-				return;
-
-			if (chaosLerpMat == null)
-			{
-				Shader chaosLerp = Shader.Find("VolumetricFogAndMist/Chaos Lerp");
-				chaosLerpMat = new Material(chaosLerp);
-				chaosLerpMat.hideFlags = HideFlags.DontSave;
-			}
-
-			turbAcum += Time.deltaTime * _turbulenceStrength;
-			chaosLerpMat.SetFloat("_Amount", turbAcum);
-
-			if (!adjustedChaosTexture)
-			{
-				adjustedChaosTexture = Instantiate(adjustedTexture) as Texture2D;
-				adjustedChaosTexture.hideFlags = HideFlags.DontSave;
-			}
-
-			RenderTexture rtAdjusted = RenderTexture.GetTemporary(adjustedTexture.width, adjustedTexture.height, 0,
-				RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-			rtAdjusted.wrapMode = TextureWrapMode.Repeat;
-			Graphics.Blit(adjustedChaosTexture, rtAdjusted, chaosLerpMat);
-			fogMat.SetTexture("_NoiseTex", rtAdjusted);
-			RenderTexture.ReleaseTemporary(rtAdjusted);
-		}
-		*/
-
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
 			var cmd = CommandBufferPool.Get(k_SolidCloudPass);
@@ -198,20 +52,84 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 			using (new ProfilingScope(cmd, sampler))
 			{
+				var mainLightIndex = renderingData.lightData.mainLightIndex;
+
+				//gen noise 
+				//###############################################
+				//也可以用compute shader 代替
+				//可以预烘焙 只生成一次
 				solidCloudMaterial.SetTexture(NoiseTex_ID, noiseTex);
-				RenderTexture tempNoiseRT = RenderTexture.GetTemporary(noiseTex.width, noiseTex.height, 0,
+				int tw = 2 << settings.noisePowSize.value;
+				RenderTexture genNoiseRT = RenderTexture.GetTemporary(tw, tw, 0,
 					RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-				tempNoiseRT.wrapMode = TextureWrapMode.Repeat;
-				amount += Time.deltaTime * settings.noiseSpeed.value;
-				solidCloudMaterial.SetFloat(Amount, amount);
-				cmd.SetRenderTarget(tempNoiseRT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+				genNoiseRT.wrapMode = TextureWrapMode.Repeat;
+				solidCloudMaterial.SetFloat("_NoiseStrength", settings.noiseStrength.value);
+				solidCloudMaterial.SetFloat("_NoiseDensity", settings.noiseDensity.value);
+
+
+				Vector3 mainLightDir;
+				Color mainLightColor;
+				if (mainLightIndex >= 0)
+				{
+					var lightData = renderingData.lightData.visibleLights[mainLightIndex];
+					mainLightDir = lightData.light.transform.forward;
+					mainLightColor = lightData.finalColor;
+				}
+				else
+				{
+					mainLightDir = Vector3.down;
+					mainLightColor = Color.white;
+				}
+
+				Vector3 nlight = new Vector3(-mainLightDir.x, 0, -mainLightDir.z).normalized * 0.3f;
+				nlight.y = mainLightDir.y > 0
+					? Mathf.Clamp01(1.0f - mainLightDir.y)
+					: 1.0f - Mathf.Clamp01(-mainLightDir.y);
+				Color specularColor = settings.cloudSpecularColor.value;
+				specularColor.r *= 0.5f;
+				specularColor.g *= 0.5f;
+				specularColor.b *= 0.5f;
+				specularColor.a = nlight.y / (1.0001f - specularColor.a);
+
+
+				solidCloudMaterial.SetColor("_LightColor", mainLightColor * 0.5f);
+				solidCloudMaterial.SetColor("_SpecularColor", specularColor);
+
+				int nz = Mathf.FloorToInt(nlight.z * tw) * tw;
+				int noiseSeed = (int) (nz + nlight.x * tw) + tw * tw;
+
+				solidCloudMaterial.SetInt("_NoiseSize", tw);
+				solidCloudMaterial.SetInt("_NoiseCount", tw * tw);
+				solidCloudMaterial.SetInt("_NoiseSeed", noiseSeed);
+
+
+				cmd.SetRenderTarget(genNoiseRT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 1);
 
 				context.ExecuteCommandBuffer(cmd);
 				context.Submit();
 				cmd.Clear();
 
-				solidCloudMaterial.SetTexture(NoiseTex_ID, tempNoiseRT);
+
+				//random noise 
+				//###############################################
+				solidCloudMaterial.SetTexture(NoiseTex_ID, genNoiseRT);
+				RenderTexture randomNoiseRT = RenderTexture.GetTemporary(tw, tw, 0,
+					RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+				randomNoiseRT.wrapMode = TextureWrapMode.Repeat;
+				amount += Time.deltaTime * settings.noiseSpeed.value;
+				solidCloudMaterial.SetFloat(Amount, amount);
+				cmd.SetRenderTarget(randomNoiseRT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 2);
+
+				context.ExecuteCommandBuffer(cmd);
+				context.Submit();
+				cmd.Clear();
+
+
+				//raymarch cloud
+				//###############################################
+				solidCloudMaterial.SetTexture(NoiseTex_ID, randomNoiseRT);
 
 				//CloudColor----------------
 				solidCloudMaterial.SetVector(CloudColor_ID, settings.cloudAlbedoColor.value);
@@ -223,7 +141,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				float distance = settings.distance.value;
 				float distanceFallOff = settings.distanceFallOff.value;
 				float maxLength = settings.maxLength.value;
-				float maxLengthFallOff = settings.maxLengthFallOff.value;
+				float maxLengthFallOff = settings.maxLengthFallOff.value * maxLength + 1.0f;
 
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_DISTANCE_ONs, distance > 0);
 
@@ -263,7 +181,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					1.0f / (1.0f + cloudAreaDepth), cloudAreaFallOff);
 				if (cloudAreaHeight > 0 && cloudAreaDepth > 0)
 				{
-					solidCloudMaterial.EnableKeyword(k_CLOUD_AREA_BOX);
+					solidCloudMaterial.DisableKeyword(k_CLOUD_AREA_SPHERE);
 				}
 				else
 				{
@@ -285,7 +203,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				}
 				else
 				{
-					var mainLightIndex = renderingData.lightData.mainLightIndex;
 					if (mainLightIndex >= 0)
 					{
 						solidCloudMaterial.EnableKeyword(k_CLOUD_SUN_SHADOWS_ON);
@@ -318,7 +235,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				// cmd.ReleaseTemporaryRT(tid);
 
 
-				RenderTexture.ReleaseTemporary(tempNoiseRT);
+				RenderTexture.ReleaseTemporary(genNoiseRT);
+				RenderTexture.ReleaseTemporary(randomNoiseRT);
 			}
 
 			context.ExecuteCommandBuffer(cmd);

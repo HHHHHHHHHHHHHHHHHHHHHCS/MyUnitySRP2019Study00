@@ -52,4 +52,4 @@ MonoBehaviour:
   m_Active: 1
   enable: 1
   solidCloudShader: {fileID: 4800000, guid: 9fc9069d155c1f8438665b47c80c9c9f, type: 3}
-  noiseTex: {fileID: 2800000, guid: 1000f26260034ee48832f27ecd19f34b, type: 3}
+  noiseTex: {fileID: 2800000, guid: 981a5e9e81c20464c972c842a30f5af5, type: 3}

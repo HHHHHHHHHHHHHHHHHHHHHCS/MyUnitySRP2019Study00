@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: PostProcess Profile
   m_EditorClassIdentifier: 
   components:
-  - {fileID: 8051714267673482292}
---- !u!114 &8051714267673482292
+  - {fileID: 9162270184291601698}
+--- !u!114 &9162270184291601698
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -33,11 +33,11 @@ MonoBehaviour:
     m_Value: 1
   height:
     m_OverrideState: 1
-    m_Value: 37.7
+    m_Value: 36
     min: 0
   density:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 1.25
     min: 0
   noiseScale:
     m_OverrideState: 1
@@ -45,11 +45,11 @@ MonoBehaviour:
     min: 0
   distance:
     m_OverrideState: 1
-    m_Value: 146
+    m_Value: 190
     min: 0
     max: 1000
   distanceFallOff:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
     min: 0
     max: 5
@@ -62,12 +62,12 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 0.3
     min: 0
-    max: 5
+    max: 1
   windDirection:
-    m_OverrideState: 1
-    m_Value: {x: 1, y: 0, z: 0}
+    m_OverrideState: 0
+    m_Value: {x: 0, y: 0, z: 0}
   windSpeed:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0
     min: -100
     max: 100
@@ -77,47 +77,47 @@ MonoBehaviour:
     min: 0
   cloudAlbedoColor:
     m_OverrideState: 1
-    m_Value: {r: 1.4980392, g: 1.4980392, b: 1.4980392, a: 1}
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
     hdr: 1
     showAlpha: 1
     showEyeDropper: 1
   cloudSpecularColor:
     m_OverrideState: 1
-    m_Value: {r: 2, g: 2, b: 2, a: 1}
+    m_Value: {r: 1, g: 0, b: 0, a: 0.8156863}
     hdr: 1
     showAlpha: 1
     showEyeDropper: 1
   cloudAreaPosition:
     m_OverrideState: 1
-    m_Value: {x: 10, y: 24.52, z: 10}
+    m_Value: {x: 10, y: 80, z: 10}
   cloudAreaRadius:
     m_OverrideState: 1
-    m_Value: 86
+    m_Value: 110
     min: 0
     max: 2000
   cloudAreaHeight:
     m_OverrideState: 1
-    m_Value: 334
+    m_Value: 300
     min: 0
     max: 2000
   cloudAreaDepth:
     m_OverrideState: 1
-    m_Value: 104
+    m_Value: 88
     min: 0
     max: 2000
   cloudAreaFallOff:
     m_OverrideState: 1
-    m_Value: 0.58
+    m_Value: 0.6
     min: 0
     max: 10
   sunShadowsStrength:
     m_OverrideState: 0
-    m_Value: 1
+    m_Value: 0
     min: 0
     max: 1
   sunShadowsJitterStrength:
     m_OverrideState: 0
-    m_Value: 0.028
+    m_Value: 0.1
     min: 0
     max: 0.5
   sunShadowsCancellation:
@@ -126,7 +126,7 @@ MonoBehaviour:
     min: 0
     max: 1
   stepping:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 8
     min: 0
     max: 20
@@ -140,3 +140,159 @@ MonoBehaviour:
     m_Value: 0
     min: 0
     max: 5
+  noisePowSize:
+    m_OverrideState: 1
+    m_Value: 6
+    min: 0
+    max: 12
+  noiseStrength:
+    m_OverrideState: 1
+    m_Value: 0.95
+    min: 0
+    max: 0.95
+  noiseDensity:
+    m_OverrideState: 1
+    m_Value: 1.247
+    min: 0
+    max: 2
+--- !u!114 &9189147458530614341
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3eeac35fc3cec9448b6bf60e17126d87, type: 3}
+  m_Name: SolidCloudRenderPostProcess
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  enableEffect:
+    m_OverrideState: 0
+    m_Value: 0
+  height:
+    m_OverrideState: 0
+    m_Value: 4
+    min: 0
+  density:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+  noiseScale:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+  distance:
+    m_OverrideState: 0
+    m_Value: 100
+    min: 0
+    max: 1000
+  distanceFallOff:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 5
+  maxLength:
+    m_OverrideState: 0
+    m_Value: 2000
+    min: 0
+    max: 2000
+  maxLengthFallOff:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  windDirection:
+    m_OverrideState: 0
+    m_Value: {x: 0, y: 0, z: 0}
+  windSpeed:
+    m_OverrideState: 0
+    m_Value: 0
+    min: -100
+    max: 100
+  noiseSpeed:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+  cloudAlbedoColor:
+    m_OverrideState: 0
+    m_Value: {r: 0.85, g: 0.85, b: 0.85, a: 0.85}
+    hdr: 1
+    showAlpha: 1
+    showEyeDropper: 1
+  cloudSpecularColor:
+    m_OverrideState: 0
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    hdr: 1
+    showAlpha: 1
+    showEyeDropper: 1
+  cloudAreaPosition:
+    m_OverrideState: 0
+    m_Value: {x: 0, y: 0, z: 0}
+  cloudAreaRadius:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 2000
+  cloudAreaHeight:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 2000
+  cloudAreaDepth:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 2000
+  cloudAreaFallOff:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 10
+  sunShadowsStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  sunShadowsJitterStrength:
+    m_OverrideState: 0
+    m_Value: 0.1
+    min: 0
+    max: 0.5
+  sunShadowsCancellation:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  stepping:
+    m_OverrideState: 0
+    m_Value: 8
+    min: 0
+    max: 20
+  steppingNear:
+    m_OverrideState: 0
+    m_Value: 50
+    min: 0
+    max: 50
+  ditherStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 5
+  noisePowSize:
+    m_OverrideState: 0
+    m_Value: 7
+    min: 0
+    max: 12
+  noiseStrength:
+    m_OverrideState: 0
+    m_Value: 0.95
+    min: 0
+    max: 0.95
+  noiseDensity:
+    m_OverrideState: 0
+    m_Value: 1.25
+    min: 0
+    max: 2

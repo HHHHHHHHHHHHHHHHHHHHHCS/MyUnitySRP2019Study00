@@ -31,6 +31,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 		private SerializedDataParameter m_stepping;
 		private SerializedDataParameter m_steppingNear;
 		private SerializedDataParameter m_ditherStrength;
+		private SerializedDataParameter m_noisePowSize;
+		private SerializedDataParameter m_noiseStrength;
+		private SerializedDataParameter m_noiseDensity;
 
 
 		public override void OnEnable()
@@ -61,6 +64,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			m_stepping = Unpack(o.Find(x => x.stepping));
 			m_steppingNear = Unpack(o.Find(x => x.steppingNear));
 			m_ditherStrength = Unpack(o.Find(x => x.ditherStrength));
+			m_noisePowSize = Unpack(o.Find(x => x.noisePowSize));
+			m_noiseStrength = Unpack(o.Find(x => x.noiseStrength));
+			m_noiseDensity = Unpack(o.Find(x => x.noiseDensity));
 		}
 
 
@@ -99,6 +105,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			PropertyField(m_stepping);
 			PropertyField(m_steppingNear);
 			PropertyField(m_ditherStrength);
+			PropertyField(m_noisePowSize);
+			PropertyField(m_noiseStrength);
+			PropertyField(m_noiseDensity);
+
 		}
 	}
 }
