@@ -36,7 +36,7 @@ MonoBehaviour:
     m_Value: 0
   height:
     m_OverrideState: 1
-    m_Value: 64
+    m_Value: 54.12
     min: 0
   density:
     m_OverrideState: 1
@@ -100,7 +100,7 @@ MonoBehaviour:
     max: 2000
   cloudAreaHeight:
     m_OverrideState: 1
-    m_Value: 58
+    m_Value: 85
     min: 0
     max: 2000
   cloudAreaDepth:
@@ -110,7 +110,7 @@ MonoBehaviour:
     max: 2000
   cloudAreaFallOff:
     m_OverrideState: 1
-    m_Value: 0.85
+    m_Value: 0.35
     min: 0
     max: 10
   sunShadowsStrength:

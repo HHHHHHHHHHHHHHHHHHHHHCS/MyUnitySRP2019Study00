@@ -262,6 +262,7 @@
 				half4 sum = zeros;
 				half4 fgCol = zeros;
 
+
 				for (; dir.w > 1; dir.w--, ft4.xyz += dir.xyz)
 				{
 					#if CLOUD_USE_XY_PLANE
@@ -279,7 +280,7 @@
 					#endif
 					float voidDistance = dot(vd, vd);
 					//边缘
-					if (voidDistance > 0.99)
+					if (voidDistance > 1)
 					{
 						break;
 					}
@@ -296,22 +297,20 @@
 					#endif
 					float voidDistance = max(vd.x, vd.y);
 					//边缘
-					if (voidDistance > 0.99)
+					if (voidDistance > 1)
 					{
-						// float by = cloudAreaPosition.y + _CloudWindDir.y;
-						// by = abs(by - ft4.y) * _CloudAreaData.y / _CloudData.w;
-						// if (by < 0.1)
-						// {
-						// 	return 1;
-						// }
 						continue;
 					}
+
+					//四边形 >0.9 之后 变小
+
 					#if CLOUD_USE_XY_PLANE
 					ng.a -= abs(ft4.z);
 					#else
 					ng.a -= abs(ft4.y); //+ voidDistance * _CloudAreaData.w - 0.3;
 					#endif
 					#endif
+
 
 					#if CLOUD_DISTANCE_ON
 					#if CLOUD_USE_XY_PLANE
@@ -323,10 +322,15 @@
 					ng.a -= fdm;
 					#endif
 
+					// smoothstep(0.9,1,voidDistance)
+					// if (ng.a * (abs(ft4.y) + 3)>1.0)
+					// {
+					// 	ng.a -= + voidDistance * _CloudAreaData.w - 0.3;
+					// }
+
 					if (ng.a > 0)
 					{
 						fgCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
-
 						#if CLOUD_SUN_SHADOWS_ON
 						float t = dir.w * shadowData.w;
 						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
@@ -337,12 +341,14 @@
 
 						fgCol.rgb *= ng.rgb * fgCol.aaa;
 						sum += fgCol * (1.0 - sum.a);
+
 						if (sum.a > 0.99)
 						{
 							break;
 						}
 					}
 				}
+
 
 				// adds fog fraction to prevent banding due stepping on low densities
 				// sum += (cloudLength >= dist) * (sum.a<0.99) * fgCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
