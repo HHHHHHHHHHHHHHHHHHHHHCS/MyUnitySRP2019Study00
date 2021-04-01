@@ -12,9 +12,24 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		// private const string k_CLOUD_AREA_BOX = "CLOUD_AREA_BOX";
 		private const string k_CLOUD_AREA_SPHERE = "CLOUD_AREA_SPHERE";
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
-		private const string k_CLOUD_DISTANCE_ONs = "CLOUD_DISTANCE_ON";
+		private const string k_CLOUD_DISTANCE_ON = "CLOUD_DISTANCE_ON";
+		private const string K_CLOUD_USE_XY_PLANE = "CLOUD_USE_XY_PLANE";
+		
+		private static readonly int CameraColorTexture_ID = Shader.PropertyToID("_CameraColorTexture");
 
+		//generate noise##################
+		private static readonly int NoiseStrength_ID = Shader.PropertyToID("_NoiseStrength");
+		private static readonly int NoiseDensity_ID = Shader.PropertyToID("_NoiseDensity");
+		private static readonly int LightColor_ID = Shader.PropertyToID("_LightColor");
+		private static readonly int SpecularColor_ID = Shader.PropertyToID("_SpecularColor");
+		private static readonly int NoiseSize_ID = Shader.PropertyToID("_NoiseSize");
+		private static readonly int NoiseCount_ID = Shader.PropertyToID("_NoiseCount");
+		private static readonly int NoiseSeed_ID = Shader.PropertyToID("_NoiseSeed");
 
+		//random noise##################
+		private static readonly int Amount_ID = Shader.PropertyToID("_Amount");
+
+		//cloud##################
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
 		private static readonly int CloudColor_ID = Shader.PropertyToID("_CloudColor");
 		private static readonly int CloudStepping_ID = Shader.PropertyToID("_CloudStepping");
@@ -31,7 +46,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		private Vector3 windSpeedAcum;
 		private float amount;
-		private static readonly int Amount = Shader.PropertyToID("_Amount");
 
 
 		public void Init(Material solidCloudMaterial, Texture2D noiseTex)
@@ -63,8 +77,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				RenderTexture genNoiseRT = RenderTexture.GetTemporary(tw, tw, 0,
 					RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 				genNoiseRT.wrapMode = TextureWrapMode.Repeat;
-				solidCloudMaterial.SetFloat("_NoiseStrength", settings.noiseStrength.value);
-				solidCloudMaterial.SetFloat("_NoiseDensity", settings.noiseDensity.value);
+				solidCloudMaterial.SetFloat(NoiseStrength_ID, settings.noiseStrength.value);
+				solidCloudMaterial.SetFloat(NoiseDensity_ID, settings.noiseDensity.value);
 
 
 				Vector3 mainLightDir;
@@ -92,15 +106,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				specularColor.a = nlight.y / (1.0001f - specularColor.a);
 
 
-				solidCloudMaterial.SetColor("_LightColor", mainLightColor * 0.5f);
-				solidCloudMaterial.SetColor("_SpecularColor", specularColor);
+				solidCloudMaterial.SetColor(LightColor_ID, mainLightColor * 0.5f);
+				solidCloudMaterial.SetColor(SpecularColor_ID, specularColor);
 
 				int nz = Mathf.FloorToInt(nlight.z * tw) * tw;
 				int noiseSeed = (int) (nz + nlight.x * tw) + tw * tw;
 
-				solidCloudMaterial.SetInt("_NoiseSize", tw);
-				solidCloudMaterial.SetInt("_NoiseCount", tw * tw);
-				solidCloudMaterial.SetInt("_NoiseSeed", noiseSeed);
+				solidCloudMaterial.SetInt(NoiseSize_ID, tw);
+				solidCloudMaterial.SetInt(NoiseCount_ID, tw * tw);
+				solidCloudMaterial.SetInt(NoiseSeed_ID, noiseSeed);
 
 
 				cmd.SetRenderTarget(genNoiseRT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
@@ -118,7 +132,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 				randomNoiseRT.wrapMode = TextureWrapMode.Repeat;
 				amount += Time.deltaTime * settings.noiseSpeed.value;
-				solidCloudMaterial.SetFloat(Amount, amount);
+				solidCloudMaterial.SetFloat(Amount_ID, amount);
 				cmd.SetRenderTarget(randomNoiseRT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 2);
 
@@ -131,8 +145,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				//###############################################
 				solidCloudMaterial.SetTexture(NoiseTex_ID, randomNoiseRT);
 
+
 				//CloudColor----------------
 				solidCloudMaterial.SetVector(CloudColor_ID, settings.cloudAlbedoColor.value);
+
+				CoreUtils.SetKeyword(solidCloudMaterial, K_CLOUD_USE_XY_PLANE, settings.useXYPlane.value);
 
 
 				float scale = 0.01f / settings.noiseScale.value;
@@ -143,7 +160,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				float maxLength = settings.maxLength.value;
 				float maxLengthFallOff = settings.maxLengthFallOff.value * maxLength + 1.0f;
 
-				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_DISTANCE_ONs, distance > 0);
+				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_DISTANCE_ON, distance > 0);
 
 				solidCloudMaterial.SetVector(CloudDistance_ID,
 					new Vector4(scale * scale * distance * distance, (distanceFallOff * distanceFallOff + 0.1f),
@@ -165,11 +182,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				Vector3 cloudAreaPosition = settings.cloudAreaPosition.value;
 
 				solidCloudMaterial.SetVector(CloudData_ID
-					, new Vector4(cloudAreaPosition.y, settings.height.value, 1.0f / settings.density.value, scale));
+					, new Vector4(0, settings.height.value, 1.0f / settings.density.value, scale));
 
 				//CloudAreaPosition_ID---------------
-				solidCloudMaterial.SetVector(CloudAreaPosition_ID,
-					new Vector4(cloudAreaPosition.x, 0, cloudAreaPosition.z, 0));
+				// solidCloudMaterial.SetVector(CloudAreaPosition_ID,
+				// 	new Vector4(cloudAreaPosition.x, 0, cloudAreaPosition.z, 0));
+
+				solidCloudMaterial.SetVector(CloudAreaPosition_ID, cloudAreaPosition);
 
 				//CloudAreaData_ID-----------
 				float cloudAreaRadius = settings.cloudAreaRadius.value;
@@ -227,10 +246,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				solidCloudMaterial.SetVector(CloudStepping_ID, fogStepping);
 
 
-				int tid = Shader.PropertyToID("_CameraColorTexture");
 				// cmd.GetTemporaryRT(tid,1920,1080,0, FilterMode.Point,GraphicsFormat.R8G8B8A8_UNorm);
-				cmd.SetRenderTarget(tid);
-				cmd.ClearRenderTarget(true, true, Color.black);
+				cmd.SetRenderTarget(CameraColorTexture_ID);
+				// cmd.ClearRenderTarget(true, true, Color.black);
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
 				// cmd.ReleaseTemporaryRT(tid);
 

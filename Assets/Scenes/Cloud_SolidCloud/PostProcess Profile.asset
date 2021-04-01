@@ -31,9 +31,12 @@ MonoBehaviour:
   enableEffect:
     m_OverrideState: 1
     m_Value: 1
+  useXYPlane:
+    m_OverrideState: 1
+    m_Value: 0
   height:
     m_OverrideState: 1
-    m_Value: 36
+    m_Value: 64
     min: 0
   density:
     m_OverrideState: 1
@@ -89,40 +92,40 @@ MonoBehaviour:
     showEyeDropper: 1
   cloudAreaPosition:
     m_OverrideState: 1
-    m_Value: {x: 10, y: 80, z: 10}
+    m_Value: {x: 0, y: 0, z: 0}
   cloudAreaRadius:
     m_OverrideState: 1
-    m_Value: 110
+    m_Value: 202
     min: 0
     max: 2000
   cloudAreaHeight:
     m_OverrideState: 1
-    m_Value: 300
+    m_Value: 200
     min: 0
     max: 2000
   cloudAreaDepth:
     m_OverrideState: 1
-    m_Value: 88
+    m_Value: 161
     min: 0
     max: 2000
   cloudAreaFallOff:
     m_OverrideState: 1
-    m_Value: 0.6
+    m_Value: 0.85
     min: 0
     max: 10
   sunShadowsStrength:
-    m_OverrideState: 0
-    m_Value: 0
+    m_OverrideState: 1
+    m_Value: 0.586
     min: 0
     max: 1
   sunShadowsJitterStrength:
-    m_OverrideState: 0
-    m_Value: 0.1
+    m_OverrideState: 1
+    m_Value: 0
     min: 0
     max: 0.5
   sunShadowsCancellation:
     m_OverrideState: 0
-    m_Value: 0
+    m_Value: 0.623
     min: 0
     max: 1
   stepping:
@@ -142,7 +145,7 @@ MonoBehaviour:
     max: 5
   noisePowSize:
     m_OverrideState: 1
-    m_Value: 6
+    m_Value: 4
     min: 0
     max: 12
   noiseStrength:
@@ -152,7 +155,7 @@ MonoBehaviour:
     max: 0.95
   noiseDensity:
     m_OverrideState: 1
-    m_Value: 1.247
+    m_Value: 1.597
     min: 0
     max: 2
 --- !u!114 &9189147458530614341
@@ -170,6 +173,9 @@ MonoBehaviour:
   active: 1
   m_AdvancedMode: 0
   enableEffect:
+    m_OverrideState: 0
+    m_Value: 0
+  useXYPlane:
     m_OverrideState: 0
     m_Value: 0
   height:

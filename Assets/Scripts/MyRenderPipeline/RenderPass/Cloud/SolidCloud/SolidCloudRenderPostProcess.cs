@@ -11,6 +11,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 	{
 		public BoolParameter enableEffect = new BoolParameter(false);
 
+		public BoolParameter useXYPlane = new BoolParameter(false);
 		
 		//float4 _CloudData ( y z w)   x is _cloudAreaPosition.y 
 		[Header("CloudData")] public MinFloatParameter height = new MinFloatParameter(4, 0);

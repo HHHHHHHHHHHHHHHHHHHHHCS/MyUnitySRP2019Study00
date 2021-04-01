@@ -8,6 +8,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 	public class SolidCloudRenderPostProcessEditor : VolumeComponentEditor
 	{
 		private SerializedDataParameter m_enableEffect;
+		private SerializedDataParameter m_useXYPlane;
 		private SerializedDataParameter m_height;
 		private SerializedDataParameter m_density;
 		private SerializedDataParameter m_noiseScale;
@@ -41,6 +42,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			var o = new PropertyFetcher<SolidCloudRenderPostProcess>(serializedObject);
 
 			m_enableEffect = Unpack(o.Find(x => x.enableEffect));
+			m_useXYPlane = Unpack(o.Find(x => x.useXYPlane));
 			m_height = Unpack(o.Find(x => x.height));
 			m_density = Unpack(o.Find(x => x.density));
 			m_noiseScale = Unpack(o.Find(x => x.noiseScale));
@@ -82,6 +84,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			EditorGUILayout.LabelField("SolidCloud", EditorStyles.miniLabel);
 
 			PropertyField(m_enableEffect);
+			PropertyField(m_useXYPlane);
 			PropertyField(m_height);
 			PropertyField(m_density);
 			PropertyField(m_noiseScale);
@@ -108,7 +111,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			PropertyField(m_noisePowSize);
 			PropertyField(m_noiseStrength);
 			PropertyField(m_noiseDensity);
-
 		}
 	}
 }
