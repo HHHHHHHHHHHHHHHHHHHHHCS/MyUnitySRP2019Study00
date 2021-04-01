@@ -11,12 +11,19 @@ public class CameraSync : MonoBehaviour
 
 	public bool syncCamera;
 
+	public Vector3 lastPos, lastRot;
+	
 	private Transform sceneTs;
 	private Transform gameTs;
 
 	private void OnEnable()
 	{
 		gameTs = Camera.main.transform;
+		if (gameTs != null)
+		{
+			lastPos = gameTs.localPosition;
+			lastRot = gameTs.localEulerAngles;
+		}
 		SceneView.duringSceneGui += OnCameraMove;
 	}
 

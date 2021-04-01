@@ -35,8 +35,8 @@
 		//Cloud
 		Pass
 		{
-			Blend One OneMinusSrcAlpha
-			
+			Blend One Zero//OneMinusSrcAlpha
+
 			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment FragCloud
@@ -91,7 +91,6 @@
 
 			half4 GetFogColor(float2 uv, float3 worldPos, float depth01, float dither)
 			{
-				//todo:camera pos xy 
 				const half4 zeros = half4(0.0, 0.0, 0.0, 0.0);
 
 				#if CLOUD_USE_XY_PLANE
@@ -156,13 +155,11 @@
 				float3 ttop = invR * (ro + boxmax);
 				//get max length
 				float3 tmin = min(ttop, tbot);
-				float2 tt0 = max(tmin.xx, tmin.yz);
-				float distanceToCloud = max(tt0.x, tt0.y);
+				float distanceToCloud = max(tmin.x, max(tmin.y, tmin.z));
 				distanceToCloud = max(distanceToCloud, 0);
 				//get min length
 				float3 tmax = max(ttop, tbot);
-				tt0 = min(tmax.xx, tmax.yz);
-				float t1 = min(tt0.x, tt0.y);
+				float t1 = min(tmax.x, min(tmax.y, tmax.z));
 				float dist = min(adir.w, _CloudDistance.z); //得到距离
 				t1 = min(t1, dist);
 				float cloudLength = t1 - distanceToCloud; //计算碰撞情况
@@ -170,7 +167,6 @@
 				{
 					return zeros;
 				}
-
 				float3 cloudCeilingCut = wsCameraPos + distanceToCloud / invR;
 				#if CLOUD_USE_XY_PLANE
 				float2 areaData = _CloudAreaData.xy / _CloudData.w;
@@ -282,9 +278,10 @@
 					float2 vd = (areaCenter - ft4.xz) * areaData.x;
 					#endif
 					float voidDistance = dot(vd, vd);
-					if (voidDistance > 1)
+					//边缘
+					if (voidDistance > 0.99)
 					{
-						continue;
+						break;
 					}
 					#if CLOUD_USE_XY_PLANE
 					ng.a -= abs(ft4.z) + voidDistance * _CloudAreaData.w - 0.3;
@@ -298,8 +295,15 @@
 					float2 vd = abs(areaCenter - ft4.xz) * areaData;
 					#endif
 					float voidDistance = max(vd.x, vd.y);
-					if (voidDistance > 1)
+					//边缘
+					if (voidDistance > 0.99)
 					{
+						// float by = cloudAreaPosition.y + _CloudWindDir.y;
+						// by = abs(by - ft4.y) * _CloudAreaData.y / _CloudData.w;
+						// if (by < 0.1)
+						// {
+						// 	return 1;
+						// }
 						continue;
 					}
 					#if CLOUD_USE_XY_PLANE
@@ -327,20 +331,25 @@
 						float t = dir.w * shadowData.w;
 						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
 						half shadowAtten = MainLightRealtimeShadow(shadowCoords);
-
 						ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
 						fgCol *= lerp(1, shadowAtten, shadowData.z);
 						#endif
 
 						fgCol.rgb *= ng.rgb * fgCol.aaa;
 						sum += fgCol * (1.0 - sum.a);
-						if (sum.a > 0.99) break;
+						if (sum.a > 0.99)
+						{
+							break;
+						}
 					}
 				}
 
 				// adds fog fraction to prevent banding due stepping on low densities
-				//		sum += (fogLength >= dist) * (sum.a<0.99) * fgCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
-				sum += (sum.a < 0.99) * fgCol * (1.0 - sum.a) * dir.w;
+				// sum += (cloudLength >= dist) * (sum.a<0.99) * fgCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
+				if (sum.a < 0.99)
+				{
+					sum += fgCol * (1.0 - sum.a) * dir.w;
+				}
 				sum *= _CloudColor.a;
 				return sum;
 			}
