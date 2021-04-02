@@ -34,9 +34,15 @@ MonoBehaviour:
   useXYPlane:
     m_OverrideState: 1
     m_Value: 0
+  enableMask:
+    m_OverrideState: 1
+    m_Value: 0
+  maskTexture:
+    m_OverrideState: 1
+    m_Value: {fileID: 2800000, guid: f9bcaf1da924d0742b9c341e5d80235f, type: 3}
   height:
     m_OverrideState: 1
-    m_Value: 54.12
+    m_Value: 50
     min: 0
   density:
     m_OverrideState: 1
@@ -44,11 +50,11 @@ MonoBehaviour:
     min: 0
   noiseScale:
     m_OverrideState: 1
-    m_Value: 3.1
+    m_Value: 5.57
     min: 0
   distance:
     m_OverrideState: 1
-    m_Value: 133
+    m_Value: 40
     min: 0
     max: 1000
   distanceFallOff:
@@ -86,7 +92,7 @@ MonoBehaviour:
     showEyeDropper: 1
   cloudSpecularColor:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 0, b: 0, a: 0.8156863}
+    m_Value: {r: 1, g: 0.71973854, b: 0, a: 0.8156863}
     hdr: 1
     showAlpha: 1
     showEyeDropper: 1
@@ -95,27 +101,27 @@ MonoBehaviour:
     m_Value: {x: 0, y: 0, z: 0}
   cloudAreaRadius:
     m_OverrideState: 1
-    m_Value: 142
+    m_Value: 217
     min: 0
     max: 2000
   cloudAreaHeight:
     m_OverrideState: 1
-    m_Value: 85
+    m_Value: 102
     min: 0
     max: 2000
   cloudAreaDepth:
     m_OverrideState: 1
-    m_Value: 176
+    m_Value: 276
     min: 0
     max: 2000
   cloudAreaFallOff:
     m_OverrideState: 1
-    m_Value: 0.35
+    m_Value: 0.1
     min: 0
     max: 10
   sunShadowsStrength:
-    m_OverrideState: 0
-    m_Value: 0.586
+    m_OverrideState: 1
+    m_Value: 0.497
     min: 0
     max: 1
   sunShadowsJitterStrength:
@@ -124,8 +130,8 @@ MonoBehaviour:
     min: 0
     max: 0.5
   sunShadowsCancellation:
-    m_OverrideState: 0
-    m_Value: 0.623
+    m_OverrideState: 1
+    m_Value: 0.072
     min: 0
     max: 1
   stepping:
@@ -178,6 +184,12 @@ MonoBehaviour:
   useXYPlane:
     m_OverrideState: 0
     m_Value: 0
+  enableMask:
+    m_OverrideState: 0
+    m_Value: 0
+  maskTexture:
+    m_OverrideState: 0
+    m_Value: {fileID: 0}
   height:
     m_OverrideState: 0
     m_Value: 4

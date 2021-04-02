@@ -35,7 +35,7 @@
 		//Cloud
 		Pass
 		{
-			Blend One Zero//OneMinusSrcAlpha
+			Blend One OneMinusSrcAlpha
 
 			HLSLPROGRAM
 			#pragma vertex Vert
@@ -44,10 +44,12 @@
 			#pragma multi_compile MAIN_LIGHT_CALCULATE_SHADOWS
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 
+			#pragma multi_compile _ CLOUD_MASK
+			#pragma multi_compile _ CLOUD_USE_XY_PLANE
 			#pragma multi_compile _ CLOUD_SUN_SHADOWS_ON
 			#pragma multi_compile _ CLOUD_DISTANCE_ON
 			#pragma multi_compile _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
-			#pragma multi_compile _ CLOUD_USE_XY_PLANE
+
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -55,6 +57,12 @@
 
 			TEXTURE2D(_NoiseTex);
 			SAMPLER(sampler_NoiseTex);
+
+			#if CLOUD_MASK
+			TEXTURE2D(_MaskTex);
+			SAMPLER(sampler_MaskTex);
+			#endif
+
 
 			float4 _CloudDistance;
 			float4 _CloudData; // x = _CloudBaseHeight, y = _CloudHeight, z = density, w = scale;
@@ -124,6 +132,7 @@
 				adir.w = length(adir.xyz);
 
 				#if CLOUD_AREA_SPHERE
+				
 				// compute sphere intersection or early exit if ray does not sphere
 				float3 oc = wsCameraPos - cloudAreaPosition;
 				float3 nadir = adir.xyz / adir.w;
@@ -168,11 +177,13 @@
 					return zeros;
 				}
 				float3 cloudCeilingCut = wsCameraPos + distanceToCloud / invR;
+				
 				#if CLOUD_USE_XY_PLANE
 				float2 areaData = _CloudAreaData.xy / _CloudData.w;
 				#else
 				float2 areaData = _CloudAreaData.xz / _CloudData.w;
 				#endif
+				
 				#endif
 
 				// 计算 每一步 ray march 方向长度
@@ -186,25 +197,28 @@
 				float4 dir = float4(adir.xyz * rs / adir.w, cloudLength / rs); //raymarch 方向  和  次数
 				//		dir.w = min(dir.w, 200);	// maximum iterations could be clamped to improve performance under some point of view, most of time got unnoticieable
 
-				#if CLOUD_USE_XY_PLANE
-				dir.xy *= _CloudData.w;
 				float dirLength = _CloudData.y * _CloudData.z; // extracted from loop, dragged here.
-				dir.z /= _CloudData.y;
 				float4 ft4 = float4(cloudCeilingCut.xyz, 0);
-				ft4.xy += _CloudWindDir.xz;
+
+				#if CLOUD_USE_XY_PLANE
+				
+				dir.xy *= _CloudData.w;
+				dir.z /= _CloudData.y;
+
 				// apply wind speed and direction; already defined above if the condition is true
-				ft4.xy *= _CloudData.w;
+				ft4.xy = (ft4.xy + _CloudWindDir.xz) * _CloudData.w;
 				ft4.z /= dirLength;
+				
 				#else
+				
 				// Extracted operations from ray-march loop for additional optimizations
 				dir.xz *= _CloudData.w;
-				float dirLength = _CloudData.y * _CloudData.z; // extracted from loop, dragged here.
 				dir.y /= dirLength;
-				float4 ft4 = float4(cloudCeilingCut.xyz, 0);
-				ft4.xz += _CloudWindDir.xz;
+
 				// apply wind speed and direction; already defined above if the condition is true
-				ft4.xz *= _CloudData.w;
+				ft4.xz = (ft4.xz + _CloudWindDir.xz) * _CloudData.w;
 				ft4.y /= dirLength;
+				
 				#endif
 
 
@@ -215,36 +229,39 @@
 
 
 				#if CLOUD_USE_XY_PLANE
+				
 				// #if CLOUD_AREA_SPHERE || CLOUD_AREA_BOX
-				float2 areaCenter = cloudAreaPosition.xy + _CloudWindDir.xy;
-				areaCenter *= _CloudData.w;
+				float2 areaCenter = (cloudAreaPosition.xy + _CloudWindDir.xy) * _CloudData.w;
 				// #endif
 
 				#if CLOUD_DISTANCE_ON
 				float2 camCenter = wsCameraPos.xy + _CloudWindDir.xy;
 				camCenter *= _CloudData.w;
 				#endif
+
 				#else
+
 				//#if CLOUD_AREA_SPHERE || CLOUD_AREA_BOX
-				float2 areaCenter = cloudAreaPosition.xz + _CloudWindDir.xz;
-				areaCenter *= _CloudData.w;
+				float2 areaCenter = (cloudAreaPosition.xz + _CloudWindDir.xz) * _CloudData.w;
 				//#endif
 
 				#if CLOUD_DISTANCE_ON
 				float2 camCenter = wsCameraPos.xz + _CloudWindDir.xz;
 				camCenter *= _CloudData.w;
 				#endif
-
+				
 				#endif
 
 
 				// Shadow preparation
 				#if CLOUD_SUN_SHADOWS_ON
+				
 				#if CLOUD_USE_XY_PLANE
 				cloudCeilingCut.z += planeOffset;
 				#else
 				cloudCeilingCut.y += planeOffset;
 				#endif
+				
 				// reduce banding
 				dir.w += frac(dither);
 				half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
@@ -256,81 +273,67 @@
 				// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
 				// apply jitter to avoid banding
 				//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
+				
 				#endif
 
 				// Ray-march
 				half4 sum = zeros;
 				half4 fgCol = zeros;
+				float2 pos, h;
 
 
 				for (; dir.w > 1; dir.w--, ft4.xyz += dir.xyz)
 				{
 					#if CLOUD_USE_XY_PLANE
-					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, ft4.xy, 0);
+					pos = ft4.xy;
+					h = ft4.z;
 					#else
-					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, ft4.xz, 0);
+					pos = ft4.xz;
+					h = ft4.y;
 					#endif
-
+					
+					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, pos, 0);
 
 					#if CLOUD_AREA_SPHERE
-					#if CLOUD_USE_XY_PLANE
-					float2 vd = (areaCenter - ft4.xy) * areaData.x;
-					#else
-					float2 vd = (areaCenter - ft4.xz) * areaData.x;
-					#endif
+					
+					float2 vd = (areaCenter - pos) * areaData.x;
 					float voidDistance = dot(vd, vd);
 					//边缘
 					if (voidDistance > 1)
 					{
 						break;
 					}
-					#if CLOUD_USE_XY_PLANE
-					ng.a -= abs(ft4.z) + voidDistance * _CloudAreaData.w - 0.3;
-					#else
-					ng.a -= abs(ft4.y) + voidDistance * _CloudAreaData.w - 0.3;
-					#endif
+					ng.a -= abs(h) + voidDistance * _CloudAreaData.w - 0.3;
+					
 					#else //if CLOUD_AREA_BOX
-					#if CLOUD_USE_XY_PLANE
-					float2 vd = abs(areaCenter - ft4.xy) * areaData;
-					#else
-					float2 vd = abs(areaCenter - ft4.xz) * areaData;
-					#endif
+					
+					float2 vd = abs(areaCenter - pos) * areaData;
 					float voidDistance = max(vd.x, vd.y);
 					//边缘
 					if (voidDistance > 1)
 					{
 						continue;
 					}
-
-					//四边形 >0.9 之后 变小
-
-					#if CLOUD_USE_XY_PLANE
-					ng.a -= abs(ft4.z);
-					#else
-					ng.a -= abs(ft4.y); //+ voidDistance * _CloudAreaData.w - 0.3;
-					#endif
+					ng.a -= abs(h) + smoothstep(1 - _CloudAreaData.w, 1, voidDistance);
+					
 					#endif
 
 
 					#if CLOUD_DISTANCE_ON
-					#if CLOUD_USE_XY_PLANE
-					float2 fd = camCenter - ft4.xy;
-					#else
-					float2 fd = camCenter - ft4.xz;
-					#endif
+					float2 fd = camCenter - pos;
 					float fdm = max(_CloudDistance.x - dot(fd, fd), 0) * _CloudDistance.y;
 					ng.a -= fdm;
 					#endif
 
-					// smoothstep(0.9,1,voidDistance)
-					// if (ng.a * (abs(ft4.y) + 3)>1.0)
-					// {
-					// 	ng.a -= + voidDistance * _CloudAreaData.w - 0.3;
-					// }
+					#if CLOUD_MASK
+					ng.a -= SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, pos, 0).r;
+					#endif
+
 
 					if (ng.a > 0)
 					{
 						fgCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
+
 						#if CLOUD_SUN_SHADOWS_ON
 						float t = dir.w * shadowData.w;
 						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);

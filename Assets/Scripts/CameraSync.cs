@@ -24,6 +24,7 @@ public class CameraSync : MonoBehaviour
 			lastPos = gameTs.localPosition;
 			lastRot = gameTs.localEulerAngles;
 		}
+		//UnityEditor.SceneView.camera 也能获取sceneView.camera
 		SceneView.duringSceneGui += OnCameraMove;
 	}
 

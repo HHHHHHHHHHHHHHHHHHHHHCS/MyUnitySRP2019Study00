@@ -12,7 +12,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public BoolParameter enableEffect = new BoolParameter(false);
 
 		public BoolParameter useXYPlane = new BoolParameter(false);
-		
+
+		[Header("Mask")] public BoolParameter enableMask = new BoolParameter(false);
+		public TextureParameter maskTexture = new TextureParameter(null);
+
+
 		//float4 _CloudData ( y z w)   x is _cloudAreaPosition.y 
 		[Header("CloudData")] public MinFloatParameter height = new MinFloatParameter(4, 0);
 		public MinFloatParameter density = new MinFloatParameter(1, 0);
@@ -33,6 +37,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		//alpha 藏在里面了
 		[Header("CloudColor")]
 		public ColorParameter cloudAlbedoColor = new ColorParameter(Color.white * 0.85f, true, true, true);
+
 		public ColorParameter cloudSpecularColor = new ColorParameter(Color.white, true, true, true);
 
 
@@ -50,17 +55,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public ClampedFloatParameter sunShadowsCancellation = new ClampedFloatParameter(0, 0, 1);
 
 		//float4 _CloudStepping (x y w)
-		[Header("CloudStepping")] 
-		public ClampedFloatParameter stepping = new ClampedFloatParameter(8, 0, 20);
+		[Header("CloudStepping")] public ClampedFloatParameter stepping = new ClampedFloatParameter(8, 0, 20);
 		public ClampedFloatParameter steppingNear = new ClampedFloatParameter(50, 0, 50);
 		public ClampedFloatParameter ditherStrength = new ClampedFloatParameter(0, 0, 5);
 
-		[Header("Noise")]
-		public ClampedIntParameter noisePowSize = new ClampedIntParameter(7, 0, 12);
+		[Header("Noise")] public ClampedIntParameter noisePowSize = new ClampedIntParameter(7, 0, 12);
 		public ClampedFloatParameter noiseStrength = new ClampedFloatParameter(0.95f, 0, 0.95f);
 		public ClampedFloatParameter noiseDensity = new ClampedFloatParameter(1.25f, 0, 2f);
 
-		
+
 		public bool IsActive() => enableEffect.value;
 
 		public bool IsTileCompatible() => false;

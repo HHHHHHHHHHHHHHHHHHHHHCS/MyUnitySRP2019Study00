@@ -9,12 +9,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 	{
 		private const string k_SolidCloudPass = "SolidCloud";
 
+		private const string k_CLOUD_MASK = "CLOUD_MASK";
+
+		private const string k_CLOUD_USE_XY_PLANE = "CLOUD_USE_XY_PLANE";
+
 		// private const string k_CLOUD_AREA_BOX = "CLOUD_AREA_BOX";
 		private const string k_CLOUD_AREA_SPHERE = "CLOUD_AREA_SPHERE";
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
 		private const string k_CLOUD_DISTANCE_ON = "CLOUD_DISTANCE_ON";
-		private const string K_CLOUD_USE_XY_PLANE = "CLOUD_USE_XY_PLANE";
-		
+
 		private static readonly int CameraColorTexture_ID = Shader.PropertyToID("_CameraColorTexture");
 
 		//generate noise##################
@@ -31,6 +34,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		//cloud##################
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
+		private static readonly int MaskTex_ID = Shader.PropertyToID("_MaskTex");
 		private static readonly int CloudColor_ID = Shader.PropertyToID("_CloudColor");
 		private static readonly int CloudStepping_ID = Shader.PropertyToID("_CloudStepping");
 		private static readonly int CloudWindDir_ID = Shader.PropertyToID("_CloudWindDir");
@@ -43,6 +47,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private SolidCloudRenderPostProcess settings;
 		private Material solidCloudMaterial;
 		private Texture2D noiseTex;
+		private Texture2D maskTex;
+
 
 		private Vector3 windSpeedAcum;
 		private float amount;
@@ -144,12 +150,22 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				//raymarch cloud
 				//###############################################
 				solidCloudMaterial.SetTexture(NoiseTex_ID, randomNoiseRT);
+				if (settings.enableMask.value && settings.maskTexture.value != null)
+				{
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MASK, true);
+					solidCloudMaterial.SetTexture(MaskTex_ID, settings.maskTexture.value);
+				}
+				else
+				{
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MASK, false);
+					solidCloudMaterial.SetTexture(MaskTex_ID, null);
+				}
 
 
 				//CloudColor----------------
 				solidCloudMaterial.SetVector(CloudColor_ID, settings.cloudAlbedoColor.value);
 
-				CoreUtils.SetKeyword(solidCloudMaterial, K_CLOUD_USE_XY_PLANE, settings.useXYPlane.value);
+				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_USE_XY_PLANE, settings.useXYPlane.value);
 
 
 				float scale = 0.01f / settings.noiseScale.value;

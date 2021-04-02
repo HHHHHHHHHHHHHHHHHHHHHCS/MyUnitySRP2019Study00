@@ -9,6 +9,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 	{
 		private SerializedDataParameter m_enableEffect;
 		private SerializedDataParameter m_useXYPlane;
+		private SerializedDataParameter m_enableMask;
+		private SerializedDataParameter m_maskTexture;
 		private SerializedDataParameter m_height;
 		private SerializedDataParameter m_density;
 		private SerializedDataParameter m_noiseScale;
@@ -43,6 +45,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 
 			m_enableEffect = Unpack(o.Find(x => x.enableEffect));
 			m_useXYPlane = Unpack(o.Find(x => x.useXYPlane));
+			m_enableMask = Unpack(o.Find(x => x.enableMask));
+			m_maskTexture = Unpack(o.Find(x => x.maskTexture));
 			m_height = Unpack(o.Find(x => x.height));
 			m_density = Unpack(o.Find(x => x.density));
 			m_noiseScale = Unpack(o.Find(x => x.noiseScale));
@@ -85,6 +89,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 
 			PropertyField(m_enableEffect);
 			PropertyField(m_useXYPlane);
+			PropertyField(m_enableMask);
+			PropertyField(m_maskTexture);
 			PropertyField(m_height);
 			PropertyField(m_density);
 			PropertyField(m_noiseScale);
