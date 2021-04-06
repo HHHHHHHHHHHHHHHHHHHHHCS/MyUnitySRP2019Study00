@@ -194,7 +194,7 @@
 				dist -= distanceToCloud;
 				rs = max(rs, 0.01);
 
-				float4 dir = float4(adir.xyz * rs / adir.w, cloudLength / rs); //raymarch 方向  和  次数
+				float4 dir = float4(rs * adir.xyz / adir.w, cloudLength / rs); //raymarch 方向  和  次数
 				//		dir.w = min(dir.w, 200);	// maximum iterations could be clamped to improve performance under some point of view, most of time got unnoticieable
 
 				float dirLength = _CloudData.y * _CloudData.z; // extracted from loop, dragged here.
@@ -266,9 +266,9 @@
 				dir.w += frac(dither);
 				half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
 				float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
-				float3 fogEndPos = cloudCeilingCut.xyz +
+				float3 cloudEndPos = cloudCeilingCut.xyz +
 					cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
-				float4 shadowCoords1 = TransformWorldToShadowCoord(fogEndPos);
+				float4 shadowCoords1 = TransformWorldToShadowCoord(cloudEndPos);
 				// shadow out of range, exclude with a subtle falloff
 				// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
 				// apply jitter to avoid banding
@@ -278,7 +278,7 @@
 
 				// Ray-march
 				half4 sum = zeros;
-				half4 fgCol = zeros;
+				half4 cloudCol = zeros;
 				float2 pos, h;
 
 
@@ -332,18 +332,18 @@
 
 					if (ng.a > 0)
 					{
-						fgCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
+						cloudCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
 
 						#if CLOUD_SUN_SHADOWS_ON
 						float t = dir.w * shadowData.w;
 						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
 						half shadowAtten = MainLightRealtimeShadow(shadowCoords);
 						ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
-						fgCol *= lerp(1, shadowAtten, shadowData.z);
+						cloudCol *= lerp(1, shadowAtten, shadowData.z);
 						#endif
 
-						fgCol.rgb *= ng.rgb * fgCol.aaa;
-						sum += fgCol * (1.0 - sum.a);
+						cloudCol.rgb *= ng.rgb * cloudCol.aaa;
+						sum += cloudCol * (1.0 - sum.a);
 
 						if (sum.a > 0.99)
 						{
@@ -354,10 +354,10 @@
 
 
 				// adds fog fraction to prevent banding due stepping on low densities
-				// sum += (cloudLength >= dist) * (sum.a<0.99) * fgCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
+				// sum += (cloudLength >= dist) * (sum.a<0.99) * cloudCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
 				if (sum.a < 0.99)
 				{
-					sum += fgCol * (1.0 - sum.a) * dir.w;
+					sum += cloudCol * (1.0 - sum.a) * dir.w;
 				}
 				sum *= _CloudColor.a;
 				return sum;
