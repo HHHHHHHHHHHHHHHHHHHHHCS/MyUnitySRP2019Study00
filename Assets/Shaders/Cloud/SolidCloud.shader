@@ -97,7 +97,7 @@
 				return dither;
 			}
 
-			half4 GetFogColor(float2 uv, float3 worldPos, float depth01, float dither)
+			half4 GetSolidCloudColor(float2 uv, float3 worldPos, float depth01, float dither)
 			{
 				const half4 zeros = half4(0.0, 0.0, 0.0, 0.0);
 
@@ -375,7 +375,7 @@
 
 				float dither = GetDither(i.uv);
 
-				half4 sum = GetFogColor(i.uv, wPos, depth, dither);
+				half4 sum = GetSolidCloudColor(i.uv, wPos, depth, dither);
 				sum *= 1.0 + dither * _CloudStepping.w;
 
 				return half4(sum);
