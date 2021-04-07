@@ -11,6 +11,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 	{
 		public BoolParameter enableEffect = new BoolParameter(false);
 
+		public BoolParameter enableBlend = new BoolParameter(true);
+
 		public BoolParameter useXYPlane = new BoolParameter(false);
 
 		[Header("Mask")] public BoolParameter enableMask = new BoolParameter(false);

@@ -53,6 +53,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 		private static readonly int DebugGreyscale_ID = Shader.PropertyToID("_DebugGreyscale");
 		private static readonly int DebugShowAllChannels_ID = Shader.PropertyToID("_DebugShowAllChannels");
 
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_CloudImageEffectPass);
 
 		private Material cloudMaterial;
 		private Material cloudSkyMaterial;
@@ -124,9 +125,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 			Material material = enableGodRay || !cloudSettings.useSkybox.value ? cloudMaterial : cloudSkyMaterial;
 
 			var cmd = CommandBufferPool.Get(k_CloudImageEffectPass);
-			var sampler = new ProfilingSampler(k_CloudImageEffectPass);
 
-			using (new ProfilingScope(cmd, sampler))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				CoreUtils.SetKeyword(material, c_OnlyCloud, enableGodRay);
 

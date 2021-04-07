@@ -31,6 +31,9 @@ MonoBehaviour:
   enableEffect:
     m_OverrideState: 1
     m_Value: 1
+  enableBlend:
+    m_OverrideState: 1
+    m_Value: 1
   useXYPlane:
     m_OverrideState: 1
     m_Value: 0
@@ -121,7 +124,7 @@ MonoBehaviour:
     max: 10
   sunShadowsStrength:
     m_OverrideState: 1
-    m_Value: 0.497
+    m_Value: 1
     min: 0
     max: 1
   sunShadowsJitterStrength:
@@ -181,6 +184,9 @@ MonoBehaviour:
   enableEffect:
     m_OverrideState: 0
     m_Value: 0
+  enableBlend:
+    m_OverrideState: 0
+    m_Value: 1
   useXYPlane:
     m_OverrideState: 0
     m_Value: 0

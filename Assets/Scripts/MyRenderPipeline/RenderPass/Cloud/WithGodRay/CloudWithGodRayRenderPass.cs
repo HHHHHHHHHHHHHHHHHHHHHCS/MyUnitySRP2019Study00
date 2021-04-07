@@ -60,6 +60,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 		private static readonly RenderTargetIdentifier CameraColorTex_RTI =
 			new RenderTargetIdentifier("_CameraColorTexture");
 
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_CloudWithGodRayPass);
+
 
 		private Texture3D shapeTexture;
 		private Texture3D detailTexture;
@@ -109,9 +111,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 			}
 
 			var cmd = CommandBufferPool.Get(k_CloudWithGodRayPass);
-			var sampler = new ProfilingSampler(k_CloudWithGodRayPass);
 
-			using (new ProfilingScope(cmd, sampler))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				var pos = containerVis.transform.position;
 				var halfSize = containerVis.transform.lossyScale / 2.0f;

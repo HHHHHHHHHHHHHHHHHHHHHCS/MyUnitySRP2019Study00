@@ -33,6 +33,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private static readonly int Amount_ID = Shader.PropertyToID("_Amount");
 
 		//cloud##################
+		private static readonly int DstBlend_ID = Shader.PropertyToID("_DstBlend");
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
 		private static readonly int MaskTex_ID = Shader.PropertyToID("_MaskTex");
 		private static readonly int CloudColor_ID = Shader.PropertyToID("_CloudColor");
@@ -44,6 +45,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private static readonly int CloudDistance_ID = Shader.PropertyToID("_CloudDistance");
 		private static readonly int SunShadowsData_ID = Shader.PropertyToID("_SunShadowsData");
 
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_SolidCloudPass);
+		
 		private SolidCloudRenderPostProcess settings;
 		private Material solidCloudMaterial;
 		private Texture2D noiseTex;
@@ -68,9 +71,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
 			var cmd = CommandBufferPool.Get(k_SolidCloudPass);
-			var sampler = new ProfilingSampler(k_SolidCloudPass);
 
-			using (new ProfilingScope(cmd, sampler))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				var mainLightIndex = renderingData.lightData.mainLightIndex;
 
@@ -130,7 +132,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				context.Submit();
 				cmd.Clear();
 
-
 				//random noise 
 				//###############################################
 				solidCloudMaterial.SetTexture(NoiseTex_ID, genNoiseRT);
@@ -149,6 +150,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 				//raymarch cloud
 				//###############################################
+				solidCloudMaterial.SetInt(DstBlend_ID,
+					(int)(settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
 				solidCloudMaterial.SetTexture(NoiseTex_ID, randomNoiseRT);
 				if (settings.enableMask.value && settings.maskTexture.value != null)
 				{

@@ -25,6 +25,7 @@ namespace MyRenderPipeline.RenderPass.GodRay
 		private static readonly RenderTargetIdentifier godRayBlur_RTI = new RenderTargetIdentifier(GodRayBlurRT_ID);
 		private static readonly RenderTargetIdentifier cameraTarget_RTI = new RenderTargetIdentifier("_CameraColorTexture");
 
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_GodRayPass);
 
 		private Material godRayMaterial;
 
@@ -75,9 +76,8 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 
 			var cmd = CommandBufferPool.Get(k_GodRayPass);
-			var sampler = new ProfilingSampler(k_GodRayPass);
 
-			using (new ProfilingScope(cmd, sampler))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				var cloudSettings = VolumeManager.instance.stack.GetComponent<CloudImageEffectPostProcess>();
 				bool enableCloud = cloudSettings != null && cloudSettings.IsActive();

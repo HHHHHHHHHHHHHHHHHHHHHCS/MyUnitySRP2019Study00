@@ -2,7 +2,7 @@
 {
 	Properties
 	{
-
+		[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", int) = 0
 	}
 	HLSLINCLUDE
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -35,7 +35,7 @@
 		//Cloud
 		Pass
 		{
-			Blend One OneMinusSrcAlpha
+			Blend One [_DstBlend]//OneMinusSrcAlpha
 
 			HLSLPROGRAM
 			#pragma vertex Vert
@@ -62,7 +62,6 @@
 			TEXTURE2D(_MaskTex);
 			SAMPLER(sampler_MaskTex);
 			#endif
-
 
 			float4 _CloudDistance;
 			float4 _CloudData; // x = _CloudBaseHeight, y = _CloudHeight, z = density, w = scale;
@@ -132,7 +131,7 @@
 				adir.w = length(adir.xyz);
 
 				#if CLOUD_AREA_SPHERE
-				
+
 				// compute sphere intersection or early exit if ray does not sphere
 				float3 oc = wsCameraPos - cloudAreaPosition;
 				float3 nadir = adir.xyz / adir.w;
@@ -177,13 +176,13 @@
 					return zeros;
 				}
 				float3 cloudCeilingCut = wsCameraPos + distanceToCloud / invR;
-				
+
 				#if CLOUD_USE_XY_PLANE
 				float2 areaData = _CloudAreaData.xy / _CloudData.w;
 				#else
 				float2 areaData = _CloudAreaData.xz / _CloudData.w;
 				#endif
-				
+
 				#endif
 
 				// 计算 每一步 ray march 方向长度
@@ -210,7 +209,7 @@
 				ft4.z /= dirLength;
 				
 				#else
-				
+
 				// Extracted operations from ray-march loop for additional optimizations
 				dir.xz *= _CloudData.w;
 				dir.y /= dirLength;
@@ -218,7 +217,7 @@
 				// apply wind speed and direction; already defined above if the condition is true
 				ft4.xz = (ft4.xz + _CloudWindDir.xz) * _CloudData.w;
 				ft4.y /= dirLength;
-				
+
 				#endif
 
 
@@ -229,7 +228,7 @@
 
 
 				#if CLOUD_USE_XY_PLANE
-				
+
 				// #if CLOUD_AREA_SPHERE || CLOUD_AREA_BOX
 				float2 areaCenter = (cloudAreaPosition.xy + _CloudWindDir.xy) * _CloudData.w;
 				// #endif
@@ -249,31 +248,38 @@
 				float2 camCenter = wsCameraPos.xz + _CloudWindDir.xz;
 				camCenter *= _CloudData.w;
 				#endif
-				
+
 				#endif
 
 
 				// Shadow preparation
 				#if CLOUD_SUN_SHADOWS_ON
-				
+
 				#if CLOUD_USE_XY_PLANE
-				cloudCeilingCut.z += planeOffset;
+					cloudCeilingCut.z += planeOffset;
 				#else
-				cloudCeilingCut.y += planeOffset;
+					cloudCeilingCut.y += planeOffset;
 				#endif
-				
-				// reduce banding
+
 				dir.w += frac(dither);
 				half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
-				float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
-				float3 cloudEndPos = cloudCeilingCut.xyz +
-					cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
-				float4 shadowCoords1 = TransformWorldToShadowCoord(cloudEndPos);
-				// shadow out of range, exclude with a subtle falloff
-				// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
-				// apply jitter to avoid banding
-				//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
 				
+				#if _MAIN_LIGHT_SHADOWS_CASCADE
+					float3 startWPos = cloudCeilingCut.xyz;
+					float3 endWPos = cloudCeilingCut.xyz +
+						cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
+				#else
+					// reduce banding
+					float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
+					float3 cloudEndPos = cloudCeilingCut.xyz +
+						cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
+					float4 shadowCoords1 = TransformWorldToShadowCoord(cloudEndPos);
+					// shadow out of range, exclude with a subtle falloff
+					// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
+					// apply jitter to avoid banding
+					//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
+				#endif
+
 				#endif
 
 				// Ray-march
@@ -291,7 +297,7 @@
 					pos = ft4.xz;
 					h = ft4.y;
 					#endif
-					
+
 					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, pos, 0);
 
 					#if CLOUD_AREA_SPHERE
@@ -306,7 +312,7 @@
 					ng.a -= abs(h) + voidDistance * _CloudAreaData.w - 0.3;
 					
 					#else //if CLOUD_AREA_BOX
-					
+
 					float2 vd = abs(areaCenter - pos) * areaData;
 					float voidDistance = max(vd.x, vd.y);
 					//边缘
@@ -315,7 +321,7 @@
 						continue;
 					}
 					ng.a -= abs(h) + smoothstep(1 - _CloudAreaData.w, 1, voidDistance);
-					
+
 					#endif
 
 
@@ -336,7 +342,14 @@
 
 						#if CLOUD_SUN_SHADOWS_ON
 						float t = dir.w * shadowData.w;
+						
+						#if _MAIN_LIGHT_SHADOWS_CASCADE
+						float3 wPos = lerp(endWPos, startWPos, t);
+						float4 shadowCoords = TransformWorldToShadowCoord(wPos);
+						#else
 						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
+						#endif
+
 						half shadowAtten = MainLightRealtimeShadow(shadowCoords);
 						ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
 						cloudCol *= lerp(1, shadowAtten, shadowData.z);

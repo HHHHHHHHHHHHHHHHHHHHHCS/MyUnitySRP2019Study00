@@ -27,6 +27,7 @@ namespace MyRenderPipeline.RenderPass.CrepuscularRay
 		private static readonly RenderTargetIdentifier CameraColorTex_RTI =
 			new RenderTargetIdentifier("_CameraColorTexture");
 
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_CrepuscularRayRenderPass);
 
 		private Material rayMaterial;
 		private CrepuscularRayPostProcess raySettings;
@@ -70,9 +71,8 @@ namespace MyRenderPipeline.RenderPass.CrepuscularRay
 			}
 
 			var cmd = CommandBufferPool.Get(k_CrepuscularRayRenderPass);
-			var sampler = new ProfilingSampler(k_CrepuscularRayRenderPass);
 
-			using (new ProfilingScope(cmd, sampler))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				rayMaterial.SetFloat(RayRange_ID, raySettings.rayRange.value);
 				rayMaterial.SetFloat(RayIntensity_ID, raySettings.rayIntensity.value);
