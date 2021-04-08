@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/Cloud_SolidCloud.unity
+    guid: b3530d7b119703f49a940da373d93824
   m_configObjects: {}

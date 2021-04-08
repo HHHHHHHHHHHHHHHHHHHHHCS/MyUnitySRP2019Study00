@@ -68,7 +68,7 @@ namespace MyRenderPipeline.RenderPass.Boid
 		private ComputeBuffer argsBuffer;
 		private uint[] args = new uint[5];
 
-
+		#if UNITY_EDITOR
 		[EditorButton]
 		public void Reload()
 		{
@@ -76,7 +76,8 @@ namespace MyRenderPipeline.RenderPass.Boid
 			UnityEditor.SceneView.GetAllSceneCameras().Select(camera => camera.GetComponent<BoidPass>())
 				.ForEach(renderer => { renderer.needUpdate = true; });
 		}
-
+		#endif
+		
 		public override void Setup(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
 			if (needUpdate)

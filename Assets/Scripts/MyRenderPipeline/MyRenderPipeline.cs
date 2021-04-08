@@ -57,10 +57,12 @@ namespace MyRenderPipeline
 
 			cmd.Clear();
 
+			#if UNITY_EDITOR
 			//Emit UI
 			if (camera.cameraType == CameraType.SceneView)
 				ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
-
+			#endif
+			
 			var cullResults = context.Cull(ref cullingParameters);
 
 			var projectionMat = camera.projectionMatrix;
