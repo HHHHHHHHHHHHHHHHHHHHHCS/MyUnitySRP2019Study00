@@ -18,7 +18,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
 		private const string k_CLOUD_DISTANCE_ON = "CLOUD_DISTANCE_ON";
 
-		private static readonly int CameraColorTexture_ID = Shader.PropertyToID("_CameraColorTexture");
+		private static readonly RenderTargetIdentifier CameraColorTexture_RTI =
+			new RenderTargetIdentifier("_CameraColorTexture");
 
 		//generate noise##################
 		private static readonly int NoiseStrength_ID = Shader.PropertyToID("_NoiseStrength");
@@ -66,6 +67,17 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public void Setup(SolidCloudRenderPostProcess solidCloudRenderPostProcess)
 		{
 			settings = solidCloudRenderPostProcess;
+		}
+
+		private int www;
+		
+		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
+		{
+			www = cameraTextureDescriptor.width;
+		}
+
+		public override void FrameCleanup(CommandBuffer cmd)
+		{
 		}
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -266,11 +278,56 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 
 				// cmd.GetTemporaryRT(tid,1920,1080,0, FilterMode.Point,GraphicsFormat.R8G8B8A8_UNorm);
-				cmd.SetRenderTarget(CameraColorTexture_ID);
+				// cmd.SetRenderTarget(CameraColorTexture_RTI);
 				// cmd.ClearRenderTarget(true, true, Color.black);
-				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+				// CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
 				// cmd.ReleaseTemporaryRT(tid);
 
+				//cmd get 有时候不靠谱
+				
+				int rtSize = settings.rtSize.value;
+				if (rtSize == 1)
+				{
+					solidCloudMaterial.SetInt(DstBlend_ID,
+						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+					cmd.SetRenderTarget(CameraColorTexture_RTI);
+					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+				}
+				else
+				{
+					if (rtSize == 3)
+					{
+						rtSize = 4;
+					}
+				
+					int width = renderingData.cameraData.camera.scaledPixelWidth / rtSize;
+					int height = renderingData.cameraData.camera.scaledPixelHeight / rtSize;
+				
+					solidCloudMaterial.SetInt(DstBlend_ID, (int) BlendMode.Zero);
+				
+					//blend
+					RenderTexture blendRT = RenderTexture.GetTemporary(width, height, 0, 
+						RenderTextureFormat.ARGB32);
+					cmd.SetRenderTarget(blendRT, RenderBufferLoadAction.DontCare,
+						RenderBufferStoreAction.Store,
+						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+				
+					context.ExecuteCommandBuffer(cmd);
+					context.Submit();
+					cmd.Clear();
+					
+					solidCloudMaterial.SetTexture(NoiseTex_ID, blendRT);
+				
+					solidCloudMaterial.SetInt(DstBlend_ID,
+						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+					cmd.SetRenderTarget(CameraColorTexture_RTI);
+					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
+				
+					RenderTexture.ReleaseTemporary(blendRT);
+
+				}
+				
 
 				RenderTexture.ReleaseTemporary(genNoiseRT);
 				RenderTexture.ReleaseTemporary(randomNoiseRT);

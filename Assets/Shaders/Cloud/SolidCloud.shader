@@ -464,5 +464,24 @@
 			}
 			ENDHLSL
 		}
+		
+		//Blend
+		Pass
+		{
+			Blend One [_DstBlend]//OneMinusSrcAlpha
+			
+			HLSLPROGRAM
+			#pragma vertex Vert
+			#pragma fragment FragNoise
+
+			TEXTURE2D(_NoiseTex);
+			SAMPLER(sampler_NoiseTex);
+
+			half4 FragNoise(v2f i):SV_TARGET
+			{
+				return SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
+			}
+			ENDHLSL
+		}
 	}
 }

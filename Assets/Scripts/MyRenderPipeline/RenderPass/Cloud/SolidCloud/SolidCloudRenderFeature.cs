@@ -1,4 +1,5 @@
-﻿using MyRenderPipeline.RenderPass.GodRay;
+﻿using System;
+using MyRenderPipeline.RenderPass.GodRay;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;

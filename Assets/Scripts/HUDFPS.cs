@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.Rendering;
 
 public class HUDFPS : MonoBehaviour 
 {
@@ -26,8 +27,9 @@ public class HUDFPS : MonoBehaviour
 
     void Start()
     {
-        timeleft = updateInterval;  
+        timeleft = updateInterval;
     }
+    
     void Update()
     {
         timeleft -= Time.deltaTime;
