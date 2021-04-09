@@ -11,6 +11,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 	public class CloudWithGodRayRenderPass : ScriptableRenderPass
 	{
 		private const string k_CloudWithGodRayPass = "CloudWithGodRayPass";
+		
+		public static readonly int inverseViewAndProjectionMatrix = Shader.PropertyToID("unity_MatrixInvVP");
 
 		private static readonly int BoundsMin_ID = Shader.PropertyToID("_BoundsMin");
 		private static readonly int BoundsMax_ID = Shader.PropertyToID("_BoundsMax");
@@ -168,6 +170,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 				cloudMaterial.SetFloat(DetailNoiseWeight_ID, cloudSettings.detailNoiseWeight.value);
 				cloudMaterial.SetVector(DetailNoiseWeights_ID, cloudSettings.detailNoiseWeights.value);
 
+				//URP 7.5.3之后  cameraData.GetGPUProjectionMatrix() 进行y翻转
+				var cameraData = renderingData.cameraData;
+				if (cameraData.IsCameraProjectionMatrixFlipped())
+				{
+					Matrix4x4 viewAndProjectionMatrix = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), false) * cameraData.GetViewMatrix();
+					Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
+					cmd.SetGlobalMatrix(inverseViewAndProjectionMatrix, inverseViewProjection);
+				}
+				
 				//降深度采样
 				cmd.GetTemporaryRT(DownsampleDepthTex_ID
 					, cameraTextureDescriptor.width / cloudSettings.downsample.value

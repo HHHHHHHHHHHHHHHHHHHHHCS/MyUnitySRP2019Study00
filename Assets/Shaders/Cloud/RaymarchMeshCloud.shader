@@ -171,8 +171,15 @@
 			//计算世界空间坐标
 			float4 GetWorldSpacePosition(float depth, float2 uv)
 			{
+				//URP 7.5之后 Inv_VP 会翻转
 				// 屏幕空间 --> 世界空间
-				float4 world_vector = mul(UNITY_MATRIX_I_VP, float4(2.0 * uv - 1.0, depth, 1.0));
+				#if  VERSION_GREATER_EQUAL(7,5)
+					float4x4 invVP = UNITY_MATRIX_I_VP;
+					invVP._12_22_32_42 = -invVP._12_22_32_42;
+					float4 world_vector = mul(invVP, float4(2.0 * uv - 1.0, depth, 1.0));
+				#else
+					float4 world_vector = mul(UNITY_MATRIX_I_VP, float4(2.0 * uv - 1.0, depth, 1.0));
+				#endif
 				world_vector.xyzw /= world_vector.w;
 				return world_vector;
 			}

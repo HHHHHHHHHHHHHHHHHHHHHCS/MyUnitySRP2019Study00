@@ -98,7 +98,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 0}
-  m_UseShadowmask: 1
+  m_UseShadowmask: 0
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -674,8 +674,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 336285084}
-  m_LocalRotation: {x: -0.30127913, y: 0.6409942, z: -0.30005684, w: -0.6390017}
-  m_LocalPosition: {x: 285.88705, y: 286.27844, z: 1.1044308}
+  m_LocalRotation: {x: 0.31587064, y: -0.6387345, z: 0.32431194, w: 0.62214607}
+  m_LocalPosition: {x: 277.76025, y: 300.2568, z: 10.884367}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -739,8 +739,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   syncCamera: 0
-  lastPos: {x: 285.88705, y: 286.27844, z: 1.1044308}
-  lastRot: {x: 50.327423, y: 269.70514, z: 359.75204}
+  lastPos: {x: 74.70098, y: 27.030354, z: -48.667683}
+  lastRot: {x: 36.131905, y: 323.8403, z: 0.0013129095}
 --- !u!114 &336285091
 MonoBehaviour:
   m_ObjectHideFlags: 0

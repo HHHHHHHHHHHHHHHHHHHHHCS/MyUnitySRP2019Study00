@@ -23,6 +23,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private static readonly int RandomNoiseTex_ID = Shader.PropertyToID("_RandomNoiseTex");
 		private static readonly int BlendTex_ID = Shader.PropertyToID("_BlendTex");
 
+		public static readonly int inverseViewAndProjectionMatrix = Shader.PropertyToID("unity_MatrixInvVP");
+
 
 		private static readonly RenderTargetIdentifier CameraColorTexture_RTI =
 			new RenderTargetIdentifier("_CameraColorTexture");
@@ -321,6 +323,18 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					dithering * 0.1f);
 				solidCloudMaterial.SetVector(CloudStepping_ID, fogStepping);
 
+				//URP 7.5.3之后  cameraData.GetGPUProjectionMatrix() 进行y翻转
+				var cameraData = renderingData.cameraData;
+				if (cameraData.IsCameraProjectionMatrixFlipped())
+				{
+					Matrix4x4 viewAndProjectionMatrix = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), false) * cameraData.GetViewMatrix();
+					Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
+					cmd.SetGlobalMatrix(inverseViewAndProjectionMatrix, inverseViewProjection);
+				}
+				
+				// Matrix4x4 viewAndProjectionMatrix = cameraData.GetGPUProjectionMatrix() * viewMatrix;
+				// Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
+				// cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);
 
 				//cmd get 有时候不靠谱
 
@@ -350,7 +364,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					cmd.Clear();
 
 					cmd.SetGlobalTexture(NoiseTex_ID, BlendTex_RTI);
-					
+
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));

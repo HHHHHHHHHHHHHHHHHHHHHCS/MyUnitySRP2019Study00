@@ -10,6 +10,8 @@ namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 		private static readonly int sspr_ColorRT_pid = Shader.PropertyToID("_MobileSSPR_ColorRT");
 		private static readonly int sspr_PackedDataRT_pid = Shader.PropertyToID("_MobileSSPR_PackedDataRT");
 		private static readonly int sspr_PosWSyRT_pid = Shader.PropertyToID("_MobileSSPR_PosWSyRT");
+		public static readonly int inverseViewAndProjectionMatrix = Shader.PropertyToID("unity_MatrixInvVP");
+
 
 		private RenderTargetIdentifier sspr_ColorRT_rti = new RenderTargetIdentifier(sspr_ColorRT_pid);
 		private RenderTargetIdentifier sspr_PackedDataRT_rti = new RenderTargetIdentifier(sspr_PackedDataRT_pid);
@@ -98,12 +100,11 @@ namespace MyRenderPipeline.RenderPass.ScreenSpacePlanarReflection
 			}
 		}
 
+		//URP 7.5.3之后  cameraData.GetGPUProjectionMatrix() 进行y翻转
 		public static void SetCameraInvVP(CommandBuffer cmd, ref CameraData cameraData)
 		{
 			Matrix4x4 viewMatrix = cameraData.camera.worldToCameraMatrix;
 			Matrix4x4 projectionMatrix = cameraData.camera.projectionMatrix;
-
-			int inverseViewAndProjectionMatrix = Shader.PropertyToID("unity_MatrixInvVP");
 
 			Matrix4x4 viewAndProjectionMatrix = GL.GetGPUProjectionMatrix(projectionMatrix, false) * viewMatrix;
 			Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
