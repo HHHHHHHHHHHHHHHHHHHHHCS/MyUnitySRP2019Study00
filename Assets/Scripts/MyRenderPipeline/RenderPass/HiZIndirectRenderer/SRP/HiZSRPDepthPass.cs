@@ -8,6 +8,10 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 {
 	public class HiZSRPDepthPass : ScriptableRenderPass
 	{
+		private const string k_profilingTag = "HiZDepth";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+
+		
 		private Shader blitShader;
 		private Material blitMaterial;
 
@@ -36,11 +40,9 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
 
-			CommandBuffer cmd = CommandBufferPool.Get("HiZDepth");
-			using (new ProfilingSample(cmd, "HiZDepth"))
+			CommandBuffer cmd = CommandBufferPool.Get(k_profilingTag);
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
-				cmd.Clear();
-
 				if (width != textureDescriptor.width || height != textureDescriptor.height)
 				{
 					if (width == -1 || height == -1)
@@ -62,8 +64,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				cmd.SetRenderTarget(depthRT);
 				cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, blitMaterial);
 				cmd.SetRenderTarget(renderingData.cameraData.targetTexture); //复原
-				context.ExecuteCommandBuffer(cmd);
-				cmd.Clear();
+	
 			}
 
 			context.ExecuteCommandBuffer(cmd);

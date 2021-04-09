@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 {
-	[CreateAssetMenu(fileName ="CloudPass", menuName ="MyRP/RenderPass/CloudPass")]
+	[CreateAssetMenu(fileName = "CloudPass", menuName = "MyRP/RenderPass/CloudPass")]
 	public class CloudPass : MyRenderPassAsset
 	{
 		public bool enablePass = true;
@@ -23,8 +23,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 
 	public class CloudPassRenderer : MyRenderPassRenderer<CloudPass>
 	{
+		private const string k_profilingTag = "Volumetric Cloud Rendering";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+
 		private Mesh screenMesh;
 		private CurlNoiseMotionRenderer curlNoiseMotionRenderer;
+
 
 		public CloudPassRenderer(CloudPass asset) : base(asset)
 		{
@@ -36,8 +40,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 			//基本不运行
 			if (curlNoiseMotionRenderer == null && asset.curlNoiseMotionComputeShader && asset.curlNoiseTexture)
 			{
-				curlNoiseMotionRenderer = new CurlNoiseMotionRenderer(asset.curlNoiseTexture,asset.curlNoiseMotionComputeShader,new Vector3Int(asset.curlNoiseTexture.width,asset.curlNoiseTexture.height,asset.curlNoiseTexture.volumeDepth));
+				curlNoiseMotionRenderer = new CurlNoiseMotionRenderer(asset.curlNoiseTexture,
+					asset.curlNoiseMotionComputeShader,
+					new Vector3Int(asset.curlNoiseTexture.width, asset.curlNoiseTexture.height,
+						asset.curlNoiseTexture.volumeDepth));
 			}
+
 			SetupLights(context, ref renderingData);
 		}
 
@@ -47,8 +55,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 			{
 				return;
 			}
-			
-			
+
+
 			if (renderingData.camera.cameraType == CameraType.Preview)
 			{
 				return;
@@ -58,16 +66,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 			{
 				return;
 			}
-			
-			var cmd = CommandBufferPool.Get("Cloud");
-			cmd.Clear();
 
+			var cmd = CommandBufferPool.Get(k_profilingTag);
 
-			using (new ProfilingSample(cmd,"Volumetric Cloud Rendering"))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
-				
 				if (curlNoiseMotionRenderer != null)
-				{//不运行
+				{
+					//不运行
 					var buffer = curlNoiseMotionRenderer.Update(cmd);
 					cmd.SetGlobalBuffer("_MotionPosBuffer", buffer);
 					var size = curlNoiseMotionRenderer.size;
@@ -90,7 +96,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 
 				if (asset.drawFullScreen)
 				{
-					cmd.DrawMesh(screenMesh, RenderUtils.ProjectionToWorldMatrix(renderingData.camera), asset.material, 0,
+					cmd.DrawMesh(screenMesh, RenderUtils.ProjectionToWorldMatrix(renderingData.camera), asset.material,
+						0,
 						0);
 				}
 				else
@@ -104,21 +111,23 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 						cmd.DrawRenderer(cube.GetComponent<MeshRenderer>(), asset.material, 0, 1);
 					}
 				}
-			
-				context.ExecuteCommandBuffer(cmd);
-				cmd.Clear();
-				CommandBufferPool.Release(cmd);
+
+
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			cmd.Clear();
+			CommandBufferPool.Release(cmd);
 		}
-		
-		
+
+
 		private void SetupLights(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
 			var cmd = CommandBufferPool.Get();
-			
+
 			renderingData.lights = renderingData.cullResults.visibleLights;
 			var mainLightIdx = GetMainLightIndex(ref renderingData);
-			
+
 			if (mainLightIdx >= 0)
 			{
 				var mainLight = renderingData.lights[GetMainLightIndex(ref renderingData)];
@@ -131,12 +140,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 				cmd.SetGlobalColor("_MainLightColor", Color.black);
 				cmd.SetGlobalVector("_MainLightPosition", Vector4.zero);
 			}
+
 			cmd.SetGlobalColor("_AmbientSkyColor", RenderSettings.ambientSkyColor);
-			
+
 			context.ExecuteCommandBuffer(cmd);
 			cmd.Clear();
 			CommandBufferPool.Release(cmd);
 		}
+
 		private int GetMainLightIndex(ref MyRenderingData renderingData)
 		{
 			var lights = renderingData.cullResults.visibleLights;
@@ -148,6 +159,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.Raymarch
 				if (lights[i].light == sun)
 					return i;
 			}
+
 			return -1;
 		}
 	}

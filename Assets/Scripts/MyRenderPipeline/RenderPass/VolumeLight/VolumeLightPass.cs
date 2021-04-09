@@ -35,6 +35,9 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 			public int volumeIndex;
 		}
 
+		private const string k_profilingTag = "Volume Light";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+		
 		private const int volumeDepthPass = 0;
 		private const int volumeScatteringPass = 1;
 		private const int fullScreenVolumeScatteringPass = 2;
@@ -83,16 +86,15 @@ namespace MyRenderPipeline.RenderPass.VolumeLight
 
 		public override void Render(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
-			var cmd = CommandBufferPool.Get("Volume Light");
+			var cmd = CommandBufferPool.Get(k_profilingTag);
 
-			using (new ProfilingSample(cmd, "Volume Light"))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				RenderVolumeLight(cmd, renderingData);
-
-				context.ExecuteCommandBuffer(cmd);
-				cmd.Clear();
-				CommandBufferPool.Release(cmd);
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			CommandBufferPool.Release(cmd);
 		}
 
 		//Debug 用

@@ -9,8 +9,10 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 {
 	public class MotionBlurRendererPass : ScriptableRenderPass
 	{
+		private const string k_profilingTag = "Motion Blur";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+
 		private MotionBlurSettings settings;
-		private ProfilingSampler profilingSampler;
 
 		private RenderTargetIdentifier source { get; set; }
 		private RenderTargetIdentifier destination { get; set; }
@@ -22,7 +24,6 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 		public MotionBlurRendererPass(MotionBlurSettings _settings)
 		{
 			settings = _settings;
-			profilingSampler = new ProfilingSampler("Motion Blur");
 			isFirstVP = true;
 		}
 
@@ -35,12 +36,15 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-			CommandBuffer cmd = CommandBufferPool.Get("Motion Blur");
+			CommandBuffer cmd = CommandBufferPool.Get(k_profilingTag);
 
 			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				RenderMotionBlur(cmd, context, ref renderingData);
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			CommandBufferPool.Release(cmd);
 		}
 
 		private void RenderMotionBlur(CommandBuffer cmd, ScriptableRenderContext context,
@@ -88,9 +92,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			prevViewProjM = viewProj;
 			isFirstVP = false;
 
-			context.ExecuteCommandBuffer(cmd);
-			//context.Submit();
-			CommandBufferPool.Release(cmd);
+
 		}
 	}
 }

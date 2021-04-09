@@ -99,7 +99,6 @@ namespace MyRenderPipeline.RenderPass.CrepuscularRay
 
 			context.ExecuteCommandBuffer(cmd);
 			CommandBufferPool.Release(cmd);
-			context.Submit();
 		}
 	}
 }

@@ -14,7 +14,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public BoolParameter enableBlend = new BoolParameter(true);
 
 		public ClampedIntParameter rtSize = new ClampedIntParameter(1, 1, 4);
+		public BoolParameter enableBlur = new BoolParameter(false);
 
+		
 		public BoolParameter useXYPlane = new BoolParameter(false);
 
 		[Header("Mask")] public BoolParameter enableMask = new BoolParameter(false);

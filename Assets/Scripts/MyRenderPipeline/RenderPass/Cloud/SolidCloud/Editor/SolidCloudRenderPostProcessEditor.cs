@@ -10,6 +10,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 		private SerializedDataParameter m_enableEffect;
 		private SerializedDataParameter m_enableBlend;
 		private SerializedDataParameter m_rtSize;
+		private SerializedDataParameter m_enableBlur;
 		private SerializedDataParameter m_useXYPlane;
 		private SerializedDataParameter m_enableMask;
 		private SerializedDataParameter m_maskTexture;
@@ -48,6 +49,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			m_enableEffect = Unpack(o.Find(x => x.enableEffect));
 			m_enableBlend = Unpack(o.Find(x => x.enableBlend));
 			m_rtSize = Unpack(o.Find(x => x.rtSize));
+			m_enableBlur = Unpack(o.Find(x => x.enableBlur));
 			m_useXYPlane = Unpack(o.Find(x => x.useXYPlane));
 			m_enableMask = Unpack(o.Find(x => x.enableMask));
 			m_maskTexture = Unpack(o.Find(x => x.maskTexture));
@@ -94,6 +96,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			PropertyField(m_enableEffect);
 			PropertyField(m_enableBlend);
 			PropertyField(m_rtSize);
+			PropertyField(m_enableBlur);
 			PropertyField(m_useXYPlane);
 			PropertyField(m_enableMask);
 			PropertyField(m_maskTexture);

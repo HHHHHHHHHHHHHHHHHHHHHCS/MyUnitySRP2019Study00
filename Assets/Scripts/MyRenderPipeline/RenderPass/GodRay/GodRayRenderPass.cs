@@ -118,7 +118,6 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 			context.ExecuteCommandBuffer(cmd);
 			CommandBufferPool.Release(cmd);
-			context.Submit();
 		}
 	}
 }

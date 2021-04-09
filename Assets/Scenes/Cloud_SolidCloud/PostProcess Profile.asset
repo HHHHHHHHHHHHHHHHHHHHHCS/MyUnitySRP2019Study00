@@ -39,12 +39,15 @@ MonoBehaviour:
     m_Value: 4
     min: 1
     max: 4
+  enableBlur:
+    m_OverrideState: 1
+    m_Value: 1
   useXYPlane:
     m_OverrideState: 1
     m_Value: 0
   enableMask:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   maskTexture:
     m_OverrideState: 1
     m_Value: {fileID: 2800000, guid: f9bcaf1da924d0742b9c341e5d80235f, type: 3}
@@ -197,6 +200,9 @@ MonoBehaviour:
     m_Value: 1
     min: 1
     max: 4
+  enableBlur:
+    m_OverrideState: 0
+    m_Value: 0
   useXYPlane:
     m_OverrideState: 0
     m_Value: 0

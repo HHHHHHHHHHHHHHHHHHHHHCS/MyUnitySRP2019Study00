@@ -16,7 +16,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		// private const string k_CLOUD_AREA_BOX = "CLOUD_AREA_BOX";
 		private const string k_CLOUD_AREA_SPHERE = "CLOUD_AREA_SPHERE";
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
+
 		private const string k_CLOUD_DISTANCE_ON = "CLOUD_DISTANCE_ON";
+		private const string k_CLOUD_BLUR_ON = "CLOUD_BLUR_ON";
+
 
 		private static readonly RenderTargetIdentifier CameraColorTexture_RTI =
 			new RenderTargetIdentifier("_CameraColorTexture");
@@ -47,7 +50,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private static readonly int SunShadowsData_ID = Shader.PropertyToID("_SunShadowsData");
 
 		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_SolidCloudPass);
-		
+
 		private SolidCloudRenderPostProcess settings;
 		private Material solidCloudMaterial;
 		private Texture2D noiseTex;
@@ -68,17 +71,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		{
 			settings = solidCloudRenderPostProcess;
 		}
-
-		private int www;
 		
-		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
-		{
-			www = cameraTextureDescriptor.width;
-		}
-
-		public override void FrameCleanup(CommandBuffer cmd)
-		{
-		}
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
@@ -141,7 +134,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 1);
 
 				context.ExecuteCommandBuffer(cmd);
-				context.Submit();
 				cmd.Clear();
 
 				//random noise 
@@ -156,14 +148,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 2);
 
 				context.ExecuteCommandBuffer(cmd);
-				context.Submit();
 				cmd.Clear();
 
 
 				//raymarch cloud
 				//###############################################
 				solidCloudMaterial.SetInt(DstBlend_ID,
-					(int)(settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+					(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
 				solidCloudMaterial.SetTexture(NoiseTex_ID, randomNoiseRT);
 				if (settings.enableMask.value && settings.maskTexture.value != null)
 				{
@@ -277,14 +268,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				solidCloudMaterial.SetVector(CloudStepping_ID, fogStepping);
 
 
-				// cmd.GetTemporaryRT(tid,1920,1080,0, FilterMode.Point,GraphicsFormat.R8G8B8A8_UNorm);
-				// cmd.SetRenderTarget(CameraColorTexture_RTI);
-				// cmd.ClearRenderTarget(true, true, Color.black);
-				// CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-				// cmd.ReleaseTemporaryRT(tid);
-
 				//cmd get 有时候不靠谱
-				
+
 				int rtSize = settings.rtSize.value;
 				if (rtSize == 1)
 				{
@@ -299,35 +284,35 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					{
 						rtSize = 4;
 					}
-				
+
 					int width = renderingData.cameraData.camera.scaledPixelWidth / rtSize;
 					int height = renderingData.cameraData.camera.scaledPixelHeight / rtSize;
-				
+
 					solidCloudMaterial.SetInt(DstBlend_ID, (int) BlendMode.Zero);
-				
+
 					//blend
-					RenderTexture blendRT = RenderTexture.GetTemporary(width, height, 0, 
-						RenderTextureFormat.ARGB32);
+					RenderTexture blendRT = RenderTexture.GetTemporary(width, height, 0
+						, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 					cmd.SetRenderTarget(blendRT, RenderBufferLoadAction.DontCare,
 						RenderBufferStoreAction.Store,
 						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
 					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-				
+
 					context.ExecuteCommandBuffer(cmd);
-					context.Submit();
 					cmd.Clear();
-					
+
 					solidCloudMaterial.SetTexture(NoiseTex_ID, blendRT);
-				
+
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
+
 					solidCloudMaterial.SetInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
 					cmd.SetRenderTarget(CameraColorTexture_RTI);
 					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
-				
-					RenderTexture.ReleaseTemporary(blendRT);
 
+					RenderTexture.ReleaseTemporary(blendRT);
 				}
-				
+
 
 				RenderTexture.ReleaseTemporary(genNoiseRT);
 				RenderTexture.ReleaseTemporary(randomNoiseRT);
@@ -335,7 +320,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 			context.ExecuteCommandBuffer(cmd);
 			CommandBufferPool.Release(cmd);
-			context.Submit();
 		}
 	}
 }

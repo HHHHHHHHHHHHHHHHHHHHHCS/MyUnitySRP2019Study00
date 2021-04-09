@@ -1,13 +1,9 @@
 ﻿using System.Collections.Generic;
-using MyRenderPipeline;
-using MyRenderPipeline.RenderPass;
 using MyRenderPipeline.RenderPass.Common;
 using MyRenderPipeline.RenderPass.Shadow;
-using MyRenderPipeline.Shadow;
 using MyRenderPipeline.Utils;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace MyRenderPipeline
 {

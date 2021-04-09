@@ -15,6 +15,10 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 {
 	public class HiZSRPRenderPass : ScriptableRenderPass
 	{
+		private const string k_profilingTag = "HiZComputeShader";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+
+
 		//StructLayout(LayoutKind.Sequential)  按成员顺序 在内存依次排序
 		// Preferrably want to have all buffer structs in power of 2...
 		// 6 * 4 bytes = 24 bytes
@@ -290,8 +294,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				return;
 			}
 
-			CommandBuffer cmd = CommandBufferPool.Get("HiZ");
-			using (new ProfilingSample(cmd, "HiZComputeShader"))
+			CommandBuffer cmd = CommandBufferPool.Get(k_profilingTag);
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
@@ -809,7 +813,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 					cmd.SetComputeVectorParam(data.preCullingCS, _FrustumMaxPoint_ID, maxPoint);
 
 					cmd.DispatchCompute(data.preCullingCS, m_preCullingCSKernelID, m_occlusionGroupX, 1, 1);
-					
+
 					if (data.logPreCullingArgumentsAfterOcclusion)
 					{
 						data.logPreCullingArgumentsAfterOcclusion = false;
@@ -830,7 +834,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Profiler.BeginSample("03 Occlusion");
 			{
 				//TODO:深度图需要反算矩阵   因为隔了一帧
-				cmd.SetComputeIntParam(data.occlusionCS, _UsePreCulling_ID, data.usePreCulling ? 1: 0);
+				cmd.SetComputeIntParam(data.occlusionCS, _UsePreCulling_ID, data.usePreCulling ? 1 : 0);
 				cmd.SetComputeTextureParam(data.occlusionCS, m_occlusionKernelID, _HiZMap_ID,
 					HiZSRPDepthPass.DepthTexture); //depth_rti);
 				cmd.SetComputeFloatParam(data.occlusionCS, _ShadowDistance_ID, QualitySettings.shadowDistance);
@@ -1665,8 +1669,8 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 				shadowsSB.AppendLine(shadowPrefix);
 			}
 
-			uint iCount =0, sCount = 0;
-			
+			uint iCount = 0, sCount = 0;
+
 			for (int i = 0; i < instancesIsVisible.Length; i++)
 			{
 				iCount += instancesIsVisible[i];
@@ -1682,7 +1686,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 			Debug.Log(instancesSB.ToString());
 			Debug.Log(shadowsSB.ToString());
 		}
-		
+
 		private void LogInstancesIsVisibleBuffers(string instancePrefix = "", string shadowPrefix = "")
 		{
 			uint[] instancesIsVisible = new uint[m_numberOfInstances];

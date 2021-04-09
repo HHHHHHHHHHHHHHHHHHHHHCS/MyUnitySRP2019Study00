@@ -44,11 +44,11 @@
 			#pragma multi_compile MAIN_LIGHT_CALCULATE_SHADOWS
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 
-			#pragma multi_compile _ CLOUD_MASK
-			#pragma multi_compile _ CLOUD_USE_XY_PLANE
-			#pragma multi_compile _ CLOUD_SUN_SHADOWS_ON
-			#pragma multi_compile _ CLOUD_DISTANCE_ON
-			#pragma multi_compile _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
+			#pragma multi_compile_local _ CLOUD_MASK
+			#pragma multi_compile_local _ CLOUD_USE_XY_PLANE
+			#pragma multi_compile_local _ CLOUD_SUN_SHADOWS_ON
+			#pragma multi_compile_local _ CLOUD_DISTANCE_ON
+			#pragma multi_compile_local _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
 
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -464,22 +464,43 @@
 			}
 			ENDHLSL
 		}
-		
+
 		//Blend
 		Pass
 		{
 			Blend One [_DstBlend]//OneMinusSrcAlpha
-			
+
+
 			HLSLPROGRAM
 			#pragma vertex Vert
-			#pragma fragment FragNoise
+			#pragma fragment FragOut
+
+			#pragma multi_compile_local _ CLOUD_BLUR_ON
 
 			TEXTURE2D(_NoiseTex);
 			SAMPLER(sampler_NoiseTex);
 
-			half4 FragNoise(v2f i):SV_TARGET
+			float4 _NoiseTex_TexelSize;
+
+			half4 FragOut(v2f i):SV_TARGET
 			{
+				#if !CLOUD_BLUR_ON
 				return SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
+				#else
+				float2 step = _NoiseTex_TexelSize.xy;
+
+				half4 col = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				                                 , i.uv + float2(step.x,0), 0);
+
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				                            , i.uv + float2(-step.x, 0), 0);
+
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				                            , i.uv + float2(0, step.y), 0);
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				                            , i.uv + float2(0, -step.y), 0);
+				return col * 0.25;
+				#endif
 			}
 			ENDHLSL
 		}

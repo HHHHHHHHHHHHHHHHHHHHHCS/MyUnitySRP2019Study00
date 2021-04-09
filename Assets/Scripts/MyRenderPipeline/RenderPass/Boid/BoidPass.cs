@@ -22,6 +22,10 @@ namespace MyRenderPipeline.RenderPass.Boid
 			public Matrix4x4 rotation;
 		}
 
+		private const string k_profilingTag = "Boid";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
+
+		
 		public const int ComputeThreads = 1024;
 		public const int KernelBoid = 0;
 
@@ -67,6 +71,8 @@ namespace MyRenderPipeline.RenderPass.Boid
 		private DoubleBuffer<ComputeBuffer> boidBuffer;
 		private ComputeBuffer argsBuffer;
 		private uint[] args = new uint[5];
+		
+
 
 		#if UNITY_EDITOR
 		[EditorButton]
@@ -168,9 +174,9 @@ namespace MyRenderPipeline.RenderPass.Boid
 
 			boidBuffer.Flip();
 
-			var cmd = CommandBufferPool.Get("Boid");
+			var cmd = CommandBufferPool.Get(k_profilingTag);
 
-			using (new ProfilingSample(cmd, "Boid"))
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				cmd.BeginSample("Boid Compute");
 				cmd.SetComputeIntParam(computeShader, "TotalSize", count);
@@ -187,10 +193,10 @@ namespace MyRenderPipeline.RenderPass.Boid
 				cmd.SetComputeBufferParam(computeShader, KernelBoid, "InputBuffer", boidBuffer.Current);
 				cmd.SetComputeBufferParam(computeShader, KernelBoid, "OutputBuffer", boidBuffer.Next);
 				cmd.DispatchCompute(computeShader, KernelBoid, Mathf.CeilToInt(count / ComputeThreads), 1, 1);
+				cmd.EndSample("Boid Compute");
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
-				cmd.EndSample("Boid Compute");
-
+				
 				cmd.BeginSample("Boid Rendering");
 				var light = GetMainLight(renderingData);
 				if (light.light)
@@ -206,10 +212,9 @@ namespace MyRenderPipeline.RenderPass.Boid
 				//argsBuffer GPU缓冲区包含要绘制多少网格实例的参数。
 				//请使用此函数。网格不会被视图视锥体或烘焙遮挡器进一步剔除，也不会为透明度或z效率进行排序
 				cmd.DrawMeshInstancedIndirect(mesh, 0, material, 0, argsBuffer);
-				
+				cmd.EndSample("Boid Rendering");
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
-				cmd.EndSample("Boid Rendering");
 			}
 			context.ExecuteCommandBuffer(cmd);
 			cmd.Clear();

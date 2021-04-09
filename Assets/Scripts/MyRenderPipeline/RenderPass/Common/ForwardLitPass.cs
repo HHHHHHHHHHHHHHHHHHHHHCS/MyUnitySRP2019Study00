@@ -15,6 +15,9 @@ namespace MyRenderPipeline.RenderPass.Common
 
 	public class ForwardLitPassRenderer : MyRenderPassRenderer<ForwardLitPass>
 	{
+		private const string k_profilerTag = "RenderOpaque";
+		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilerTag);
+		
 		public ForwardLitPassRenderer(ForwardLitPass asset) : base(asset)
 		{
 		}
@@ -27,8 +30,8 @@ namespace MyRenderPipeline.RenderPass.Common
 		public override void Render(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
 			var camera = renderingData.camera;
-			var cmd = CommandBufferPool.Get("RenderOpaque");
-			using (new ProfilingSample(cmd, "RenderOpaque"))
+			var cmd = CommandBufferPool.Get(k_profilerTag);
+			using (new ProfilingScope(cmd, profilingSampler))
 			{
 				//开始profilling  并且 清理之前可能没有处理的cmd
 				context.ExecuteCommandBuffer(cmd);

@@ -19,6 +19,11 @@ namespace MyRenderPipeline.RenderPass.Common
 
 	public class TransparentPassRenderer : MyRenderPassRenderer<TransparentPass>
 	{
+		private const string k_profilerTag_transparent = "RenderTransparent";
+		private readonly ProfilingSampler profilingSampler_transparent = new ProfilingSampler(k_profilerTag_transparent);
+		private const string k_profilerTag_depthPeeling = "Depth Peeling";
+		private readonly ProfilingSampler profilingSampler_depthPeeling = new ProfilingSampler(k_profilerTag_depthPeeling);
+		
 		private Material copyDepthMat;
 		private Material transparentMat;
 
@@ -31,9 +36,9 @@ namespace MyRenderPipeline.RenderPass.Common
 
 		public override void Render(ScriptableRenderContext context, ref MyRenderingData renderingData)
 		{
-			var cmd = CommandBufferPool.Get("RenderTransparent");
+			var cmd = CommandBufferPool.Get(k_profilerTag_transparent);
 
-			using (new ProfilingSample(cmd, "RendertTransparent"))
+			using (new ProfilingScope(cmd, profilingSampler_transparent))
 			{
 				cmd.SetRenderTarget(renderingData.colorTarget, renderingData.depthTarget);
 
@@ -45,11 +50,12 @@ namespace MyRenderPipeline.RenderPass.Common
 				{
 					RenderDepthPeeling(context, ref renderingData);
 				}
-
-				context.ExecuteCommandBuffer(cmd);
-				cmd.Clear();
-				CommandBufferPool.Release(cmd);
 			}
+			
+			context.ExecuteCommandBuffer(cmd);
+			cmd.Clear();
+			CommandBufferPool.Release(cmd);
+
 		}
 
 		private void RenderDefaultTransparent(ScriptableRenderContext context, ref MyRenderingData renderingData)
@@ -88,8 +94,8 @@ namespace MyRenderPipeline.RenderPass.Common
 
 			RenderStateBlock stateBlock = new RenderStateBlock(RenderStateMask.Nothing);
 
-			var cmd = CommandBufferPool.Get("Depth Peeling");
-			using (new ProfilingSample(cmd, "Depth Peeling"))
+			var cmd = CommandBufferPool.Get(k_profilerTag_depthPeeling);
+			using (new ProfilingScope(cmd, profilingSampler_depthPeeling))
 			{
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
@@ -149,11 +155,10 @@ namespace MyRenderPipeline.RenderPass.Common
 				}
 
 				cmd.SetRenderTarget(renderingData.colorTarget, renderingData.depthTarget);
-				context.ExecuteCommandBuffer(cmd);
 
-				cmd.Clear();
-				CommandBufferPool.Release(cmd);
 			}
+			context.ExecuteCommandBuffer(cmd);
+			CommandBufferPool.Release(cmd);
 		}
 	}
 }
