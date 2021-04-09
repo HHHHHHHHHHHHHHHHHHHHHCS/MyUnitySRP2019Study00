@@ -2,7 +2,8 @@
 {
 	Properties
 	{
-		[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", int) = 0
+		//不能添加  会造成属性优先级问题
+		//[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", int) = 0
 	}
 	HLSLINCLUDE
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -56,7 +57,7 @@
 
 
 			TEXTURE2D(_NoiseTex);
-			SAMPLER(sampler_NoiseTex);
+			SAMPLER(sampler_linear_repeat_NoiseTex);
 
 			#if CLOUD_MASK
 			TEXTURE2D(_MaskTex);
@@ -298,7 +299,7 @@
 					h = ft4.y;
 					#endif
 
-					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, pos, 0);
+					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, pos, 0);
 
 					#if CLOUD_AREA_SPHERE
 					
@@ -404,7 +405,7 @@
 			#pragma fragment FragNoise
 
 			TEXTURE2D(_NoiseTex);
-			SAMPLER(sampler_NoiseTex);
+			SAMPLER(sampler_linear_repeat_NoiseTex);
 
 			float _NoiseStrength;
 			float _NoiseDensity;
@@ -417,7 +418,7 @@
 
 			inline float GetAlpha(float2 uv)
 			{
-				const float alpha = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, uv, 0).r;
+				const float alpha = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, uv, 0).r;
 				return pow((1.0f - alpha * _NoiseStrength), _NoiseDensity);
 				// return (1.0f - alpha * _NoiseStrength) * _NoiseDensity;
 				// return smoothstep(0, 1, (1.0f - alpha * _NoiseStrength) * _NoiseDensity);
@@ -444,20 +445,20 @@
 			#pragma fragment FragNoise
 
 			TEXTURE2D(_NoiseTex);
-			SAMPLER(sampler_NoiseTex);
+			SAMPLER(sampler_linear_repeat_NoiseTex);
 			float _Amount;
 
 			half4 FragNoise(v2f i):SV_TARGET
 			{
 				float sint, cost;
 				sincos(_Amount, sint, cost);
-				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
-				half4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.25,0.25), 0);
+				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
+				half4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.25,0.25), 0);
 				float t0 = (sint + 1.0) * 0.5;
 				half4 r0 = lerp(p0, p1, t0);
 
-				half4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.5,0.5), 0);
-				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv + float2(0.75,0.75), 0);
+				half4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.5,0.5), 0);
+				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.75,0.75), 0);
 				float t1 = (cost + 1.0) * 0.5;
 				half4 r1 = lerp(p2, p3, t1);
 				return max(r0, r1);
@@ -478,26 +479,26 @@
 			#pragma multi_compile_local _ CLOUD_BLUR_ON
 
 			TEXTURE2D(_NoiseTex);
-			SAMPLER(sampler_NoiseTex);
+			SAMPLER(sampler_linear_repeat_NoiseTex);
 
 			float4 _NoiseTex_TexelSize;
 
 			half4 FragOut(v2f i):SV_TARGET
 			{
 				#if !CLOUD_BLUR_ON
-				return SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex, i.uv, 0);
+				return SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
 				#else
 				float2 step = _NoiseTex_TexelSize.xy;
 
-				half4 col = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				half4 col = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
 				                                 , i.uv + float2(step.x,0), 0);
 
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
 				                            , i.uv + float2(-step.x, 0), 0);
 
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
 				                            , i.uv + float2(0, step.y), 0);
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
 				                            , i.uv + float2(0, -step.y), 0);
 				return col * 0.25;
 				#endif
