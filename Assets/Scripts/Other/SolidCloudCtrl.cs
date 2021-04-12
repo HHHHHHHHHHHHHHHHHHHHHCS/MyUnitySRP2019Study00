@@ -14,7 +14,10 @@ public class SolidCloudCtrl : MonoBehaviour
 	public Toggle shadowToggle;
 	public Toggle maskToggle;
 	public Toggle blurToggle;
-	public Dropdown rtSize;
+	public Toggle mulRTToggle;
+	public Dropdown rtSizeDropdown;
+	public Slider stepSlider;
+	public Text stepText;
 
 	private SolidCloudRenderPostProcess settings;
 
@@ -26,7 +29,12 @@ public class SolidCloudCtrl : MonoBehaviour
 		shadowToggle.isOn = settings.sunShadowsStrength.overrideState;
 		maskToggle.isOn = settings.enableMask.value;
 		blurToggle.isOn = settings.enableBlur.value;
-		rtSize.value = GetCurrentRTSize(settings.rtSize.value);
+		mulRTToggle.isOn = settings.mulRTBlend.value;
+		rtSizeDropdown.value = settings.rtSize.value - 1;
+		stepSlider.value = settings.stepping.value;
+		stepSlider.minValue = settings.stepping.min;
+		stepSlider.maxValue = settings.stepping.max;
+		stepText.text = stepSlider.value.ToString();
 	}
 
 	private void Update()
@@ -35,11 +43,9 @@ public class SolidCloudCtrl : MonoBehaviour
 		settings.sunShadowsStrength.overrideState = shadowToggle.isOn;
 		settings.enableMask.value = maskToggle.isOn;
 		settings.enableBlur.value = blurToggle.isOn;
-		settings.rtSize.value = rtSize.value + 1;
-	}
-
-	private static int GetCurrentRTSize(int rtSize)
-	{
-		return rtSize <= 3 ? rtSize - 1 : 2;
+		settings.mulRTBlend.value = mulRTToggle.isOn;
+		settings.rtSize.value = rtSizeDropdown.value + 1;
+		settings.stepping.value = stepSlider.value;
+		stepText.text = stepSlider.value.ToString();
 	}
 }

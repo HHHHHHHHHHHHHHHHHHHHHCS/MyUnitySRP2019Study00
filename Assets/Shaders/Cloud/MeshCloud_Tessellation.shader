@@ -38,7 +38,7 @@
 
 			#pragma multi_compile_instancing
 			//阴影相关 REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR可能会超过数据限制报错
-			// #pragma multi_compile MAIN_LIGHT_CALCULATE_SHADOWS //REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR  
+			// #pragma multi_compile _ _MAIN_LIGHT_SHADOWS //REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR  
 			// #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"

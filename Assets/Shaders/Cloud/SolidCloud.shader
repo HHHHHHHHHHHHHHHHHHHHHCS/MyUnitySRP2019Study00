@@ -42,10 +42,9 @@
 			#pragma vertex Vert
 			#pragma fragment FragCloud
 
-			#pragma multi_compile MAIN_LIGHT_CALCULATE_SHADOWS
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
 
-			#pragma multi_compile_local _ CLOUD_MASK
 			#pragma multi_compile_local _ CLOUD_USE_XY_PLANE
 			#pragma multi_compile_local _ CLOUD_SUN_SHADOWS_ON
 			#pragma multi_compile_local _ CLOUD_DISTANCE_ON
@@ -59,10 +58,10 @@
 			TEXTURE2D(_NoiseTex);
 			SAMPLER(sampler_linear_repeat_NoiseTex);
 
-			#if CLOUD_MASK
-			TEXTURE2D(_MaskTex);
-			SAMPLER(sampler_MaskTex);
-			#endif
+			// #if CLOUD_MASK
+			// TEXTURE2D(_MaskTex);
+			// SAMPLER(sampler_MaskTex);
+			// #endif
 
 			float4 _CloudDistance;
 			float4 _CloudData; // x = _CloudBaseHeight, y = _CloudHeight, z = density, w = scale;
@@ -194,8 +193,10 @@
 				dist -= distanceToCloud;
 				rs = max(rs, 0.01);
 
+
 				float4 dir = float4(rs * adir.xyz / adir.w, cloudLength / rs); //raymarch 方向  和  次数
-				//		dir.w = min(dir.w, 200);	// maximum iterations could be clamped to improve performance under some point of view, most of time got unnoticieable
+				// dir.w = min(dir.w, 200);	//最大步长限制
+				// dir.xyz *= cloudLength / rs / dir.w;
 
 				float dirLength = _CloudData.y * _CloudData.z; // extracted from loop, dragged here.
 				float4 ft4 = float4(cloudCeilingCut.xyz, 0);
@@ -288,9 +289,12 @@
 				half4 cloudCol = zeros;
 				float2 pos, h;
 
+				int count = 0;
 
-				for (; dir.w > 1; dir.w--, ft4.xyz += dir.xyz)
+				for (; dir.w > 1; dir.w --, ft4.xyz += dir.xyz)
 				{
+					count++;
+
 					#if CLOUD_USE_XY_PLANE
 					pos = ft4.xy;
 					h = ft4.z;
@@ -332,9 +336,9 @@
 					ng.a -= fdm;
 					#endif
 
-					#if CLOUD_MASK
-					ng.a -= SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, pos, 0).r;
-					#endif
+					// #if CLOUD_MASK
+					// ng.a -= SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, pos, 0).r;
+					// #endif
 
 
 					if (ng.a > 0)
@@ -357,7 +361,7 @@
 						#endif
 
 						cloudCol.rgb *= ng.rgb * cloudCol.aaa;
-						sum += cloudCol * (1.0 - sum.a);
+						sum += (lerp(1, 10, _CloudStepping.x) * (1.0 - sum.a)) * cloudCol;
 
 						if (sum.a > 0.99)
 						{
@@ -366,6 +370,7 @@
 					}
 				}
 
+				// return count-300;
 
 				// adds fog fraction to prevent banding due stepping on low densities
 				// sum += (cloudLength >= dist) * (sum.a<0.99) * cloudCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
@@ -444,12 +449,20 @@
 			#pragma vertex Vert
 			#pragma fragment FragNoise
 
+			#pragma multi_compile_local _ CLOUD_MASK
+
 			TEXTURE2D(_NoiseTex);
 			SAMPLER(sampler_linear_repeat_NoiseTex);
 			float _Amount;
 
+			#if CLOUD_MASK
+			TEXTURE2D(_MaskTex);
+			SAMPLER(sampler_MaskTex);
+			#endif
+
 			half4 FragNoise(v2f i):SV_TARGET
 			{
+				// _Amount = 0;
 				float sint, cost;
 				sincos(_Amount, sint, cost);
 				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
@@ -461,7 +474,14 @@
 				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.75,0.75), 0);
 				float t1 = (cost + 1.0) * 0.5;
 				half4 r1 = lerp(p2, p3, t1);
-				return max(r0, r1);
+
+				r0 = max(r0, r1);
+
+				#if CLOUD_MASK
+				r0.a = saturate(r0.a - SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, i.uv, 0).r);
+				#endif
+
+				return r0;
 			}
 			ENDHLSL
 		}
@@ -478,30 +498,60 @@
 
 			#pragma multi_compile_local _ CLOUD_BLUR_ON
 
-			TEXTURE2D(_NoiseTex);
-			SAMPLER(sampler_linear_repeat_NoiseTex);
+
+			TEXTURE2D(_BlendTex);
+			SAMPLER(sampler_linear_repeat_BlendTex);
 
 			float4 _NoiseTex_TexelSize;
 
 			half4 FragOut(v2f i):SV_TARGET
 			{
 				#if !CLOUD_BLUR_ON
-				return SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
+				return SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex, i.uv, 0);
 				#else
 				float2 step = _NoiseTex_TexelSize.xy;
 
-				half4 col = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
+				half4 col = SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
 				                                 , i.uv + float2(step.x,0), 0);
 
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
 				                            , i.uv + float2(-step.x, 0), 0);
 
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
 				                            , i.uv + float2(0, step.y), 0);
-				col += SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex
+				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
 				                            , i.uv + float2(0, -step.y), 0);
 				return col * 0.25;
 				#endif
+			}
+			ENDHLSL
+		}
+
+		//Blend
+		Pass
+		{
+			Blend One [_DstBlend]
+
+			HLSLPROGRAM
+			#pragma vertex Vert
+			#pragma fragment FragOut
+
+
+			// TEXTURE2D(_TempBlendTex0);
+			// SAMPLER(sampler_linear_repeat_TempBlendTex0);
+			TEXTURE2D(_TempBlendTex1);
+			SAMPLER(sampler_linear_repeat_TempBlendTex1);
+			TEXTURE2D(_TempBlendTex2);
+			SAMPLER(sampler_linear_repeat_TempBlendTex2);
+
+
+			half4 FragOut(v2f i):SV_TARGET
+			{
+				half4 col = 0;
+				// col += 0.333 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex0, sampler_linear_repeat_TempBlendTex0, i.uv, 0);
+				col += 0.5 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_repeat_TempBlendTex1, i.uv, 0);
+				col += 0.5 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex2, sampler_linear_repeat_TempBlendTex2, i.uv, 0);
+				return col;
 			}
 			ENDHLSL
 		}

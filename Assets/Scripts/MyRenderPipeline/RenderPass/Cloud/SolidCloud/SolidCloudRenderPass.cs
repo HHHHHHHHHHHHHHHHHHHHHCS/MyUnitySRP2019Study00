@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -18,10 +19,20 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private const string k_CLOUD_SUN_SHADOWS_ON = "CLOUD_SUN_SHADOWS_ON";
 		private const string k_CLOUD_DISTANCE_ON = "CLOUD_DISTANCE_ON";
 		private const string k_CLOUD_BLUR_ON = "CLOUD_BLUR_ON";
+		private const string k_CLOUD_MUL_RT_ON = "CLOUD_MUL_RT_ON";
+
 
 		private static readonly int GenNoiseTex_ID = Shader.PropertyToID("_GenNoiseTex");
 		private static readonly int RandomNoiseTex_ID = Shader.PropertyToID("_RandomNoiseTex");
 		private static readonly int BlendTex_ID = Shader.PropertyToID("_BlendTex");
+
+		private static readonly int[] TempBlendTex_ID =
+		{
+			Shader.PropertyToID("_TempBlendTex0"),
+			Shader.PropertyToID("_TempBlendTex1"),
+			Shader.PropertyToID("_TempBlendTex2"),
+		};
+
 
 		public static readonly int inverseViewAndProjectionMatrix = Shader.PropertyToID("unity_MatrixInvVP");
 
@@ -37,6 +48,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		private static readonly RenderTargetIdentifier BlendTex_RTI =
 			new RenderTargetIdentifier(BlendTex_ID);
+
+		private static readonly RenderTargetIdentifier[] TempBlendTex_RTI =
+		{
+			new RenderTargetIdentifier(TempBlendTex_ID[0]),
+			new RenderTargetIdentifier(TempBlendTex_ID[1]),
+			new RenderTargetIdentifier(TempBlendTex_ID[2]),
+		};
 
 		//generate noise##################
 		private static readonly int NoiseStrength_ID = Shader.PropertyToID("_NoiseStrength");
@@ -74,9 +92,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private Vector3 windSpeedAcum;
 		private float amount;
 
-		private RenderTexture genNoiseRT, randomNoiseRT, blendRT;
-
-
 		public void Init(Material solidCloudMaterial, Texture2D noiseTex)
 		{
 			this.solidCloudMaterial = solidCloudMaterial;
@@ -87,51 +102,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		{
 			settings = solidCloudRenderPostProcess;
 		}
-
-		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
-		{
-			// int tw = 2 << settings.noisePowSize.value;
-			//
-			// genNoiseRT = RenderTexture.GetTemporary(tw, tw, 0,
-			// 	RenderTextureFormat.ARGB32);
-			// genNoiseRT.wrapMode = TextureWrapMode.Repeat;
-			//
-			// randomNoiseRT = RenderTexture.GetTemporary(tw, tw, 0,
-			// 	RenderTextureFormat.ARGB32);
-			// randomNoiseRT.wrapMode = TextureWrapMode.Repeat;
-			//
-			// int rtSize = settings.rtSize.value;
-			//
-			// if (rtSize != 1)
-			// {
-			// 	int width = cameraTextureDescriptor.width / rtSize;
-			// 	int height = cameraTextureDescriptor.height / rtSize;
-			// 	blendRT = RenderTexture.GetTemporary(width, height, 0
-			// 		, RenderTextureFormat.ARGB32);
-			// }
-		}
-
-		public override void FrameCleanup(CommandBuffer cmd)
-		{
-			if (genNoiseRT != null)
-			{
-				RenderTexture.ReleaseTemporary(genNoiseRT);
-				genNoiseRT = null;
-			}
-
-			if (randomNoiseRT != null)
-			{
-				RenderTexture.ReleaseTemporary(randomNoiseRT);
-				randomNoiseRT = null;
-			}
-
-			if (blendRT != null)
-			{
-				RenderTexture.ReleaseTemporary(blendRT);
-				blendRT = null;
-			}
-		}
-
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
@@ -190,6 +160,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				cmd.GetTemporaryRT(GenNoiseTex_ID, tw, tw, 0, FilterMode.Point, RenderTextureFormat.ARGB32);
 				cmd.SetRenderTarget(GenNoiseTex_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 1);
+				cmd.SetGlobalTexture(NoiseTex_ID, GenNoiseTex_RTI);
 
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
@@ -197,21 +168,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 				//random noise 
 				//###############################################
-				cmd.SetGlobalTexture(NoiseTex_ID, GenNoiseTex_RTI);
-
-				amount += Time.deltaTime * settings.noiseSpeed.value;
-				solidCloudMaterial.SetFloat(Amount_ID, amount);
-				cmd.GetTemporaryRT(RandomNoiseTex_ID, tw, tw, 0, FilterMode.Point, RenderTextureFormat.ARGB32);
-				cmd.SetRenderTarget(RandomNoiseTex_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 2);
-
-				context.ExecuteCommandBuffer(cmd);
-				cmd.Clear();
-
-
-				//raymarch cloud
-				//###############################################
-				cmd.SetGlobalTexture(NoiseTex_ID, RandomNoiseTex_RTI);
 				if (settings.enableMask.value && settings.maskTexture.value != null)
 				{
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MASK, true);
@@ -222,6 +178,21 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MASK, false);
 					solidCloudMaterial.SetTexture(MaskTex_ID, null);
 				}
+
+
+				amount += Time.deltaTime * settings.noiseSpeed.value;
+				solidCloudMaterial.SetFloat(Amount_ID, amount);
+				cmd.GetTemporaryRT(RandomNoiseTex_ID, tw, tw, 0, FilterMode.Point, RenderTextureFormat.ARGB32);
+				cmd.SetRenderTarget(RandomNoiseTex_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+				CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 2);
+				cmd.SetGlobalTexture(NoiseTex_ID, RandomNoiseTex_RTI);
+
+				context.ExecuteCommandBuffer(cmd);
+				cmd.Clear();
+
+
+				//raymarch cloud
+				//###############################################
 
 
 				//CloudColor----------------
@@ -321,66 +292,135 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 				Vector4 fogStepping = new Vector4(1.0f / (stepping + 1.0f), 1 / (1 + steppingNear), 0,
 					dithering * 0.1f);
-				solidCloudMaterial.SetVector(CloudStepping_ID, fogStepping);
 
 				//URP 7.5.3之后  cameraData.GetGPUProjectionMatrix() 进行y翻转
 				var cameraData = renderingData.cameraData;
 				if (cameraData.IsCameraProjectionMatrixFlipped())
 				{
-					Matrix4x4 viewAndProjectionMatrix = GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), false) * cameraData.GetViewMatrix();
+					Matrix4x4 viewAndProjectionMatrix =
+						GL.GetGPUProjectionMatrix(cameraData.GetProjectionMatrix(), false) * cameraData.GetViewMatrix();
 					Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
 					cmd.SetGlobalMatrix(inverseViewAndProjectionMatrix, inverseViewProjection);
 				}
-				
-				// Matrix4x4 viewAndProjectionMatrix = cameraData.GetGPUProjectionMatrix() * viewMatrix;
-				// Matrix4x4 inverseViewProjection = Matrix4x4.Inverse(viewAndProjectionMatrix);
-				// cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);
-
-				//cmd get 有时候不靠谱
 
 				int rtSize = settings.rtSize.value;
-				if (rtSize == 1)
+
+				//如果是mul叠加  则 用下面两级来叠加 1/2 1/4 1/8 1/16  步长则最短
+				if (settings.mulRTBlend.value)
 				{
-					cmd.SetGlobalInt(DstBlend_ID,
-						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
-					cmd.SetRenderTarget(CameraColorTexture_RTI);
-					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-				}
-				else
-				{
+					fogStepping.x = 1;
+					cmd.SetGlobalVector(CloudStepping_ID, fogStepping);
 					cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, true);
 
 					//blend
-					int width = renderingData.cameraData.camera.scaledPixelWidth / rtSize;
-					int height = renderingData.cameraData.camera.scaledPixelHeight / rtSize;
+					for (int i = 1; i < 3; i++)
+					{
+						int div = (int) Math.Pow(2, rtSize - 1 + i);
+						int width = renderingData.cameraData.camera.scaledPixelWidth / div;
+						int height = renderingData.cameraData.camera.scaledPixelHeight / div;
 
-					cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
-					cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
-						RenderBufferStoreAction.Store,
-						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+						cmd.GetTemporaryRT(TempBlendTex_ID[i], width, height, 0, FilterMode.Bilinear,
+							RenderTextureFormat.ARGB32);
+						cmd.SetRenderTarget(TempBlendTex_RTI[i], RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+					}
+
+					for (int i = 1; i < 3; i++)
+					{
+						cmd.SetGlobalTexture(TempBlendTex_ID[i], TempBlendTex_RTI[i]);
+					}
 
 					context.ExecuteCommandBuffer(cmd);
 					cmd.Clear();
 
-					cmd.SetGlobalTexture(NoiseTex_ID, BlendTex_RTI);
+					if (!settings.enableBlur.value)
+					{
+						cmd.SetGlobalInt(DstBlend_ID,
+							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+						cmd.SetRenderTarget(CameraColorTexture_RTI);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+					}
+					else
+					{
+						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+						int div = (int) Math.Pow(2, rtSize - 1);
+						int width = renderingData.cameraData.camera.scaledPixelWidth / div;
+						int height = renderingData.cameraData.camera.scaledPixelHeight / div;
+						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
+							RenderTextureFormat.ARGB32);
+						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
 
-					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
-					cmd.SetGlobalInt(DstBlend_ID,
-						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
-					cmd.SetRenderTarget(CameraColorTexture_RTI);
-					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
+						cmd.SetGlobalTexture(BlendTex_ID, BlendTex_RTI);
+						CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, true);
+						cmd.SetGlobalInt(DstBlend_ID,
+							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+
+						cmd.SetRenderTarget(CameraColorTexture_RTI);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
+					}
+
+					for (int i = 1; i < 3; i++)
+					{
+						cmd.ReleaseTemporaryRT(TempBlendTex_ID[i]);
+					}
+
+					cmd.ReleaseTemporaryRT(BlendTex_ID);
 				}
+				else
+				{
+					solidCloudMaterial.SetVector(CloudStepping_ID, fogStepping);
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, false);
+
+					if (rtSize == 1)
+					{
+						cmd.SetGlobalInt(DstBlend_ID,
+							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+						cmd.SetRenderTarget(CameraColorTexture_RTI);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+					}
+					else
+					{
+						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+
+						//blend
+						int div = (int) Mathf.Pow(2, rtSize - 1);
+						int width = renderingData.cameraData.camera.scaledPixelWidth / div;
+						int height = renderingData.cameraData.camera.scaledPixelHeight / div;
+
+						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
+							RenderTextureFormat.ARGB32);
+						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+
+						context.ExecuteCommandBuffer(cmd);
+						cmd.Clear();
+
+						cmd.SetGlobalTexture(BlendTex_ID, BlendTex_RTI);
+
+						CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
+						cmd.SetGlobalInt(DstBlend_ID,
+							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+						cmd.SetRenderTarget(CameraColorTexture_RTI);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
+
+						cmd.ReleaseTemporaryRT(BlendTex_ID);
+					}
+				}
+
 
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
 
 				cmd.ReleaseTemporaryRT(GenNoiseTex_ID);
 				cmd.ReleaseTemporaryRT(RandomNoiseTex_ID);
-				if (rtSize != 1)
-				{
-					cmd.ReleaseTemporaryRT(BlendTex_ID);
-				}
 			}
 
 			context.ExecuteCommandBuffer(cmd);
