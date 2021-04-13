@@ -33,7 +33,7 @@
 		ZTest Always
 		ZWrite Off
 
-		//Cloud
+		//0.Cloud
 		Pass
 		{
 			Blend One [_DstBlend]//OneMinusSrcAlpha
@@ -49,6 +49,7 @@
 			#pragma multi_compile_local _ CLOUD_SUN_SHADOWS_ON
 			#pragma multi_compile_local _ CLOUD_DISTANCE_ON
 			#pragma multi_compile_local _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
+			#pragma multi_compile_local _ CLOUD_FRAME_ON
 
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -79,6 +80,9 @@
 			half3 _SunShadowsData; //x:sunShadowsStrength  y:sunShadowsJitterStrength  z:sunShadowsCancellation
 			#endif
 
+			#if CLOUD_FRAME_ON
+			int _Frame;
+			#endif
 
 			//计算世界空间坐标
 			float3 GetWorldSpacePosition(float2 uv, float depth = 1.0)
@@ -385,16 +389,39 @@
 
 			half4 FragCloud(v2f i):SV_TARGET
 			{
-				float depth = SampleSceneDepth(i.uv);
+				float2 uv = i.uv;
+
+				#if CLOUD_FRAME_ON
+
+				if (_Frame == 0 && (uv.x <=0.5 && uv.y <=0.5) == false)
+				{
+					discard;
+				}
+				else if (_Frame == 1 && (uv.x >=0.5 && uv.y <0.5) == false)
+				{
+					discard;
+				}
+				else if (_Frame == 2 && (uv.x <=0.5 && uv.y >=0.5) == false)
+				{
+					discard;
+				}
+				else if(_Frame == 3 &&(uv.x >=0.5 && uv.y >= 0.5) == false)
+				{
+					discard;
+				}
+
+				#endif
+
+				float depth = SampleSceneDepth(uv);
 				// 因为来源是一个大三角形  所以这样子还是不准确 所以换下面的方法
 				//  VS :  o.camDir = GetWorldSpacePosition(uv) - _WorldSpaceCameraPos;
 				// depth = Linear01Depth(depth,_ZBufferParams);
 				// float3 wPos = _WorldSpaceCameraPos + i.camDir * depth;
-				float3 wPos = GetWorldSpacePosition(i.uv, depth);
+				float3 wPos = GetWorldSpacePosition(uv, depth);
 
-				float dither = GetDither(i.uv);
+				float dither = GetDither(uv);
 
-				half4 sum = GetSolidCloudColor(i.uv, wPos, depth, dither);
+				half4 sum = GetSolidCloudColor(uv, wPos, depth, dither);
 				sum *= 1.0 + dither * _CloudStepping.w;
 
 				return half4(sum);
@@ -402,7 +429,7 @@
 			ENDHLSL
 		}
 
-		//generateNoise
+		//1.GenerateNoise
 		Pass
 		{
 			HLSLPROGRAM
@@ -442,7 +469,7 @@
 			ENDHLSL
 		}
 
-		//Random Noise
+		//2.Random Noise
 		Pass
 		{
 			HLSLPROGRAM
@@ -486,7 +513,7 @@
 			ENDHLSL
 		}
 
-		//Blend
+		//3.Blend
 		Pass
 		{
 			Blend One [_DstBlend]//OneMinusSrcAlpha
@@ -509,9 +536,11 @@
 				#if !CLOUD_BLUR_ON
 				return SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex, i.uv, 0);
 				#else
-				float2 step = _NoiseTex_TexelSize.xy;
+				float2 step = 1 * _NoiseTex_TexelSize.xy;
 
-				half4 col = SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
+				half4 col = 0;
+
+				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
 				                                 , i.uv + float2(step.x,0), 0);
 
 				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
@@ -527,7 +556,7 @@
 			ENDHLSL
 		}
 
-		//Blend
+		//4.Blend Mul RT
 		Pass
 		{
 			Blend One [_DstBlend]
@@ -535,7 +564,6 @@
 			HLSLPROGRAM
 			#pragma vertex Vert
 			#pragma fragment FragOut
-
 
 			// TEXTURE2D(_TempBlendTex0);
 			// SAMPLER(sampler_linear_repeat_TempBlendTex0);
@@ -549,8 +577,8 @@
 			{
 				half4 col = 0;
 				// col += 0.333 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex0, sampler_linear_repeat_TempBlendTex0, i.uv, 0);
-				col += 0.5 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_repeat_TempBlendTex1, i.uv, 0);
-				col += 0.5 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex2, sampler_linear_repeat_TempBlendTex2, i.uv, 0);
+				col += 0.8 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_repeat_TempBlendTex1, i.uv, 0);
+				col += 0.2 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex2, sampler_linear_repeat_TempBlendTex2, i.uv, 0);
 				return col;
 			}
 			ENDHLSL

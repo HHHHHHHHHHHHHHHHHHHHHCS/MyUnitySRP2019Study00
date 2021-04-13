@@ -15,6 +15,7 @@ public class SolidCloudCtrl : MonoBehaviour
 	public Toggle maskToggle;
 	public Toggle blurToggle;
 	public Toggle mulRTToggle;
+	public Toggle frameRTToggle;
 	public Dropdown rtSizeDropdown;
 	public Slider stepSlider;
 	public Text stepText;
@@ -30,6 +31,7 @@ public class SolidCloudCtrl : MonoBehaviour
 		maskToggle.isOn = settings.enableMask.value;
 		blurToggle.isOn = settings.enableBlur.value;
 		mulRTToggle.isOn = settings.mulRTBlend.value;
+		frameRTToggle.isOn = settings.enableFrame.value;
 		rtSizeDropdown.value = settings.rtSize.value - 1;
 		stepSlider.value = settings.stepping.value;
 		stepSlider.minValue = settings.stepping.min;
@@ -44,6 +46,7 @@ public class SolidCloudCtrl : MonoBehaviour
 		settings.enableMask.value = maskToggle.isOn;
 		settings.enableBlur.value = blurToggle.isOn;
 		settings.mulRTBlend.value = mulRTToggle.isOn;
+		settings.enableFrame.value = frameRTToggle.isOn;
 		settings.rtSize.value = rtSizeDropdown.value + 1;
 		settings.stepping.value = stepSlider.value;
 		stepText.text = stepSlider.value.ToString();

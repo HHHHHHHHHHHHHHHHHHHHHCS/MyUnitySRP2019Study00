@@ -31,6 +31,26 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			solidCloudRenderPass.Init(solidCloudMaterial, noiseTex);
 		}
 
+		private void OnDisable()
+		{
+			DoDestroy();
+		}
+
+		private void OnDestroy()
+		{
+			DoDestroy();
+		}
+
+		private void Reset()
+		{
+			DoDestroy();
+		}
+
+		private void DoDestroy()
+		{
+			solidCloudRenderPass?.Destroy();
+		}
+
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
 			if (enable && renderingData.postProcessingEnabled && solidCloudMaterial != null)
@@ -39,7 +59,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 				if (settings != null && settings.IsActive())
 				{
-					solidCloudRenderPass.Setup(settings);
+					int width = renderingData.cameraData.camera.scaledPixelWidth;
+					int height = renderingData.cameraData.camera.scaledPixelHeight;
+
+					solidCloudRenderPass.Setup(settings, width, height);
 					renderer.EnqueuePass(solidCloudRenderPass);
 				}
 			}

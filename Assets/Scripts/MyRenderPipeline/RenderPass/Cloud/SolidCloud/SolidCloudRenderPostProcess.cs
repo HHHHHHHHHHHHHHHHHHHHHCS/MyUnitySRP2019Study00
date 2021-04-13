@@ -12,6 +12,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		public BoolParameter enableEffect = new BoolParameter(false);
 
 		public BoolParameter enableBlend = new BoolParameter(true);
+		
+		public BoolParameter enableFrame = new BoolParameter(false);
 
 		public BoolParameter mulRTBlend = new BoolParameter(false);
 		public ClampedIntParameter rtSize = new ClampedIntParameter(1, 1, 5);
