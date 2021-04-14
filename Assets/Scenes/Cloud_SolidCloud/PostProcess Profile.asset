@@ -36,10 +36,10 @@ MonoBehaviour:
     m_Value: 1
   enableFrame:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   mulRTBlend:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   rtSize:
     m_OverrideState: 1
     m_Value: 2
@@ -133,7 +133,7 @@ MonoBehaviour:
     max: 2000
   cloudAreaFallOff:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0.05
     min: 0
     max: 10
   sunShadowsStrength:
