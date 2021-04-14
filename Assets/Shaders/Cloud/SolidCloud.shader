@@ -94,6 +94,7 @@
 
 			inline float GetDither(float2 uv)
 			{
+				//也可以用绘制的rt的size 不过偷懒所以用了_ScreenParams
 				float dither = dot(float2(2.4084507, 3.2535211), uv * _ScreenParams.xy); // _MainTex_TexelSize.zw);
 				dither = frac(dither) - 0.5;
 				//		dither = frac(sin(dot(uv ,float2(12.9898,78.233))) * 43758.5453) - 0.5;
