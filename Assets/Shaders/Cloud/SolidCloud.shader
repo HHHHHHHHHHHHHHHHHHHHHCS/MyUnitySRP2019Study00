@@ -194,8 +194,8 @@
 				// stepping ratio with atten detail with distance
 				rs *= _CloudData.z; // prevents lag when density is too low
 				rs *= saturate(dist * _CloudStepping.y);
-				dist -= distanceToCloud;
-				rs = max(rs, 0.01);
+				// dist -= distanceToCloud;
+				// rs = max(rs, 0.01); //基本很难触发
 
 
 				float4 dir = float4(rs * adir.xyz / adir.w, cloudLength / rs); //raymarch 方向  和  次数
@@ -293,12 +293,8 @@
 				half4 cloudCol = zeros;
 				float2 pos, h;
 
-				int count = 0;
-
 				for (; dir.w > 1; dir.w --, ft4.xyz += dir.xyz)
 				{
-					count++;
-
 					#if CLOUD_USE_XY_PLANE
 					pos = ft4.xy;
 					h = ft4.z;
@@ -373,8 +369,6 @@
 						}
 					}
 				}
-
-				// return count-300;
 
 				// adds fog fraction to prevent banding due stepping on low densities
 				// sum += (cloudLength >= dist) * (sum.a<0.99) * cloudCol * (1.0-sum.a) * dir.w; // first operand not needed if dithering is enabled
