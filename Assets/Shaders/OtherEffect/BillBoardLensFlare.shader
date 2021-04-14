@@ -1,5 +1,5 @@
 ﻿//copy by github.com/ColinLeung-NiloCat/UnityURP-BillboardLensFlareShader
-Shader "MyRP/Other/BillBoardLensFlare"
+Shader "MyRP/OtherEffect/BillBoardLensFlare"
 {
 	Properties
 	{

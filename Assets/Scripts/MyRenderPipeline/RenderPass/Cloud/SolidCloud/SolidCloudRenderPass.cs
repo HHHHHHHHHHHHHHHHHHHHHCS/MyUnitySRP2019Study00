@@ -8,9 +8,11 @@ using Object = UnityEngine.Object;
 
 namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 {
+	//isframe   0帧数 uv.x<=0.5    1帧数 uv.x>=0.5   2帧数不更新
+	//mulrt  0rt blend 用	1rt 1/2   2rt  1/4
 	public class SolidCloudRenderPass : ScriptableRenderPass
 	{
-		private const int c_MulRTStart = 1;
+		// private const int c_MulRTStart = 1;
 
 		private const string k_SolidCloudPass = "SolidCloud";
 
@@ -153,17 +155,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		{
 			if (frameRTS != null)
 			{
-				int div = 0;
-				int idx = 0;
 				if (settings.mulRTBlend.value)
 				{
 					if (frameRTS.Length == 1)
 					{
 						return true;
 					}
-
-					div = (int) Mathf.Pow(2, rtSize - 1 + c_MulRTStart);
-					idx = 1;
 				}
 				else
 				{
@@ -171,14 +168,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					{
 						return true;
 					}
-
-					div = (int) Mathf.Pow(2, rtSize - 1);
-					idx = 0;
 				}
+				
+				int div = (int) Mathf.Pow(2, rtSize - 1);
+
 
 				int width = screenWidth / div;
 				int height = screenHeight / div;
-				if (frameRTS[idx] == null || frameRTS[idx].width != width || frameRTS[idx].height != height)
+				if (frameRTS[0] == null || frameRTS[0].width != width || frameRTS[0].height != height)
 				{
 					return true;
 				}
@@ -194,29 +191,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				return;
 			}
 
-			if (settings.mulRTBlend.value)
+			int len = settings.mulRTBlend.value ? 3 : 1;
+			frameRTS = new RenderTexture[len];
+			for (int i = 0; i < len; i++)
 			{
-				frameRTS = new RenderTexture[3];
-				for (int i = c_MulRTStart; i < 3; i++)
-				{
-					int div = (int) Mathf.Pow(2, rtSize - 1 + i);
-					int width = screenWidth / div;
-					int height = screenHeight / div;
-					frameRTS[i] = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32,
-						RenderTextureReadWrite.sRGB)
-					{
-						filterMode = FilterMode.Bilinear
-					};
-				}
-			}
-			else
-			{
-				frameRTS = new RenderTexture[1];
-
-				int div = (int) Mathf.Pow(2, rtSize - 1);
+				int div = (int) Mathf.Pow(2, rtSize - 1 + i);
 				int width = screenWidth / div;
 				int height = screenHeight / div;
-				frameRTS[0] = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32,
+				frameRTS[i] = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32,
 					RenderTextureReadWrite.sRGB)
 				{
 					filterMode = FilterMode.Bilinear
@@ -287,7 +269,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			solidCloudMaterial.SetInt(NoiseSize_ID, noiseSize);
 			solidCloudMaterial.SetInt(NoiseCount_ID, noiseSize * noiseSize);
 			solidCloudMaterial.SetInt(NoiseSeed_ID, noiseSeed);
-			cmd.GetTemporaryRT(GenNoiseTex_ID, noiseSize, noiseSize, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
+			cmd.GetTemporaryRT(GenNoiseTex_ID, noiseSize, noiseSize, 0, FilterMode.Bilinear,
+				RenderTextureFormat.ARGB32);
 			cmd.SetRenderTarget(GenNoiseTex_RTI, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
 			CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 1);
 			cmd.SetGlobalTexture(NoiseTex_ID, GenNoiseTex_RTI);
@@ -441,7 +424,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			{
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, true);
 				solidCloudMaterial.SetInt(Frame_ID, frame);
-				frame = (frame + 1) % 4;
+				frame = (frame + 1) % 3;
 			}
 			else
 			{
@@ -457,17 +440,20 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, true);
 
 				//blend
-				for (int i = c_MulRTStart; i < 3; i++)
+				for (int i = 1; i < 3; i++)
 				{
 					if (isFrame)
 					{
-						cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.DontCare,
-							RenderBufferStoreAction.Store,
-							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-						//frame 叠加   如果clear了  覆盖不上去   而且还少了一个clear
-						// CoreUtils.ClearRenderTarget(cmd, ClearFlag.Color, new Color(0, 0, 0, 0));
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-						cmd.SetGlobalTexture(TempBlendTex_ID[i], frameRTS[i]);
+						if (frame != 2)
+						{
+							cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.Load,
+								RenderBufferStoreAction.Store,
+								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+							//frame 叠加   如果clear了  覆盖不上去   而且还少了一个clear
+							// CoreUtils.ClearRenderTarget(cmd, ClearFlag.Color, new Color(0, 0, 0, 0));
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+							cmd.SetGlobalTexture(TempBlendTex_ID[i], frameRTS[i]);
+						}
 					}
 					else
 					{
@@ -501,17 +487,38 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				else
 				{
 					cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-					int div = (int) Math.Pow(2, rtSize - 1);
-					int width = screenWidth / div;
-					int height = screenHeight / div;
-					cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
-						RenderTextureFormat.ARGB32);
-					cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
-						RenderBufferStoreAction.Store,
-						RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+					if (isFrame)
+					{
+						if (frame != 2)
+						{
+							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
+								RenderBufferStoreAction.Store,
+								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 
-					cmd.SetGlobalTexture(BlendTex_ID, BlendTex_RTI);
+							context.ExecuteCommandBuffer(cmd);
+							cmd.Clear();
+						}
+					}
+					else
+					{
+						int div = (int) Math.Pow(2, rtSize - 1);
+						int width = screenWidth / div;
+						int height = screenHeight / div;
+						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
+							RenderTextureFormat.ARGB32);
+						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+						cmd.SetGlobalTexture(BlendTex_ID, BlendTex_RTI);
+
+						context.ExecuteCommandBuffer(cmd);
+						cmd.Clear();
+					}
+
+
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, true);
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
@@ -520,7 +527,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
 				}
 
-				for (int i = c_MulRTStart; i < 3; i++)
+				for (int i = 1; i < 3; i++)
 				{
 					cmd.ReleaseTemporaryRT(TempBlendTex_ID[i]);
 				}
@@ -535,13 +542,16 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				{
 					if (isFrame)
 					{
-						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-						cmd.SetRenderTarget(frameRTS[0]);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						if (frame != 2)
+						{
+							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+							cmd.SetRenderTarget(frameRTS[0]);
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 
-						context.ExecuteCommandBuffer(cmd);
-						cmd.Clear();
+							context.ExecuteCommandBuffer(cmd);
+							cmd.Clear();
+						}
 
 						CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, false);
 						cmd.SetRenderTarget(CameraColorTexture_RTI);
@@ -568,10 +578,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 					if (isFrame)
 					{
-						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-						cmd.SetRenderTarget(frameRTS[0]);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						if (frame != 2)
+						{
+							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+							cmd.SetRenderTarget(frameRTS[0]);
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						}
 					}
 					else
 					{

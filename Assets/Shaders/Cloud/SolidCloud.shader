@@ -391,25 +391,37 @@
 			{
 				float2 uv = i.uv;
 
+				//其实这里可以用小的RT 渲染到 uv*2+ 1 or 0 渲染到大的rt
+				//但是 因为可能会做 raymarch mesh  而不是 屏幕
+				//所以就先做屏幕切割法   不过如果存在极端情况 屏幕切割法应该没有用
 				#if CLOUD_FRAME_ON
 
-				if (_Frame == 0 && (uv.x <=0.5 && uv.y <=0.5) == false)
-				{
-					discard;
-				}
-				else if (_Frame == 1 && (uv.x >=0.5 && uv.y <0.5) == false)
-				{
-					discard;
-				}
-				else if (_Frame == 2 && (uv.x <=0.5 && uv.y >=0.5) == false)
-				{
-					discard;
-				}
-				else if(_Frame == 3 &&(uv.x >=0.5 && uv.y >= 0.5) == false)
-				{
-					discard;
-				}
+				// if (_Frame == 0 && (uv.x <=0.5 && uv.y <=0.5) == false)
+				// {
+				// 	discard;
+				// }
+				// else if (_Frame == 1 && (uv.x >=0.5 && uv.y <0.5) == false)
+				// {
+				// 	discard;
+				// }
+				// else if (_Frame == 2 && (uv.x <=0.5 && uv.y >=0.5) == false)
+				// {
+				// 	discard;
+				// }
+				// else if(_Frame == 3 &&(uv.x >=0.5 && uv.y >= 0.5) == false)
+				// {
+				// 	discard;
+				// }
 
+				if (_Frame == 0 && (uv.x <=0.5) == false)
+				{
+					discard;
+				}
+				else if (_Frame == 1 && (uv.x >=0.5) == false)
+				{
+					discard;
+				}
+				
 				#endif
 
 				float depth = SampleSceneDepth(uv);

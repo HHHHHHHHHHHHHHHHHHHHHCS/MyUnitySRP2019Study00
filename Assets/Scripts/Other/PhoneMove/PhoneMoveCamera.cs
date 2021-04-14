@@ -8,23 +8,22 @@ namespace Other.PhoneMove
 		public ScrollCircle rotateCom, moveCom;
 
 		private Transform mainCamera;
-		
+
 		private void Awake()
 		{
 			mainCamera = Camera.main.transform;
-			rotateCom.onValueChanged.AddListener(Rotate); 
-			moveCom.onValueChanged.AddListener(Move); 
+			rotateCom.onDragEvent += Rotate;
+			moveCom.onDragEvent += Move;
 		}
 
 		private void Rotate(Vector2 dir)
 		{
-			// mainCamera.transform.Rotate();
-			// Debug.Log(dir.x);
+			mainCamera.Rotate(-dir.y, dir.x, 0);
 		}
 
 		private void Move(Vector2 dir)
 		{
-			
+			mainCamera.Translate(dir.x, 0, dir.y);
 		}
 	}
 }

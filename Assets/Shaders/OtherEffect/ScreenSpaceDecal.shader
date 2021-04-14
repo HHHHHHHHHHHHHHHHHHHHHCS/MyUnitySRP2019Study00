@@ -1,5 +1,5 @@
 ﻿//copyby github.com/ColinLeung-NiloCat/UnityURPUnlitScreenSpaceDecalShader
-Shader "MyRP/Other/ScreenSpaceDecal"
+Shader "MyRP/OtherEffect/ScreenSpaceDecal"
 {
 	Properties
 	{
