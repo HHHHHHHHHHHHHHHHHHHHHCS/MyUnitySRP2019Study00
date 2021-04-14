@@ -391,33 +391,29 @@
 				//所以就先做屏幕切割法   不过如果存在极端情况 屏幕切割法应该没有用
 				#if CLOUD_FRAME_ON
 
-				// if (_Frame == 0 && (uv.x <=0.5 && uv.y <=0.5) == false)
-				// {
-				// 	discard;
-				// }
-				// else if (_Frame == 1 && (uv.x >=0.5 && uv.y <0.5) == false)
-				// {
-				// 	discard;
-				// }
-				// else if (_Frame == 2 && (uv.x <=0.5 && uv.y >=0.5) == false)
-				// {
-				// 	discard;
-				// }
-				// else if(_Frame == 3 &&(uv.x >=0.5 && uv.y >= 0.5) == false)
-				// {
-				// 	discard;
-				// }
+				uv*=0.5;
 
-				if (_Frame == 0 && (uv.x <=0.5) == false)
+_Frame= 3 ;
+				
+				if (_Frame == 0 )
 				{
-					discard;
+					
 				}
-				else if (_Frame == 1 && (uv.x >=0.5) == false)
+				else if (_Frame == 1)
 				{
-					discard;
+					uv = uv + float2(0.5,0);
+				}
+				else if (_Frame == 2)
+				{
+					uv = uv + float2(0.0,0.5);
+				}
+				else if (_Frame == 3)
+				{
+					uv = uv + float2(0.5,0.5);
 				}
 				
 				#endif
+
 
 				float depth = SampleSceneDepth(uv);
 				// 因为来源是一个大三角形  所以这样子还是不准确 所以换下面的方法
@@ -579,9 +575,20 @@
 			TEXTURE2D(_TempBlendTex2);
 			SAMPLER(sampler_linear_repeat_TempBlendTex2);
 
+			#pragma multi_compile_local _ CLOUD_FRAME_ON
+
+			#if CLOUD_FRAME_ON
+			int _Frame;
+			#endif
+
 
 			half4 FragOut(v2f i):SV_TARGET
 			{
+				#if CLOUD_FRAME_ON
+				
+					
+				#endif
+				
 				half4 col = 0;
 				// col += 0.333 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex0, sampler_linear_repeat_TempBlendTex0, i.uv, 0);
 				col += 0.8 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_repeat_TempBlendTex1, i.uv, 0);

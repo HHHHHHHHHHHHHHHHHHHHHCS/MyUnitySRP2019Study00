@@ -169,7 +169,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 						return true;
 					}
 				}
-				
+
 				int div = (int) Mathf.Pow(2, rtSize - 1);
 
 
@@ -424,7 +424,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			{
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, true);
 				solidCloudMaterial.SetInt(Frame_ID, frame);
-				frame = (frame + 1) % 3;
+				frame = 0;//(frame + 1) % 4;
 			}
 			else
 			{
@@ -444,16 +444,13 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				{
 					if (isFrame)
 					{
-						if (frame != 2)
-						{
-							cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.Load,
-								RenderBufferStoreAction.Store,
-								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-							//frame 叠加   如果clear了  覆盖不上去   而且还少了一个clear
-							// CoreUtils.ClearRenderTarget(cmd, ClearFlag.Color, new Color(0, 0, 0, 0));
-							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-							cmd.SetGlobalTexture(TempBlendTex_ID[i], frameRTS[i]);
-						}
+						cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						//frame 叠加   如果clear了  覆盖不上去   而且还少了一个clear
+						// CoreUtils.ClearRenderTarget(cmd, ClearFlag.Color, new Color(0, 0, 0, 0));
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+						cmd.SetGlobalTexture(TempBlendTex_ID[i], frameRTS[i]);
 					}
 					else
 					{
@@ -489,17 +486,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
 					if (isFrame)
 					{
-						if (frame != 2)
-						{
-							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
-								RenderBufferStoreAction.Store,
-								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
-							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
+							RenderBufferStoreAction.Store,
+							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 
-							context.ExecuteCommandBuffer(cmd);
-							cmd.Clear();
-						}
+						context.ExecuteCommandBuffer(cmd);
+						cmd.Clear();
 					}
 					else
 					{
@@ -542,16 +536,16 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				{
 					if (isFrame)
 					{
-						if (frame != 2)
-						{
-							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-							cmd.SetRenderTarget(frameRTS[0]);
-							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						//todo: 改成dont car
+						//todo: 把UV写在定点里面
+						//todo: 添加quarter 
+						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+						cmd.SetRenderTarget(frameRTS[0]);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 
-							context.ExecuteCommandBuffer(cmd);
-							cmd.Clear();
-						}
+						context.ExecuteCommandBuffer(cmd);
+						cmd.Clear();
 
 						CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, false);
 						cmd.SetRenderTarget(CameraColorTexture_RTI);
@@ -578,13 +572,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 					if (isFrame)
 					{
-						if (frame != 2)
-						{
-							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-							cmd.SetRenderTarget(frameRTS[0]);
-							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
-						}
+						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+						cmd.SetRenderTarget(frameRTS[0]);
+						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 					}
 					else
 					{
