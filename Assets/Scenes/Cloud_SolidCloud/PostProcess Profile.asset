@@ -37,9 +37,14 @@ MonoBehaviour:
   enableFrame:
     m_OverrideState: 1
     m_Value: 1
+  frameMode:
+    m_OverrideState: 1
+    m_Value: 2
+    min: 0
+    max: 3
   mulRTBlend:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   rtSize:
     m_OverrideState: 1
     m_Value: 2
@@ -204,6 +209,11 @@ MonoBehaviour:
   enableFrame:
     m_OverrideState: 0
     m_Value: 0
+  frameMode:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 3
   mulRTBlend:
     m_OverrideState: 0
     m_Value: 0

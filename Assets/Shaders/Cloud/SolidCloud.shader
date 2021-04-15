@@ -3,14 +3,14 @@
 	Properties
 	{
 		//不能添加  会造成属性优先级问题
-		//[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend("Dst Blend", int) = 0
+		//[Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", int) = 0
 	}
 	HLSLINCLUDE
 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 	struct a2v
 	{
-		uint vertexID:SV_VERTEXID;
+		uint vertexID: SV_VERTEXID;
 	};
 
 	struct v2f
@@ -19,11 +19,50 @@
 		float2 uv: TEXCOORD0;
 	};
 
-	v2f Vert(a2v v)
+	#if CLOUD_FRAME_ON
+		int _Frame;
+	#endif
+
+	v2f DefaultVert(a2v v)
 	{
 		v2f o = (v2f)0;
 		o.pos = GetFullScreenTriangleVertexPosition(v.vertexID);
+		//三个顶点运算量很少  所以为了看起来方便 直接不做分支了
+		//但是会有很多的变体  所以我这里的建议是 自己创建quad
 		o.uv = GetFullScreenTriangleTexCoord(v.vertexID);
+
+		//UV 可能存在平台差异
+		#if CLOUD_FRAME_ON
+		// _Frame = 0;
+		#if FRAME_MODE_0 || (!CLOUD_MUL_RT_ON && FRAME_MODE_1 && !FRAME_BLEND)
+				o.pos.xy = float2((-1 + 2 * (_Frame >> 1)) * (o.pos.x + 1), (1 - 2 * (_Frame & 1)) * (o.pos.y + 1));
+				o.uv = 0.5 * float2(1 + o.pos.x, 1 - o.pos.y);
+		#elif FRAME_MODE_1
+		#if FRAME_BLEND
+					o.pos.xy = float2((-1 + 2 * (_Frame >> 1)) * (o.pos.x + 1), (1 - 2 * (_Frame & 1)) * (o.pos.y + 1));
+					o.uv = float2(o.pos.x + (1 - (_Frame >> 1)), -o.pos.y + (1 - (_Frame & 1)));
+		#else
+					o.uv = 0.5 * (o.uv + float2(_Frame >> 1, _Frame & 1));
+		#endif
+		#elif FRAME_MODE_2
+		#if FRAME_BLEND
+					o.pos.x = (-1 + 2 * _Frame) * (o.pos.x + 1) ;
+					o.uv = float2((1 - _Frame) +  o.pos.x, 0.5 - 0.5 * o.pos.y);
+		#else
+		#if CLOUD_MUL_RT_ON
+			o.uv.x = 0.5 * (_Frame + o.uv.x);
+		#else
+			o.pos.x = (-1 + 2 * _Frame) * (o.pos.x + 1) ;
+			o.uv.x = 0.5 + (-1 +2 * _Frame) * o.uv.x;
+		#endif
+
+		#endif
+
+		#elif FRAME_BLEND
+		// o.uv = 0.5 * (o.uv + float2(_Frame>>1 , _Frame&1));
+		#endif
+		#endif
+
 		return o;
 	}
 	ENDHLSL
@@ -32,6 +71,7 @@
 	{
 		ZTest Always
 		ZWrite Off
+		Cull Off
 
 		//0.Cloud
 		Pass
@@ -39,7 +79,7 @@
 			Blend One [_DstBlend]//OneMinusSrcAlpha
 
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragCloud
 
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
@@ -50,6 +90,8 @@
 			#pragma multi_compile_local _ CLOUD_DISTANCE_ON
 			#pragma multi_compile_local _ CLOUD_AREA_SPHERE  //default CLOUD_AREA_BOX
 			#pragma multi_compile_local _ CLOUD_FRAME_ON
+			#pragma multi_compile_local _ CLOUD_MUL_RT_ON
+			#pragma multi_compile_local FRAME_MODE_0 FRAME_MODE_1 FRAME_MODE_2 FRAME_MODE_3
 
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -77,11 +119,7 @@
 			//#endif
 
 			#if CLOUD_SUN_SHADOWS_ON
-			half3 _SunShadowsData; //x:sunShadowsStrength  y:sunShadowsJitterStrength  z:sunShadowsCancellation
-			#endif
-
-			#if CLOUD_FRAME_ON
-			int _Frame;
+				half3 _SunShadowsData; //x:sunShadowsStrength  y:sunShadowsJitterStrength  z:sunShadowsCancellation
 			#endif
 
 			//计算世界空间坐标
@@ -106,25 +144,24 @@
 				const half4 zeros = half4(0.0, 0.0, 0.0, 0.0);
 
 				#if CLOUD_USE_XY_PLANE
-				const float3 cloudAreaPosition = float3(_CloudAreaPosition.xy, 0);
-				const float planeOffset = _CloudAreaPosition.z;
-				const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x
-				                                  , _WorldSpaceCameraPos.y, _WorldSpaceCameraPos.z - planeOffset);
-				worldPos.z -= planeOffset;
-				if ((wsCameraPos.z > _CloudData.y && worldPos.z > _CloudData.y) ||
-					(wsCameraPos.z < -_CloudData.y && worldPos.z < -_CloudData.y))
-				{
-					return zeros;
-				}
+					const float3 cloudAreaPosition = float3(_CloudAreaPosition.xy, 0);
+					const float planeOffset = _CloudAreaPosition.z;
+					const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x, _WorldSpaceCameraPos.y, _WorldSpaceCameraPos.z - planeOffset);
+					worldPos.z -= planeOffset;
+					if ((wsCameraPos.z > _CloudData.y && worldPos.z > _CloudData.y) ||
+					(wsCameraPos.z < - _CloudData.y && worldPos.z < - _CloudData.y))
+					{
+						return zeros;
+					}
 				#else
 				const float3 cloudAreaPosition = float3(_CloudAreaPosition.x, 0, _CloudAreaPosition.z);
 				const float planeOffset = _CloudAreaPosition.y;
-				const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x
-				                                  , _WorldSpaceCameraPos.y - planeOffset, _WorldSpaceCameraPos.z);
+				const float3 wsCameraPos = float3(_WorldSpaceCameraPos.x, _WorldSpaceCameraPos.y - planeOffset,
+				                                  _WorldSpaceCameraPos.z);
 				worldPos.y -= planeOffset;
 				// early exit if fog is not crossed
 				if ((wsCameraPos.y > _CloudData.y && worldPos.y > _CloudData.y) ||
-					(wsCameraPos.y < -_CloudData.y && worldPos.y < -_CloudData.y))
+					(wsCameraPos.y < - _CloudData.y && worldPos.y < - _CloudData.y))
 				{
 					return zeros;
 				}
@@ -137,27 +174,27 @@
 
 				#if CLOUD_AREA_SPHERE
 
-				// compute sphere intersection or early exit if ray does not sphere
-				float3 oc = wsCameraPos - cloudAreaPosition;
-				float3 nadir = adir.xyz / adir.w;
-				float b = dot(nadir, oc);
-				float c = dot(oc, oc) - _CloudAreaData.y;
-				float t = b * b - c;
-				if (t >= 0)
-				{
-					t = sqrt(t);
-				}
-				float distanceToCloud = max(-b - t, 0);
-				float dist = min(adir.w, _CloudDistance.z);
-				float t1 = min(-b + t, dist);
-				float cloudLength = t1 - distanceToCloud;
-				if (cloudLength < 0)
-				{
-					return zeros;
-				}
-				float3 cloudCeilingCut = wsCameraPos + nadir * distanceToCloud;
-				float2 areaData = _CloudAreaData.xz;
-
+					// compute sphere intersection or early exit if ray does not sphere
+					float3 oc = wsCameraPos - cloudAreaPosition;
+					float3 nadir = adir.xyz / adir.w;
+					float b = dot(nadir, oc);
+					float c = dot(oc, oc) - _CloudAreaData.y;
+					float t = b * b - c;
+					if (t >= 0)
+					{
+						t = sqrt(t);
+					}
+					float distanceToCloud = max(-b - t, 0);
+					float dist = min(adir.w, _CloudDistance.z);
+					float t1 = min(-b + t, dist);
+					float cloudLength = t1 - distanceToCloud;
+					if (cloudLength < 0)
+					{
+						return zeros;
+					}
+					float3 cloudCeilingCut = wsCameraPos + nadir * distanceToCloud;
+					float2 areaData = _CloudAreaData.xz;
+					
 				#else //if CLOUD_AREA_BOX
 
 				// compute box intersectionor early exit if ray does not cross box
@@ -183,7 +220,7 @@
 				float3 cloudCeilingCut = wsCameraPos + distanceToCloud / invR;
 
 				#if CLOUD_USE_XY_PLANE
-				float2 areaData = _CloudAreaData.xy / _CloudData.w;
+						float2 areaData = _CloudAreaData.xy / _CloudData.w;
 				#else
 				float2 areaData = _CloudAreaData.xz / _CloudData.w;
 				#endif
@@ -207,14 +244,14 @@
 				float4 ft4 = float4(cloudCeilingCut.xyz, 0);
 
 				#if CLOUD_USE_XY_PLANE
-				
-				dir.xy *= _CloudData.w;
-				dir.z /= _CloudData.y;
-
-				// apply wind speed and direction; already defined above if the condition is true
-				ft4.xy = (ft4.xy + _CloudWindDir.xz) * _CloudData.w;
-				ft4.z /= dirLength;
-				
+					
+					dir.xy *= _CloudData.w;
+					dir.z /= _CloudData.y;
+					
+					// apply wind speed and direction; already defined above if the condition is true
+					ft4.xy = (ft4.xy + _CloudWindDir.xz) * _CloudData.w;
+					ft4.z /= dirLength;
+					
 				#else
 
 				// Extracted operations from ray-march loop for additional optimizations
@@ -236,13 +273,13 @@
 
 				#if CLOUD_USE_XY_PLANE
 
-				// #if CLOUD_AREA_SPHERE || CLOUD_AREA_BOX
-				float2 areaCenter = (cloudAreaPosition.xy + _CloudWindDir.xy) * _CloudData.w;
-				// #endif
+						// #if CLOUD_AREA_SPHERE || CLOUD_AREA_BOX
+						float2 areaCenter = (cloudAreaPosition.xy + _CloudWindDir.xy) * _CloudData.w;
+						// #endif
 
 				#if CLOUD_DISTANCE_ON
-				float2 camCenter = wsCameraPos.xy + _CloudWindDir.xy;
-				camCenter *= _CloudData.w;
+							float2 camCenter = wsCameraPos.xy + _CloudWindDir.xy;
+							camCenter *= _CloudData.w;
 				#endif
 
 				#else
@@ -252,8 +289,8 @@
 				//#endif
 
 				#if CLOUD_DISTANCE_ON
-				float2 camCenter = wsCameraPos.xz + _CloudWindDir.xz;
-				camCenter *= _CloudData.w;
+							float2 camCenter = wsCameraPos.xz + _CloudWindDir.xz;
+							camCenter *= _CloudData.w;
 				#endif
 
 				#endif
@@ -263,28 +300,28 @@
 				#if CLOUD_SUN_SHADOWS_ON
 
 				#if CLOUD_USE_XY_PLANE
-					cloudCeilingCut.z += planeOffset;
+							cloudCeilingCut.z += planeOffset;
 				#else
-					cloudCeilingCut.y += planeOffset;
+							cloudCeilingCut.y += planeOffset;
 				#endif
-
-				dir.w += frac(dither);
-				half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
-				
+						
+						dir.w += frac(dither);
+						half4 shadowData = half4(_SunShadowsData, 1.0 / dir.w);
+						
 				#if _MAIN_LIGHT_SHADOWS_CASCADE
-					float3 startWPos = cloudCeilingCut.xyz;
-					float3 endWPos = cloudCeilingCut.xyz +
-						cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
+							float3 startWPos = cloudCeilingCut.xyz;
+							float3 endWPos = cloudCeilingCut.xyz +
+							cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
 				#else
-					// reduce banding
-					float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
-					float3 cloudEndPos = cloudCeilingCut.xyz +
-						cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
-					float4 shadowCoords1 = TransformWorldToShadowCoord(cloudEndPos);
-					// shadow out of range, exclude with a subtle falloff
-					// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
-					// apply jitter to avoid banding
-					//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
+							// reduce banding
+							float4 shadowCoords0 = TransformWorldToShadowCoord(cloudCeilingCut);
+							float3 cloudEndPos = cloudCeilingCut.xyz +
+							cloudLength * (1.0 + dither * shadowData.y) * adir.xyz / adir.w;
+							float4 shadowCoords1 = TransformWorldToShadowCoord(cloudEndPos);
+							// shadow out of range, exclude with a subtle falloff
+							// shadowData.x *= 1; //saturate((_SunWorldPos.w - distanceToFog) / 35.0);
+							// apply jitter to avoid banding
+							//			shadowCoords0 += (shadowCoords1 - shadowCoords0) * dither * _SunShadowsData.y;
 				#endif
 
 				#endif
@@ -292,13 +329,14 @@
 				// Ray-march
 				half4 sum = zeros;
 				half4 cloudCol = zeros;
-				float2 pos, h;
+				float2 pos;
+				float h;
 
 				for (; dir.w > 1; dir.w --, ft4.xyz += dir.xyz)
 				{
 					#if CLOUD_USE_XY_PLANE
-					pos = ft4.xy;
-					h = ft4.z;
+							pos = ft4.xy;
+							h = ft4.z;
 					#else
 					pos = ft4.xz;
 					h = ft4.y;
@@ -307,16 +345,16 @@
 					half4 ng = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, pos, 0);
 
 					#if CLOUD_AREA_SPHERE
-					
-					float2 vd = (areaCenter - pos) * areaData.x;
-					float voidDistance = dot(vd, vd);
-					//边缘
-					if (voidDistance > 1)
-					{
-						break;
-					}
-					ng.a -= abs(h) + voidDistance * _CloudAreaData.w - 0.3;
-					
+							
+							float2 vd = (areaCenter - pos) * areaData.x;
+							float voidDistance = dot(vd, vd);
+							//边缘
+							if (voidDistance > 1)
+							{
+								break;
+							}
+							ng.a -= abs(h) + voidDistance * _CloudAreaData.w - 0.3;
+							
 					#else //if CLOUD_AREA_BOX
 
 					float2 vd = abs(areaCenter - pos) * areaData;
@@ -332,9 +370,9 @@
 
 
 					#if CLOUD_DISTANCE_ON
-					float2 fd = camCenter - pos;
-					float fdm = max(_CloudDistance.x - dot(fd, fd), 0) * _CloudDistance.y;
-					ng.a -= fdm;
+							float2 fd = camCenter - pos;
+							float fdm = max(_CloudDistance.x - dot(fd, fd), 0) * _CloudDistance.y;
+							ng.a -= fdm;
 					#endif
 
 					// #if CLOUD_MASK
@@ -347,18 +385,18 @@
 						cloudCol = half4(_CloudColor.rgb * (1.0 - ng.a), ng.a * 0.4);
 
 						#if CLOUD_SUN_SHADOWS_ON
-						float t = dir.w * shadowData.w;
-						
+								float t = dir.w * shadowData.w;
+								
 						#if _MAIN_LIGHT_SHADOWS_CASCADE
-						float3 wPos = lerp(endWPos, startWPos, t);
-						float4 shadowCoords = TransformWorldToShadowCoord(wPos);
+									float3 wPos = lerp(endWPos, startWPos, t);
+									float4 shadowCoords = TransformWorldToShadowCoord(wPos);
 						#else
-						float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
+									float4 shadowCoords = lerp(shadowCoords1, shadowCoords0, t);
 						#endif
-
-						half shadowAtten = MainLightRealtimeShadow(shadowCoords);
-						ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
-						cloudCol *= lerp(1, shadowAtten, shadowData.z);
+								
+								half shadowAtten = MainLightRealtimeShadow(shadowCoords);
+								ng.rgb *= lerp(1.0, shadowAtten, shadowData.x * sum.a);
+								cloudCol *= lerp(1, shadowAtten, shadowData.z);
 						#endif
 
 						cloudCol.rgb *= ng.rgb * cloudCol.aaa;
@@ -382,39 +420,10 @@
 			}
 
 
-			half4 FragCloud(v2f i):SV_TARGET
+			half4 FragCloud(v2f i): SV_TARGET
 			{
 				float2 uv = i.uv;
-
-				//其实这里可以用小的RT 渲染到 uv*2+ 1 or 0 渲染到大的rt
-				//但是 因为可能会做 raymarch mesh  而不是 屏幕
-				//所以就先做屏幕切割法   不过如果存在极端情况 屏幕切割法应该没有用
-				#if CLOUD_FRAME_ON
-
-				uv*=0.5;
-
-_Frame= 3 ;
-				
-				if (_Frame == 0 )
-				{
-					
-				}
-				else if (_Frame == 1)
-				{
-					uv = uv + float2(0.5,0);
-				}
-				else if (_Frame == 2)
-				{
-					uv = uv + float2(0.0,0.5);
-				}
-				else if (_Frame == 3)
-				{
-					uv = uv + float2(0.5,0.5);
-				}
-				
-				#endif
-
-
+				// return half4(uv, 0, 1);
 				float depth = SampleSceneDepth(uv);
 				// 因为来源是一个大三角形  所以这样子还是不准确 所以换下面的方法
 				//  VS :  o.camDir = GetWorldSpacePosition(uv) - _WorldSpaceCameraPos;
@@ -430,13 +439,14 @@ _Frame= 3 ;
 				return half4(sum);
 			}
 			ENDHLSL
+
 		}
 
 		//1.GenerateNoise
 		Pass
 		{
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragNoise
 
 			TEXTURE2D(_NoiseTex);
@@ -454,29 +464,31 @@ _Frame= 3 ;
 			inline float GetAlpha(float2 uv)
 			{
 				const float alpha = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, uv, 0).r;
-				return pow((1.0f - alpha * _NoiseStrength), _NoiseDensity);
+				return PositivePow((1.0f - alpha * _NoiseStrength), _NoiseDensity);
 				// return (1.0f - alpha * _NoiseStrength) * _NoiseDensity;
 				// return smoothstep(0, 1, (1.0f - alpha * _NoiseStrength) * _NoiseDensity);
 			}
 
 
-			half4 FragNoise(v2f i):SV_TARGET
+			half4 FragNoise(v2f i): SV_TARGET
 			{
 				int k = i.pos.y * _NoiseSize + i.pos.x;
-				int rd = (k + _NoiseSeed) % _NoiseCount;
+				int rd = fmod((k + _NoiseSeed), _NoiseCount);
 				float a = GetAlpha(i.uv);
-				float2 rdUV = float2(rd % _NoiseSize, floor(rd / _NoiseSize)) / _NoiseSize;
+				float rcp_ns = rcp(_NoiseSize);
+				float2 rdUV = float2(fmod(rd, _NoiseSize), floor(rd * rcp_ns)) * rcp_ns;
 				float r = saturate((a - GetAlpha(rdUV)) * _SpecularColor.a);
 				return half4(_LightColor.rgb + _SpecularColor.rgb * r, a);
 			}
 			ENDHLSL
+
 		}
 
 		//2.Random Noise
 		Pass
 		{
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragNoise
 
 			#pragma multi_compile_local _ CLOUD_MASK
@@ -486,34 +498,37 @@ _Frame= 3 ;
 			float _Amount;
 
 			#if CLOUD_MASK
-			TEXTURE2D(_MaskTex);
-			SAMPLER(sampler_MaskTex);
+					TEXTURE2D(_MaskTex);
+					SAMPLER(sampler_MaskTex);
 			#endif
 
-			half4 FragNoise(v2f i):SV_TARGET
+			half4 FragNoise(v2f i): SV_TARGET
 			{
 				// _Amount = 0;
 				float sint, cost;
 				sincos(_Amount, sint, cost);
 				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
-				half4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.25,0.25), 0);
+				half4 p1 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.25, 0.25),
+				                                0);
 				float t0 = (sint + 1.0) * 0.5;
 				half4 r0 = lerp(p0, p1, t0);
 
-				half4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.5,0.5), 0);
-				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.75,0.75), 0);
+				half4 p2 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.5, 0.5), 0);
+				half4 p3 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv + float2(0.75, 0.75),
+				                                0);
 				float t1 = (cost + 1.0) * 0.5;
 				half4 r1 = lerp(p2, p3, t1);
 
 				r0 = max(r0, r1);
 
 				#if CLOUD_MASK
-				r0.a = saturate(r0.a - SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, i.uv, 0).r);
+						r0.a = saturate(r0.a - SAMPLE_TEXTURE2D_LOD(_MaskTex, sampler_MaskTex, i.uv, 0).r);
 				#endif
 
 				return r0;
 			}
 			ENDHLSL
+
 		}
 
 		//3.Blend
@@ -523,40 +538,37 @@ _Frame= 3 ;
 
 
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragOut
 
 			#pragma multi_compile_local _ CLOUD_BLUR_ON
 
 
 			TEXTURE2D(_BlendTex);
-			SAMPLER(sampler_linear_repeat_BlendTex);
+			SAMPLER(sampler_linear_clamp_BlendTex);
 
 			float4 _NoiseTex_TexelSize;
 
-			half4 FragOut(v2f i):SV_TARGET
+			half4 FragOut(v2f i): SV_TARGET
 			{
 				#if !CLOUD_BLUR_ON
-				return SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex, i.uv, 0);
+				return SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_clamp_BlendTex, i.uv, 0);
 				#else
-				float2 step = 1 * _NoiseTex_TexelSize.xy;
-
-				half4 col = 0;
-
-				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
-				                                 , i.uv + float2(step.x,0), 0);
-
-				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
-				                            , i.uv + float2(-step.x, 0), 0);
-
-				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
-				                            , i.uv + float2(0, step.y), 0);
-				col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_repeat_BlendTex
-				                            , i.uv + float2(0, -step.y), 0);
-				return col * 0.25;
+						float2 step = 1 * _NoiseTex_TexelSize.xy;
+						
+						half4 col = 0;
+						
+						col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_clamp_BlendTex, i.uv + float2(step.x, 0), 0);
+						
+						col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_clamp_BlendTex, i.uv + float2(-step.x, 0), 0);
+						
+						col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_clamp_BlendTex, i.uv + float2(0, step.y), 0);
+						col += SAMPLE_TEXTURE2D_LOD(_BlendTex, sampler_linear_clamp_BlendTex, i.uv + float2(0, -step.y), 0);
+						return col * 0.25;
 				#endif
 			}
 			ENDHLSL
+
 		}
 
 		//4.Blend Mul RT
@@ -565,37 +577,32 @@ _Frame= 3 ;
 			Blend One [_DstBlend]
 
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragOut
 
 			// TEXTURE2D(_TempBlendTex0);
 			// SAMPLER(sampler_linear_repeat_TempBlendTex0);
 			TEXTURE2D(_TempBlendTex1);
-			SAMPLER(sampler_linear_repeat_TempBlendTex1);
+			SAMPLER(sampler_linear_clamp_TempBlendTex1);
 			TEXTURE2D(_TempBlendTex2);
-			SAMPLER(sampler_linear_repeat_TempBlendTex2);
+			SAMPLER(sampler_linear_clamp_TempBlendTex2);
 
+			#pragma multi_compile_local FRAME_BLEND
+			#pragma multi_compile_local FRAME_MODE_0 FRAME_MODE_1 FRAME_MODE_2 FRAME_MODE_3
 			#pragma multi_compile_local _ CLOUD_FRAME_ON
 
-			#if CLOUD_FRAME_ON
-			int _Frame;
-			#endif
 
-
-			half4 FragOut(v2f i):SV_TARGET
+			half4 FragOut(v2f i): SV_TARGET
 			{
-				#if CLOUD_FRAME_ON
-				
-					
-				#endif
-				
+				// return half4(i.uv, 0, 1);
 				half4 col = 0;
 				// col += 0.333 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex0, sampler_linear_repeat_TempBlendTex0, i.uv, 0);
-				col += 0.8 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_repeat_TempBlendTex1, i.uv, 0);
-				col += 0.2 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex2, sampler_linear_repeat_TempBlendTex2, i.uv, 0);
+				col += 0.8 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex1, sampler_linear_clamp_TempBlendTex1, i.uv, 0);
+				col += 0.2 * SAMPLE_TEXTURE2D_LOD(_TempBlendTex2, sampler_linear_clamp_TempBlendTex2, i.uv, 0);
 				return col;
 			}
 			ENDHLSL
+
 		}
 	}
 }

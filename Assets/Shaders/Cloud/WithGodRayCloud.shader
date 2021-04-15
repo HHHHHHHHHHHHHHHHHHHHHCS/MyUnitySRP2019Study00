@@ -22,7 +22,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 	};
 
 
-	v2f Vert(a2v v)
+	v2f DefaultVert(a2v v)
 	{
 		v2f o;
 
@@ -47,7 +47,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 		Pass
 		{
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragCloud
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -315,7 +315,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 			Name "DownsampleDepth"
 
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragDownsampleDepth
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
@@ -351,7 +351,7 @@ Shader "MyRP/Cloud/WithGodRayCloud"
 		{
 			Name "CombineColor"
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragCombineColor
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"

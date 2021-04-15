@@ -53,6 +53,14 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
+			//删除scene camera效果
+			//是因为 create RT 第一次draw 会执行clear
+			//并且两个camera 的参数不一样 又会争夺 create destroy rt
+			if (renderingData.cameraData.cameraType != CameraType.Game)
+			{
+				return;
+			}
+
 			if (enable && renderingData.postProcessingEnabled && solidCloudMaterial != null)
 			{
 				var settings = VolumeManager.instance.stack.GetComponent<SolidCloudRenderPostProcess>();

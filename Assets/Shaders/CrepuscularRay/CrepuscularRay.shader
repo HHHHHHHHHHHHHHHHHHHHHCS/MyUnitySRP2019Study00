@@ -21,7 +21,7 @@
 	};
 
 
-	v2f Vert(a2v v)
+	v2f DefaultVert(a2v v)
 	{
 		v2f o;
 
@@ -47,7 +47,7 @@
 			Blend One One
 			
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragRay
 
 			TEXTURE2D(_DownsampleTex);
@@ -103,7 +103,7 @@
 		Pass
 		{
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragDownsample4
 
 			// #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"

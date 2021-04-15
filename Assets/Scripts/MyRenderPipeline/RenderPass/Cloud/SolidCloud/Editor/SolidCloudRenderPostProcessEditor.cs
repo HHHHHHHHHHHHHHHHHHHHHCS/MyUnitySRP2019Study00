@@ -10,6 +10,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 		private SerializedDataParameter m_enableEffect;
 		private SerializedDataParameter m_enableBlend;
 		private SerializedDataParameter m_enableFrame;
+		private SerializedDataParameter m_frameMode;
 		private SerializedDataParameter m_mulRTBlend;
 		private SerializedDataParameter m_rtSize;
 		private SerializedDataParameter m_enableBlur;
@@ -51,6 +52,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			m_enableEffect = Unpack(o.Find(x => x.enableEffect));
 			m_enableBlend = Unpack(o.Find(x => x.enableBlend));
 			m_enableFrame = Unpack(o.Find(x => x.enableFrame));
+			m_frameMode = Unpack(o.Find(x => x.frameMode));
 			m_mulRTBlend = Unpack(o.Find(x => x.mulRTBlend));
 			m_rtSize = Unpack(o.Find(x => x.rtSize));
 			m_enableBlur = Unpack(o.Find(x => x.enableBlur));
@@ -100,6 +102,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud.Editor
 			PropertyField(m_enableEffect);
 			PropertyField(m_enableBlend);
 			PropertyField(m_enableFrame);
+			if (m_enableFrame.value.boolValue)
+			{
+				PropertyField(m_frameMode);
+			}
 			PropertyField(m_mulRTBlend);
 			PropertyField(m_rtSize);
 			PropertyField(m_enableBlur);

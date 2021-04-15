@@ -59,7 +59,7 @@
 			Cull Back //Off
 
 			HLSLPROGRAM
-			#pragma vertex Vert
+			#pragma vertex DefaultVert
 			#pragma fragment FragCloud
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -272,7 +272,7 @@
 			}
 
 
-			v2f Vert(a2v v)
+			v2f DefaultVert(a2v v)
 			{
 				v2f o;
 

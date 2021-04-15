@@ -10,6 +10,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 {
 	//isframe   0帧数 uv.x<=0.5    1帧数 uv.x>=0.5   2帧数不更新
 	//mulrt  0rt blend 用	1rt 1/2   2rt  1/4
+	//todo:frame mode 0 可以画一个更小的RT 然后 合并上去
+	//todo: 添加quarter 
 	public class SolidCloudRenderPass : ScriptableRenderPass
 	{
 		// private const int c_MulRTStart = 1;
@@ -27,6 +29,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private const string k_CLOUD_BLUR_ON = "CLOUD_BLUR_ON";
 		private const string k_CLOUD_MUL_RT_ON = "CLOUD_MUL_RT_ON";
 		private const string k_CLOUD_FRAME_ON = "CLOUD_FRAME_ON";
+
+		private static readonly string[] k_FRAME_MODE =
+		{
+			"FRAME_MODE_0", "FRAME_MODE_1", "FRAME_MODE_2", "FRAME_MODE_3"
+		};
 
 
 		private static readonly int GenNoiseTex_ID = Shader.PropertyToID("_GenNoiseTex");
@@ -99,6 +106,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		private int rtSize, screenWidth, screenHeight, noiseSize;
 		private int mainLightIndex;
+		private bool mulRTBlend, enableFrame;
+		private int frameMode;
 
 		private Vector3 windSpeedAcum = Vector3.zero;
 		private float amount = 0;
@@ -118,9 +127,12 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			screenWidth = width;
 			screenHeight = height;
 			noiseSize = 2 << settings.noisePowSize.value;
+			mulRTBlend = settings.mulRTBlend.value;
+			enableFrame = settings.enableFrame.value;
+			frameMode = settings.frameMode.value;
 
 
-			if (settings.enableFrame.value)
+			if (enableFrame)
 			{
 				if (CheckFrameRTChange())
 				{
@@ -155,16 +167,16 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		{
 			if (frameRTS != null)
 			{
-				if (settings.mulRTBlend.value)
+				if (mulRTBlend)
 				{
-					if (frameRTS.Length == 1)
+					if (frameRTS.Length != 3)
 					{
 						return true;
 					}
 				}
 				else
 				{
-					if (frameRTS.Length == 3)
+					if (frameRTS.Length != 1)
 					{
 						return true;
 					}
@@ -191,11 +203,17 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				return;
 			}
 
-			int len = settings.mulRTBlend.value ? 3 : 1;
+			int len = mulRTBlend ? 3 : 1;
 			frameRTS = new RenderTexture[len];
+			int div = (int) Mathf.Pow(2, rtSize - 1);
+
 			for (int i = 0; i < len; i++)
 			{
-				int div = (int) Mathf.Pow(2, rtSize - 1 + i);
+				if (mulRTBlend && i != 0)
+				{
+					div <<= 1;
+				}
+
 				int width = screenWidth / div;
 				int height = screenHeight / div;
 				frameRTS[i] = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32,
@@ -420,35 +438,52 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			}
 
 
-			if (settings.enableFrame.value)
+			if (enableFrame)
 			{
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, true);
+				if (frameMode == 2)
+				{
+					frame = (frame + 1) % 3;
+				}
+				else
+				{
+					frame = (frame + 1) % 4;
+				}
+
 				solidCloudMaterial.SetInt(Frame_ID, frame);
-				frame = 0;//(frame + 1) % 4;
+				for (int i = 0; i < k_FRAME_MODE.Length; i++)
+				{
+					CoreUtils.SetKeyword(solidCloudMaterial, k_FRAME_MODE[i], i == frameMode);
+				}
 			}
 			else
 			{
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, false);
+				frame = -1;
 			}
-
-			bool isFrame = settings.enableFrame.value;
+			
+			CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, mulRTBlend);
 
 			//如果是mul叠加  则 用下面两级来叠加 1/2 1/4 1/8 1/16  步长则最短
-			if (settings.mulRTBlend.value)
+			if (mulRTBlend)
 			{
 				cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, true);
 
 				//blend
 				for (int i = 1; i < 3; i++)
 				{
-					if (isFrame)
+					if (enableFrame)
 					{
+						if (frameMode == 2 && frame == 2)
+						{
+							break;
+						}
+
 						cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.DontCare,
 							RenderBufferStoreAction.Store,
 							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
 						//frame 叠加   如果clear了  覆盖不上去   而且还少了一个clear
-						// CoreUtils.ClearRenderTarget(cmd, ClearFlag.Color, new Color(0, 0, 0, 0));
+						// CoreUtils.ClearRenderTarget(cmd, ClearFlag.None, new Color(0, 0, 0, 0));
 						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
 						cmd.SetGlobalTexture(TempBlendTex_ID[i], frameRTS[i]);
 					}
@@ -474,7 +509,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				context.ExecuteCommandBuffer(cmd);
 				cmd.Clear();
 
-				if (!settings.enableBlur.value)
+				if (!enableFrame && !settings.enableBlur.value)
 				{
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
@@ -483,17 +518,19 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				}
 				else
 				{
-					cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-					if (isFrame)
+					if (enableFrame)
 					{
-						cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
-							RenderBufferStoreAction.Store,
-							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
-						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						if (!(frameMode == 2 && frame == 2))
+						{
+							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.Load,
+								RenderBufferStoreAction.Store,
+								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
+							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
 
-						context.ExecuteCommandBuffer(cmd);
-						cmd.Clear();
+							context.ExecuteCommandBuffer(cmd);
+							cmd.Clear();
+						}
 					}
 					else
 					{
@@ -510,10 +547,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 						context.ExecuteCommandBuffer(cmd);
 						cmd.Clear();
+
+						for (int i = 1; i < 3; i++)
+						{
+							cmd.ReleaseTemporaryRT(TempBlendTex_ID[i]);
+						}
 					}
 
 
-					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, true);
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
 
@@ -521,64 +563,39 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
 				}
 
-				for (int i = 1; i < 3; i++)
-				{
-					cmd.ReleaseTemporaryRT(TempBlendTex_ID[i]);
-				}
-
 				cmd.ReleaseTemporaryRT(BlendTex_ID);
 			}
 			else
 			{
-				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, false);
-
-				if (rtSize == 1 && settings.enableBlur.value == false)
+				if (rtSize == 1 && settings.enableBlur.value == false && enableFrame == false)
 				{
-					if (isFrame)
-					{
-						//todo: 改成dont car
-						//todo: 把UV写在定点里面
-						//todo: 添加quarter 
-						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-						cmd.SetRenderTarget(frameRTS[0]);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
-
-						context.ExecuteCommandBuffer(cmd);
-						cmd.Clear();
-
-						CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, false);
-						cmd.SetRenderTarget(CameraColorTexture_RTI);
-						cmd.SetGlobalInt(DstBlend_ID,
-							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 3);
-					}
-					else
-					{
-						cmd.SetGlobalInt(DstBlend_ID,
-							(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
-						cmd.SetRenderTarget(CameraColorTexture_RTI);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-					}
+					cmd.SetGlobalInt(DstBlend_ID,
+						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+					cmd.SetRenderTarget(CameraColorTexture_RTI);
+					CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
 				}
 				else
 				{
 					cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
 
 					//blend
-					int div = (int) Mathf.Pow(2, rtSize - 1);
-					int width = screenWidth / div;
-					int height = screenHeight / div;
-
-					if (isFrame)
+					if (enableFrame)
 					{
-						cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
-						cmd.SetRenderTarget(frameRTS[0]);
-						CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
-						cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						if (!(frameMode == 2 && frame == 2))
+						{
+							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
+								RenderBufferStoreAction.Store);
+							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
+							cmd.SetGlobalTexture(BlendTex_ID, frameRTS[0]);
+						}
 					}
 					else
 					{
+						int div = (int) Mathf.Pow(2, rtSize - 1);
+						int width = screenWidth / div;
+						int height = screenHeight / div;
+
 						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
 						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
