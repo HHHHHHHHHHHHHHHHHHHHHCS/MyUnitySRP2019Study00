@@ -1,4 +1,4 @@
-Shader "MyRP/Cloud"
+Shader "MyRP/Cloud/Cloud"
 {
 	Properties
 	{
