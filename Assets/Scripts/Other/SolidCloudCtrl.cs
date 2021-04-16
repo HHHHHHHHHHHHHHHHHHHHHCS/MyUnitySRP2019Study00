@@ -35,6 +35,8 @@ public class SolidCloudCtrl : MonoBehaviour
 		mulRTToggle.isOn = settings.mulRTBlend.value;
 		frameRTToggle.isOn = settings.enableFrame.value;
 		frameModeSlider.value = settings.frameMode.value;
+		frameModeSlider.minValue = settings.frameMode.min;
+		frameModeSlider.maxValue = settings.frameMode.max;
 		frameModeText.text = frameModeSlider.value.ToString();
 		rtSizeDropdown.value = settings.rtSize.value - 1;
 		stepSlider.value = settings.stepping.value;
@@ -51,7 +53,7 @@ public class SolidCloudCtrl : MonoBehaviour
 		settings.enableBlur.value = blurToggle.isOn;
 		settings.mulRTBlend.value = mulRTToggle.isOn;
 		settings.enableFrame.value = frameRTToggle.isOn;
-		settings.frameMode.value = (int)frameModeSlider.value;
+		settings.frameMode.value = (int) frameModeSlider.value;
 		frameModeText.text = frameModeSlider.value.ToString();
 		settings.rtSize.value = rtSizeDropdown.value + 1;
 		settings.stepping.value = stepSlider.value;

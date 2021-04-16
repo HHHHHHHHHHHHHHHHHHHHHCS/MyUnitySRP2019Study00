@@ -8,10 +8,11 @@ using Object = UnityEngine.Object;
 
 namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 {
-	//isframe   0帧数 uv.x<=0.5    1帧数 uv.x>=0.5   2帧数不更新
-	//mulrt  0rt blend 用	1rt 1/2   2rt  1/4
-	//todo:frame mode 0 可以画一个更小的RT 然后 合并上去
-	//todo: 添加quarter 
+	//还有 sdf 预测   放弃挣扎  https://zhuanlan.zhihu.com/p/350058989
+	//这里的1/2尺寸 都是相对 width/height  而不是面积  
+	//m+f  0:1/4的渲染的渲染一个角    1:1/2的渲染一个角    2:竖着1/2的渲染半屏幕 3帧数抽一帧    3:横着1/2的渲染 3帧数抽一帧    4:1/2的小格子渲染
+	//f  0,1:1/2的渲染一个角    2:竖着1/2渲染半屏幕 3帧数抽一帧    2:横着着1/2渲染半屏幕 3帧数抽一帧  4:默认效果
+	//m  创建一个1/2的rt 和 1/4的rt 进行blend
 	public class SolidCloudRenderPass : ScriptableRenderPass
 	{
 		// private const int c_MulRTStart = 1;
@@ -30,9 +31,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private const string k_CLOUD_MUL_RT_ON = "CLOUD_MUL_RT_ON";
 		private const string k_CLOUD_FRAME_ON = "CLOUD_FRAME_ON";
 
+		//FRAME_MODE_0 FRAME_MODE_1的算法一样
 		private static readonly string[] k_FRAME_MODE =
 		{
-			"FRAME_MODE_0", "FRAME_MODE_1", "FRAME_MODE_2", "FRAME_MODE_3"
+			"FRAME_MODE_0", "FRAME_MODE_0", "FRAME_MODE_2", "FRAME_MODE_3", "FRAME_MODE_4"
 		};
 
 
@@ -84,6 +86,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		//cloud##################
 		private static readonly int Frame_ID = Shader.PropertyToID("_Frame");
+		private static readonly int MulRTScale_ID = Shader.PropertyToID("_MulRTScale");
 		private static readonly int DstBlend_ID = Shader.PropertyToID("_DstBlend");
 		private static readonly int NoiseTex_ID = Shader.PropertyToID("_NoiseTex");
 		private static readonly int MaskTex_ID = Shader.PropertyToID("_MaskTex");
@@ -182,12 +185,19 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 				}
 
-				int div = (int) Mathf.Pow(2, rtSize - 1);
+				int div = rtSize - 1;
 
-
-				int width = screenWidth / div;
-				int height = screenHeight / div;
+				int width = screenWidth >> div;
+				int height = screenHeight >> div;
 				if (frameRTS[0] == null || frameRTS[0].width != width || frameRTS[0].height != height)
+				{
+					return true;
+				}
+
+				width >>= (frameMode == 0 ? 2 : 1);
+				height >>= (frameMode == 0 ? 2 : 1);
+				if (mulRTBlend && (frameRTS[1] == null || frameRTS[1].width != width ||
+				                   frameRTS[1].height != height))
 				{
 					return true;
 				}
@@ -205,17 +215,27 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 			int len = mulRTBlend ? 3 : 1;
 			frameRTS = new RenderTexture[len];
-			int div = (int) Mathf.Pow(2, rtSize - 1);
+			int div = rtSize - 1;
 
 			for (int i = 0; i < len; i++)
 			{
-				if (mulRTBlend && i != 0)
+				if (mulRTBlend)
 				{
-					div <<= 1;
+					// 1 or 2
+					if (i != 0)
+					{
+						div += 1;
+					}
+
+					// mulRT && frameMode == 0     rt 1 和 2 要小0.5
+					if (frameMode == 0 && i == 1)
+					{
+						div += 1;
+					}
 				}
 
-				int width = screenWidth / div;
-				int height = screenHeight / div;
+				int width = screenWidth >> div;
+				int height = screenHeight >> div;
 				frameRTS[i] = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32,
 					RenderTextureReadWrite.sRGB)
 				{
@@ -441,7 +461,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			if (enableFrame)
 			{
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, true);
-				if (frameMode == 2)
+				if (frameMode == 2 || frameMode == 3)
 				{
 					frame = (frame + 1) % 3;
 				}
@@ -453,7 +473,15 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				solidCloudMaterial.SetInt(Frame_ID, frame);
 				for (int i = 0; i < k_FRAME_MODE.Length; i++)
 				{
-					CoreUtils.SetKeyword(solidCloudMaterial, k_FRAME_MODE[i], i == frameMode);
+					//手机的bug 短时间内对一个关键字快速的enable disable  如果shader过于麻烦 手机反应不过来会死机
+					if ((i == 0 && frameMode == 1) || (i == 1 && frameMode == 0))
+					{
+						CoreUtils.SetKeyword(solidCloudMaterial, k_FRAME_MODE[0], true);
+					}
+					else
+					{
+						CoreUtils.SetKeyword(solidCloudMaterial, k_FRAME_MODE[i], i == frameMode);
+					}
 				}
 			}
 			else
@@ -461,7 +489,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_FRAME_ON, false);
 				frame = -1;
 			}
-			
+
 			CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, mulRTBlend);
 
 			//如果是mul叠加  则 用下面两级来叠加 1/2 1/4 1/8 1/16  步长则最短
@@ -474,11 +502,18 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				{
 					if (enableFrame)
 					{
-						if (frameMode == 2 && frame == 2)
+						if ((frameMode == 2 || frameMode == 3) && frame == 2)
 						{
 							break;
 						}
 
+						if (frameMode == 4)
+						{
+							cmd.SetGlobalVector(MulRTScale_ID
+								, new Vector4(frameRTS[0].width, frameRTS[0].height, i - 1, i * 2));
+						}
+
+						//如果dontcare 出现花屏幕  改成 load
 						cmd.SetRenderTarget(frameRTS[i], RenderBufferLoadAction.DontCare,
 							RenderBufferStoreAction.Store,
 							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
@@ -489,9 +524,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = (int) Math.Pow(2, rtSize - 1 + i);
-						int width = screenWidth / div;
-						int height = screenHeight / div;
+						int div = rtSize - 1 + i;
+						int width = screenWidth >> div;
+						int height = screenHeight >> div;
 
 						//其实FPS够高 cmd.GetTemporaryRT 也有效果  但是我这里为了保险用了常驻的rt
 						cmd.GetTemporaryRT(TempBlendTex_ID[i], width, height, 0, FilterMode.Bilinear,
@@ -520,9 +555,10 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 				{
 					if (enableFrame)
 					{
-						if (!(frameMode == 2 && frame == 2))
+						if (!((frameMode == 2 || frameMode == 3) && frame == 2))
 						{
-							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.Load,
+							//如果dontcare 出现花屏幕  改成 load
+							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
 								RenderBufferStoreAction.Store,
 								RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
 							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 4);
@@ -534,9 +570,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = (int) Math.Pow(2, rtSize - 1);
-						int width = screenWidth / div;
-						int height = screenHeight / div;
+						int div = rtSize - 1;
+						int width = screenWidth >> div;
+						int height = screenHeight >> div;
 						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
 						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
@@ -581,9 +617,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					//blend
 					if (enableFrame)
 					{
-						if (!(frameMode == 2 && frame == 2))
+						if (!((frameMode == 2 || frameMode == 3) && frame == 2))
 						{
 							cmd.SetGlobalInt(DstBlend_ID, (int) BlendMode.Zero);
+
+							//如果dontcare 出现花屏幕  改成 load
 							cmd.SetRenderTarget(frameRTS[0], RenderBufferLoadAction.DontCare,
 								RenderBufferStoreAction.Store);
 							CoreUtils.DrawFullScreen(cmd, solidCloudMaterial, null, 0);
@@ -592,9 +630,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = (int) Mathf.Pow(2, rtSize - 1);
-						int width = screenWidth / div;
-						int height = screenHeight / div;
+						int div = rtSize - 1;
+						int width = screenWidth >> div;
+						int height = screenHeight >> div;
 
 						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
