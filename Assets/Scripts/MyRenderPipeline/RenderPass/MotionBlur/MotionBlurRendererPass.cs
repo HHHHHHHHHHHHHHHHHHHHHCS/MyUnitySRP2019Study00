@@ -66,6 +66,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 
 			if (mat == null)
 			{
+				Debug.LogError("Motion Blur Material is null!");
 				return;
 			}
 

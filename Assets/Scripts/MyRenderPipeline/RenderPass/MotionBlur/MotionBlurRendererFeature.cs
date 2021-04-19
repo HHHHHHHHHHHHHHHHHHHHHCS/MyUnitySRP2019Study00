@@ -35,7 +35,7 @@ namespace MyRenderPipeline.RenderPass.MotionBlur
 			
 			motionBlurRendererPass = new MotionBlurRendererPass(settings);
 
-			motionBlurRendererPass.renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+			motionBlurRendererPass.renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
 		}
 
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
