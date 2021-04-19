@@ -349,7 +349,7 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			//###############################################
 
 			//CloudColor----------------
-			solidCloudMaterial.SetVector(CloudColor_ID, settings.cloudAlbedoColor.value);
+			solidCloudMaterial.SetColor(CloudColor_ID, settings.cloudAlbedoColor.value);
 
 			CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_USE_XY_PLANE, settings.useXYPlane.value);
 
