@@ -67,7 +67,7 @@ MonoBehaviour:
     m_Value: 1
   enableFrame:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   frameMode:
     m_OverrideState: 1
     m_Value: 1
@@ -75,15 +75,15 @@ MonoBehaviour:
     max: 4
   mulRTBlend:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   rtSize:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 4
     min: 1
     max: 5
   enableBlur:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   useXYPlane:
     m_OverrideState: 1
     m_Value: 0

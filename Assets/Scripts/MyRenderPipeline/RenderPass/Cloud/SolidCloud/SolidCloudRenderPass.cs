@@ -98,6 +98,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 		private static readonly int CloudAreaData_ID = Shader.PropertyToID("_CloudAreaData");
 		private static readonly int CloudDistance_ID = Shader.PropertyToID("_CloudDistance");
 		private static readonly int SunShadowsData_ID = Shader.PropertyToID("_SunShadowsData");
+		private static readonly int Step_TexelSize_ID = Shader.PropertyToID("_Step_TexelSize");
+
 
 		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_SolidCloudPass);
 
@@ -492,6 +494,41 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 			CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_MUL_RT_ON, mulRTBlend);
 
+			int div = rtSize - 1;
+			int width = screenWidth >> div;
+			int height = screenHeight >> div;
+			if (settings.enableBlur.value)
+			{
+				if (div != 0)
+				{
+					if (mulRTBlend && !enableFrame)
+					{
+						solidCloudMaterial.SetVector(Step_TexelSize_ID,
+							new Vector4(1.5f / (div * width), 1.5f / (div * height)));
+					}
+					else if (!mulRTBlend && enableFrame)
+					{
+						solidCloudMaterial.SetVector(Step_TexelSize_ID,
+							new Vector4(1f / (div * width), 1f / (div * height)));
+					}
+					else if (mulRTBlend && enableFrame)
+					{
+						solidCloudMaterial.SetVector(Step_TexelSize_ID,
+							new Vector4(2f / (div * width), 2f / (div * height)));
+					}
+					else
+					{
+						solidCloudMaterial.SetVector(Step_TexelSize_ID,
+							new Vector4(1.5f / (div * width), 1.5f / (div * height)));
+					}
+				}
+				else
+				{
+					solidCloudMaterial.SetVector(Step_TexelSize_ID,
+						Vector4.zero);
+				}
+			}
+
 			//如果是mul叠加  则 用下面两级来叠加 1/2 1/4 1/8 1/16  步长则最短
 			if (mulRTBlend)
 			{
@@ -524,10 +561,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = rtSize - 1 + i;
-						int width = screenWidth >> div;
-						int height = screenHeight >> div;
-
 						//其实FPS够高 cmd.GetTemporaryRT 也有效果  但是我这里为了保险用了常驻的rt
 						cmd.GetTemporaryRT(TempBlendTex_ID[i], width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
@@ -570,9 +603,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = rtSize - 1;
-						int width = screenWidth >> div;
-						int height = screenHeight >> div;
 						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
 						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
@@ -590,7 +620,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 						}
 					}
 
-
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
@@ -603,8 +632,9 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 			}
 			else
 			{
-				if (rtSize == 1 && settings.enableBlur.value == false && enableFrame == false)
+				if (rtSize == 1 && enableFrame == false)
 				{
+					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, false);
 					cmd.SetGlobalInt(DstBlend_ID,
 						(int) (settings.enableBlend.value ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
 					cmd.SetRenderTarget(CameraColorTexture_RTI);
@@ -630,10 +660,6 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					}
 					else
 					{
-						int div = rtSize - 1;
-						int width = screenWidth >> div;
-						int height = screenHeight >> div;
-
 						cmd.GetTemporaryRT(BlendTex_ID, width, height, 0, FilterMode.Bilinear,
 							RenderTextureFormat.ARGB32);
 						cmd.SetRenderTarget(BlendTex_RTI, RenderBufferLoadAction.DontCare,
@@ -643,10 +669,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 						cmd.SetGlobalTexture(BlendTex_ID, BlendTex_RTI);
 					}
 
-
 					context.ExecuteCommandBuffer(cmd);
 					cmd.Clear();
-
 
 					CoreUtils.SetKeyword(solidCloudMaterial, k_CLOUD_BLUR_ON, settings.enableBlur.value);
 					cmd.SetGlobalInt(DstBlend_ID,
