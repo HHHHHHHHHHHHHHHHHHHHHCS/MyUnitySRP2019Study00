@@ -17,7 +17,7 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 
 		[Tooltip("Feedback")] public ClampedFloatParameter feedback = new ClampedFloatParameter(0.0f, 0f, 1f);
 
-		public bool IsActive() => enableEffect.value && feedback.value > 0.0f && feedback.overrideState == true;
+		public bool IsActive() => enableEffect.value && feedback.value > 0.0f;// && feedback.overrideState == true;
 
 		public bool IsTileCompatible() => false;
 	}
