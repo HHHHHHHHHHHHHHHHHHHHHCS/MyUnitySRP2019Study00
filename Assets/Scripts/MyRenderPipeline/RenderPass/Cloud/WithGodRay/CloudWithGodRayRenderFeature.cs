@@ -24,6 +24,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.WithGodRay
 
 		public override void Create()
 		{
+			if (cloudMaterial != null && cloudMaterial.shader != cloudShader)
+			{
+				DestroyImmediate(cloudMaterial);
+			}
+			
 			if (cloudShader == null)
 			{
 				Debug.LogError("Shader is null!");

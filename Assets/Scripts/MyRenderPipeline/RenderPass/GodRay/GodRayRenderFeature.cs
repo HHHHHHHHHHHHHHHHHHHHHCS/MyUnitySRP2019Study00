@@ -15,6 +15,11 @@ namespace MyRenderPipeline.RenderPass.GodRay
 
 		public override void Create()
 		{
+			if (godRayMaterial != null && godRayMaterial.shader != godRayShader)
+			{
+				DestroyImmediate(godRayMaterial);
+			}
+			
 			if (godRayShader == null)
 			{
 				Debug.LogError("Shader is null!");

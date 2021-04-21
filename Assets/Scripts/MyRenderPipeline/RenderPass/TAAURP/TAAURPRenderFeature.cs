@@ -10,10 +10,11 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 	{
 		public Shader taaurpShader;
 
-		private TAAURPData taaData;
+		private TAAURPProjectionRenderPass taaurpProjectionRenderPass;
 		private TAAURPRenderPass taaurpRenderPass;
 
 		private bool isNextFrame;
+		private TAAURPData taaData;
 		private Material taaurpMaterial;
 
 
@@ -31,6 +32,11 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 			}
 
 			taaurpMaterial = CoreUtils.CreateEngineMaterial(taaurpShader);
+
+			taaurpProjectionRenderPass = new TAAURPProjectionRenderPass()
+			{
+				renderPassEvent = RenderPassEvent.BeforeRenderingOpaques
+			};
 			taaurpRenderPass = new TAAURPRenderPass()
 			{
 				renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing
@@ -41,6 +47,7 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 		}
 
 		//这里默认只处理一个摄像机的   如果是多摄像机  添加一个dict<camera,taaData>维护
+		//同时历史RT也要维护
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
 			var camera = renderingData.cameraData.camera;
@@ -58,7 +65,10 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 				{
 					UpdateTAAData(camera, settings);
 
-					taaurpRenderPass.Setup(settings, ref taaData);
+					taaurpProjectionRenderPass.Setup(taaData.proOverride);
+					renderer.EnqueuePass(taaurpProjectionRenderPass);
+
+					taaurpRenderPass.Setup( settings, ref taaData);
 					renderer.EnqueuePass(taaurpRenderPass);
 
 					isNextFrame = true;
@@ -66,11 +76,13 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 				else
 				{
 					isNextFrame = false;
+					taaurpRenderPass?.ClearRT();
 				}
 			}
 			else
 			{
 				isNextFrame = false;
+				taaurpRenderPass?.ClearRT();
 			}
 		}
 
@@ -86,10 +98,11 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 					? TAAURPUtils.GetJitteredOrthographicProjectionMatrix(camera, offset)
 					: TAAURPUtils.GetJitteredPerspectiveProjectionMatrix(camera, offset);
 
+			
 			taaData.sampleOffset = new Vector2(offset.x / camera.scaledPixelWidth, offset.y / camera.scaledPixelHeight);
 
 			taaData.viewCurrent = camera.worldToCameraMatrix;
-			taaData.projCurrent = camera.projectionMatrix;
+			taaData.projCurrent = taaData.proOverride;//camera.projectionMatrix;
 		}
 	}
 }

@@ -24,6 +24,16 @@ namespace MyRenderPipeline.RenderPass.Cloud.ImageEffect
 
 		public override void Create()
 		{
+			if (cloudMaterial != null && cloudMaterial.shader != cloudShader)
+			{
+				DestroyImmediate(cloudMaterial);
+			}
+			
+			if (cloudSkyMaterial != null && cloudSkyMaterial.shader != cloudSkyShader)
+			{
+				DestroyImmediate(cloudSkyMaterial);
+			}
+			
 			if (cloudShader == null || cloudSkyShader == null)
 			{
 				Debug.LogError("Shader is null!");

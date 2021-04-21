@@ -27,6 +27,11 @@ namespace MyRenderPipeline.RenderPass.MyBlit
 
 		public override void Create()
 		{
+			if (blitMaterial != null && blitMaterial.shader != blitShader)
+			{
+				DestroyImmediate(blitMaterial);
+			}
+
 			if (blitShader != null)
 			{
 				blitMaterial = CoreUtils.CreateEngineMaterial(blitShader);
@@ -36,7 +41,7 @@ namespace MyRenderPipeline.RenderPass.MyBlit
 				};
 			}
 		}
-		
+
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
 			if (blitRenderPass != null)

@@ -17,6 +17,11 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 
 		public override void Create()
 		{
+			if (solidCloudMaterial != null && solidCloudMaterial.shader != solidCloudShader)
+			{
+				DestroyImmediate(solidCloudMaterial);
+			}
+			
 			if (solidCloudShader == null)
 			{
 				Debug.LogError("Shader is null!");

@@ -15,6 +15,11 @@ namespace MyRenderPipeline.RenderPass.CrepuscularRay
         
         public override void Create()
         {
+            if (crepuscularRayMaterial != null && crepuscularRayMaterial.shader != crepuscularRayShader)
+            {
+                DestroyImmediate(crepuscularRayMaterial);
+            }
+            
             if (crepuscularRayShader == null)
             {
                 Debug.LogError("Shader is null!");
