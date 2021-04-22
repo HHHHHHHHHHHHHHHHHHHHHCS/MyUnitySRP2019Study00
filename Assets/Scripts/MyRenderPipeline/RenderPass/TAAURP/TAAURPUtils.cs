@@ -50,8 +50,8 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 
 			float left = offset.x - horizontal;
 			float right = offset.x + horizontal;
-			float top = offset.x - horizontal;
-			float bottom = offset.x - horizontal;
+			float top = offset.y - vertical;
+			float bottom = offset.y + vertical;
 
 			return Matrix4x4.Ortho(left, right, bottom, top, camera.nearClipPlane, camera.farClipPlane);
 		}

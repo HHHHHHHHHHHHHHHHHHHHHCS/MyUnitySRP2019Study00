@@ -60,6 +60,7 @@
 			float4x4 _TAA_PrevViewProj, _TAA_Current_I_V_Jittered, _TAA_Current_I_P_Jittered;
 
 			//其实 有时候对颜色做clamp 会用 ycocg
+			//这里的指令可以进行优化   因为 color_min,color_max 只用rgb   color_avg 只用alpha
 			half4 MinMaxColor(float2 uv, out half4 color_min, out half4 color_max, out half4 color_avg)
 			{
 				//left right top bottom
@@ -77,30 +78,30 @@
 
 				#elif _TAA_MEDIUM
 					
-					half4 clt = SampleColor(_MainTex, uv + offset.zy);
-					half4 clb = SampleColor(_MainTex, uv + offset.zw);
-					half4 crt = SampleColor(_MainTex, uv + offset.xy);
-					half4 crb = SampleColor(_MainTex, uv + offset.xw);
-					
-					
-					color_min = min(cc, min(crt, min(clb, min(crb, clt))));
-					color_max = max(cc, max(crt, max(clb, max(crb, clt))));
-					color_avg = 0.2 * (cc + crt + clb + crb + clt);
+				half4 clt = SampleColor(uv + offset.zy);
+				half4 clb = SampleColor(uv + offset.zw);
+				half4 crt = SampleColor(uv + offset.xy);
+				half4 crb = SampleColor(uv + offset.xw);
+				
+				
+				color_min = min(cc, min(crt, min(clb, min(crb, clt))));
+				color_max = max(cc, max(crt, max(clb, max(crb, clt))));
+				color_avg = 0.2 * (cc + crt + clb + crb + clt);
 					
 				#else //if _TAA_HIGH
 					
-					half4 cl = SampleColor(uv + float2(offset.z, 0));
-					half4 cr = SampleColor(uv + float2(offset.x, 0));
-					half4 ct = SampleColor(uv + float2(0, offset.y));
-					half4 cb = SampleColor(uv + float2(0, offset.w));
-					half4 clt = SampleColor(uv + float2(offset.zy));
-					half4 clb = SampleColor(uv + float2(offset.zw));
-					half4 crt = SampleColor(uv + float2(offset.xy));
-					half4 crb = SampleColor(uv + float2(offset.xw));
-					
-					color_min = min(cc, min(cl, min(cr, min(ct, min(cb, min(clt, min(clb, min(crt, crb))))))));
-					color_max = max(cc, max(cl, max(cr, max(ct, max(cb, max(clt, max(clb, max(crt, crb))))))));
-					color_avg = 0.1111111 * (cc + cl + cr + ct + cb + clt + clb + crt + crb);
+				half4 cl = SampleColor(uv + float2(offset.z, 0));
+				half4 cr = SampleColor(uv + float2(offset.x, 0));
+				half4 ct = SampleColor(uv + float2(0, offset.y));
+				half4 cb = SampleColor(uv + float2(0, offset.w));
+				half4 clt = SampleColor(uv + float2(offset.zy));
+				half4 clb = SampleColor(uv + float2(offset.zw));
+				half4 crt = SampleColor(uv + float2(offset.xy));
+				half4 crb = SampleColor(uv + float2(offset.xw));
+				
+				color_min = min(cc, min(cl, min(cr, min(ct, min(cb, min(clt, min(clb, min(crt, crb))))))));
+				color_max = max(cc, max(cl, max(cr, max(ct, max(cb, max(clt, max(clb, max(crt, crb))))))));
+				color_avg = 0.1111111 * (cc + cl + cr + ct + cb + clt + clb + crt + crb);
 					
 				#endif
 
@@ -116,7 +117,13 @@
 				#endif
 				depth = 2.0 * depth - 1.0;
 
+				#if UNITY_UV_STARTS_AT_TOP
+				uv.y = 1 - uv.y;
+				#endif
+
+				
 				float3 viewPos = ComputeViewSpacePosition(uv, depth, _TAA_Current_I_P_Jittered);
+				viewPos.z = -viewPos.z;//ComputeViewSpacePosition 里面有反转z
 				float4 worldPos = float4(mul(_TAA_Current_I_V_Jittered, float4(viewPos, 1.0)).xyz, 1.0);
 
 				float4 historyNDC = mul(_TAA_PrevViewProj, worldPos);
@@ -127,31 +134,30 @@
 				return historyNDC.xy;
 			}
 
-			half4 ClipAABB(half3 color_min, half3 color_max, half4 color_avg, half4 color_prev)
+			half4 ClipAABB(half3 color_min, half3 color_max, half alpha_avg, half4 color_prev)
 			{
 				half3 p_clip = 0.5 * (color_max + color_min);
 				half3 e_clip = 0.5 * (color_max - color_min) + FLT_EPS;
-				half4 v_clip = color_prev - float4(p_clip, color_avg.w);
+				half4 v_clip = color_prev - half4(p_clip, alpha_avg);
 				float3 v_unit = v_clip.xyz / e_clip;
 				float3 a_unit = abs(v_unit);
 				float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z)) + FLT_EPS;
 
 				if (ma_unit > 1.0)
-					return float4(p_clip, color_avg.w) + v_clip / ma_unit;
+					return half4(p_clip, alpha_avg) + v_clip / ma_unit;
 				else
 					return color_prev;
 			}
 
-			//todo:taa抖动
 			half4 Frag(v2f i): SV_Target
 			{
-				float2 uv = i.uv;
-				// float2 jittered_uv = jittered_uv + _TAA_Params.xy;
+				//unjittered uv 
+				float2 uv = i.uv - _TAA_Params.xy;
 				half4 color_min, color_max, color_avg;
 				half4 color = MinMaxColor(uv, color_min, color_max, color_avg);
 				float2 previousTC = HistoryPosition(uv);
-				float4 prev_color = SAMPLE_TEXTURE2D_X(_TAA_PreTexture, sampler_LinearClamp, previousTC);
-				prev_color = ClipAABB(color_min, color_max, color_avg, prev_color);
+				half4 prev_color = SAMPLE_TEXTURE2D(_TAA_PreTexture, sampler_LinearClamp, previousTC);
+				prev_color = ClipAABB(color_min.rgb, color_max.rgb, color_avg.a, prev_color);
 				float4 result_color = lerp(color, prev_color, _TAA_Params.z);
 				return result_color;
 			}

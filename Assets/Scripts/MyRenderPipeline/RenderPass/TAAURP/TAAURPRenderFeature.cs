@@ -52,7 +52,8 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 		{
 			var camera = renderingData.cameraData.camera;
 
-			if (camera.cameraType != CameraType.Game)
+			//PreviewCamera 也会TAA
+			if (camera.cameraType != CameraType.Game || camera.name.StartsWith("Preview"))
 			{
 				return;
 			}
@@ -68,7 +69,7 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 					taaurpProjectionRenderPass.Setup(taaData.proOverride);
 					renderer.EnqueuePass(taaurpProjectionRenderPass);
 
-					taaurpRenderPass.Setup( settings, ref taaData);
+					taaurpRenderPass.Setup(settings, ref taaData);
 					renderer.EnqueuePass(taaurpRenderPass);
 
 					isNextFrame = true;
@@ -98,11 +99,11 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 					? TAAURPUtils.GetJitteredOrthographicProjectionMatrix(camera, offset)
 					: TAAURPUtils.GetJitteredPerspectiveProjectionMatrix(camera, offset);
 
-			
+
 			taaData.sampleOffset = new Vector2(offset.x / camera.scaledPixelWidth, offset.y / camera.scaledPixelHeight);
 
 			taaData.viewCurrent = camera.worldToCameraMatrix;
-			taaData.projCurrent = taaData.proOverride;//camera.projectionMatrix;
+			taaData.projCurrent = camera.projectionMatrix;//因为反算的时候 uv走的是 unjittered的
 		}
 	}
 }

@@ -28,7 +28,8 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 		private TAAURPData data;
 
 		private RenderTexture[] historyRTs;
-		private int indexWrite = 0;
+		private int indexWrite;
+		private bool isFirst;
 
 
 		public void Init(Material taaurpMaterial)
@@ -61,11 +62,15 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 		public void CreateRT(int count, int width, int height, RenderTextureFormat format, FilterMode filterMode
 			, int depthBits = 0, int antiAliasing = 1)
 		{
+			indexWrite = 0;
+			isFirst = true;
 			historyRTs = new RenderTexture[count];
 			for (int i = 0; i < count; i++)
 			{
-				historyRTs[i] = RenderTexture.GetTemporary(width, height, depthBits, format,
+				var temp = RenderTexture.GetTemporary(width, height, depthBits, format,
 					RenderTextureReadWrite.Default, antiAliasing);
+				temp.filterMode = filterMode;
+				historyRTs[i] = temp;
 			}
 		}
 
@@ -131,9 +136,20 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 			int indexRead = indexWrite;
 			indexWrite = (indexWrite + 1) % 2;
 
+			if (isFirst)
+			{
+				cmd.SetRenderTarget(historyRTs[indexWrite]
+					, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+				cmd.SetGlobalTexture(SrcTex_ID, CameraColorTexture_RTI);
+				CoreUtils.DrawFullScreen(cmd, taaurpMat, null, 1);
+				isFirst = false;
+				return;
+			}
+
 			Matrix4x4 inv_Proj_Jittered = Matrix4x4.Inverse(data.proOverride);
 			Matrix4x4 inv_View_Jittered = Matrix4x4.Inverse(data.viewCurrent);
 			Matrix4x4 previous_vp = data.projPrevious * data.viewPrevious;
+			// previous_vp = data.proOverride * data.viewCurrent;
 
 			taaurpMat.SetMatrix(TAA_Current_I_V_Jittered_ID, inv_View_Jittered);
 			taaurpMat.SetMatrix(TAA_Current_I_P_Jittered_ID, inv_Proj_Jittered);
@@ -147,7 +163,6 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 				settings.quality.value == TAAURPQuality.Medium);
 			CoreUtils.SetKeyword(cmd, k_TAA_HIGH_QUALITY,
 				settings.quality.value == TAAURPQuality.High);
-
 
 			cmd.SetRenderTarget(historyRTs[indexWrite]
 				, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
