@@ -518,7 +518,7 @@
 
 			half4 FragNoise(v2f i): SV_TARGET
 			{
-				_Amount = 0;
+				// _Amount = 0;
 				float sint, cost;
 				sincos(_Amount, sint, cost);
 				half4 p0 = SAMPLE_TEXTURE2D_LOD(_NoiseTex, sampler_linear_repeat_NoiseTex, i.uv, 0);
