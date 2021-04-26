@@ -562,8 +562,8 @@ namespace MyRenderPipeline.RenderPass.Cloud.SolidCloud
 					else
 					{
 						//其实FPS够高 cmd.GetTemporaryRT 也有效果  但是我这里为了保险用了常驻的rt
-						cmd.GetTemporaryRT(TempBlendTex_ID[i], width, height, 0, FilterMode.Bilinear,
-							RenderTextureFormat.ARGB32);
+						cmd.GetTemporaryRT(TempBlendTex_ID[i], width / (2 * i), height / (2 * i), 0,
+							FilterMode.Bilinear, RenderTextureFormat.ARGB32);
 						cmd.SetRenderTarget(TempBlendTex_RTI[i], RenderBufferLoadAction.DontCare,
 							RenderBufferStoreAction.Store,
 							RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
