@@ -53,7 +53,11 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 			var camera = renderingData.cameraData.camera;
 
 			//PreviewCamera 也会TAA
-			if (camera.cameraType != CameraType.Game || camera.name.StartsWith("Preview"))
+			if (camera.cameraType != CameraType.Game 
+			    #if UNITY_EDITOR
+			    || camera.name.StartsWith("Preview")
+			    #endif
+			)
 			{
 				return;
 			}
