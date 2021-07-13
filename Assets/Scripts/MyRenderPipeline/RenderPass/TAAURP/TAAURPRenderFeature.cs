@@ -53,10 +53,10 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 			var camera = renderingData.cameraData.camera;
 
 			//PreviewCamera 也会TAA
-			if (camera.cameraType != CameraType.Game 
-			    #if UNITY_EDITOR
+			if (camera.cameraType != CameraType.Game
+#if UNITY_EDITOR
 			    || camera.name.StartsWith("Preview")
-			    #endif
+#endif
 			)
 			{
 				return;
@@ -107,7 +107,7 @@ namespace MyRenderPipeline.RenderPass.TAAURP
 			taaData.sampleOffset = new Vector2(offset.x / camera.scaledPixelWidth, offset.y / camera.scaledPixelHeight);
 
 			taaData.viewCurrent = camera.worldToCameraMatrix;
-			taaData.projCurrent = camera.projectionMatrix;//因为反算的时候 uv走的是 unjittered的
+			taaData.projCurrent = camera.projectionMatrix; //因为反算的时候 uv走的是 unjittered的
 		}
 	}
 }
