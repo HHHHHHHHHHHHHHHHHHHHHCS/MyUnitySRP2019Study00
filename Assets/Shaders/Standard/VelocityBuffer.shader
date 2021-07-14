@@ -67,7 +67,7 @@
 	}
 }
 
-//1.首先在DrawSettings中把PerObjectDatad Motion打开
+//1.首先在DrawSettings中把PerObjectData.Motion打开
 //-------------------------
 //2.接着在 UnityPerFrame 中添加且自己传入
 // float4x4 Matrix_PrevViewProj

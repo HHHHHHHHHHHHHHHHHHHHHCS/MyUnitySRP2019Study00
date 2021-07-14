@@ -1,5 +1,5 @@
-#ifndef MYRP_SHADER_LIB
-	#define MYRP_SHADER_LIB
+#ifndef MYRP_TAA_LIB
+	#define MYRP_TAA_LIB
 	
 	#include "UnityCG.cginc"
 	
