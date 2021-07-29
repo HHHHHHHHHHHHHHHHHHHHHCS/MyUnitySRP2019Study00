@@ -11,7 +11,7 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 		private const string k_profilingTag = "HiZDepth";
 		private readonly ProfilingSampler profilingSampler = new ProfilingSampler(k_profilingTag);
 
-		
+
 		private Shader blitShader;
 		private Material blitMaterial;
 
@@ -39,7 +39,6 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 		{
-
 			CommandBuffer cmd = CommandBufferPool.Get(k_profilingTag);
 			using (new ProfilingScope(cmd, profilingSampler))
 			{
@@ -53,18 +52,21 @@ namespace MyRenderPipeline.RenderPass.HiZIndirectRenderer.SRP
 					width = textureDescriptor.width;
 					height = textureDescriptor.height;
 					depthRT = new RenderTexture(textureDescriptor.width, textureDescriptor.height, 0,
-						RenderTextureFormat.RFloat,
-						-1)
+						RenderTextureFormat.RFloat, Mathf.CeilToInt(Mathf.Log(width, 2)))
 					{
-						name = "HiZDepth"
+						name = "HiZDepth",
+						useMipMap = true,
+						autoGenerateMips = false
 					};
 					DepthTexture = depthRT;
+					depthRT.Create();
 				}
 
 				cmd.SetRenderTarget(depthRT);
 				cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, blitMaterial);
 				cmd.SetRenderTarget(renderingData.cameraData.targetTexture); //复原
-	
+				//正常mipmap要自己写生成的取周围点的做max/min  但是这里我偷懒了
+				cmd.GenerateMips(depthRT);
 			}
 
 			context.ExecuteCommandBuffer(cmd);
