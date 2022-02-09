@@ -73,7 +73,7 @@ float2 ConvertReflectedPosWSToScreenUV(float3 reflectedPosWS)
 	float heightStretch = abs(reflectedPosWS.y - _HorizontalPlaneHeightWS);
 	//摄像机倒转的角度
 	float angleStretch = -_CameraDirection.y;
-	//左右两边 阀值保护
+	//左右两边 阈值保护
 	float screenStretch = saturate(abs(reflectedScreenUV.x * 2 - 1) - threshold);
 	
 	//采样的UV.x 偏移
