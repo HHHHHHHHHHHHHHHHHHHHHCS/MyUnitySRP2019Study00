@@ -92,7 +92,7 @@ float2 ConvertReflectedPosWSToScreenUV(float3 reflectedPosWS)
 half ConvertOpaqueColorRTScreenUVToFadeAlphaParam(float2 screenUV, float reflectedPosWSy)
 {
 	half fadeoutAlpha = smoothstep(1, 1 - _FadeOutScreenBorderWidthVertical, screenUV.y);
-	fadeoutAlpha *= smoothstep(1, 1 + _FadeOutScreenBorderWidthHorizontal * reflectedPosWSy, abs(screenUV.x * 2 - 1));
+	fadeoutAlpha *= smoothstep(1, 1 - _FadeOutScreenBorderWidthHorizontal * -(reflectedPosWSy-_HorizontalPlaneHeightWS), abs(screenUV.x * 2 - 1));
 	return fadeoutAlpha;
 }
 
